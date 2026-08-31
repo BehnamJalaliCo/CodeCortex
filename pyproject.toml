@@ -1,36 +1,22 @@
 [build-system]
-requires = ["hatchling>=1.27"]
+requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "codecortex"
+name = "codecortex-ai"
 version = "0.1.0a1"
-description = "Context intelligence and orchestration for AI coding agents"
+description = "Context intelligence layer for AI coding agents"
 readme = "README.md"
 requires-python = ">=3.11"
-authors = [{ name = "Behnam Jalali" }]
-license = "Apache-2.0"
-license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
-keywords = [
-  "ai-agents",
-  "coding-agents",
-  "mcp",
-  "knowledge-graph",
-  "code-intelligence",
-  "context-engineering",
-  "developer-tools",
-]
+license = {file = "LICENSE"}
+authors = [{name = "Behnam Jalali"}]
+keywords = ["ai", "coding-agents", "mcp", "code-intelligence", "context-engine"]
 classifiers = [
   "Development Status :: 3 - Alpha",
-  "Environment :: Console",
-  "Intended Audience :: Developers",
-  "Operating System :: OS Independent",
-  "Programming Language :: Python :: 3",
+  "License :: OSI Approved :: Apache Software License",
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
-  "Topic :: Software Development :: Libraries :: Python Modules",
-  "Topic :: Software Development :: Quality Assurance",
 ]
 dependencies = [
   "pydantic>=2.8,<3",
@@ -38,40 +24,38 @@ dependencies = [
   "rich>=13.7,<15",
 ]
 
+[project.optional-dependencies]
+semantic = ["sentence-transformers>=3,<6"]
+dev = [
+  "pytest>=8.2",
+  "pytest-asyncio>=0.23",
+  "ruff>=0.6",
+  "mypy>=1.11",
+  "build>=1.2",
+  "twine>=5",
+]
+security = ["pip-audit>=2.7", "bandit>=1.7", "cyclonedx-bom>=4"]
+
 [project.urls]
 Homepage = "https://github.com/BehnamJalaliCo/CodeCortex"
 Repository = "https://github.com/BehnamJalaliCo/CodeCortex"
 Issues = "https://github.com/BehnamJalaliCo/CodeCortex/issues"
-Changelog = "https://github.com/BehnamJalaliCo/CodeCortex/blob/main/CHANGELOG.md"
-
-[project.optional-dependencies]
-semantic = [
-  "sentence-transformers>=5,<6",
-]
-dev = [
-  "pytest>=8.2,<9",
-  "pytest-asyncio>=0.23,<1",
-  "ruff>=0.6,<1",
-  "mypy>=1.11,<2",
-  "build>=1.2,<2",
-  "twine>=6,<7",
-]
 
 [project.scripts]
-codecortex = "codecortex.entrypoint:app"
-cortex = "codecortex.entrypoint:app"
+codecortex = "codecortex.cli:app"
+cortex = "codecortex.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codecortex"]
 
 [tool.pytest.ini_options]
 pythonpath = ["src"]
-testpaths = ["tests"]
 asyncio_mode = "auto"
+testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 100
 target-version = "py311"
+line-length = 100
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
