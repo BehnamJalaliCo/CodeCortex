@@ -220,6 +220,10 @@ def test_dashboard_http_routes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         handler.do_GET()
         assert sent[-1][0] == status
 
+    @dataclass
+    class _RiskReport:
+        risk: str
+
     monkeypatch.setattr(
         dashboard,
         "IncrementalGraphIndex",
@@ -229,7 +233,7 @@ def test_dashboard_http_routes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
         dashboard,
         "PRIntelligence",
         lambda root, graph: SimpleNamespace(
-            analyze=lambda base, head: SimpleNamespace(risk="low")
+            analyze=lambda base, head: _RiskReport(risk="low")
         ),
     )
     handler.path = "/api/pr-risk?base=main&head=HEAD"
@@ -290,7 +294,7 @@ def test_entrypoint_helpers_and_backend_commands(tmp_path: Path, monkeypatch: py
     entrypoint.backend_remove("graph")
     assert manager.removed == ["graph"]
 
-    status = BackendStatus(
+    unhealthy = BackendStatus(
         key="graph",
         installed=True,
         healthy=False,
@@ -298,14 +302,23 @@ def test_entrypoint_helpers_and_backend_commands(tmp_path: Path, monkeypatch: py
         contract_version=1,
         capabilities=("repository",),
     )
+    healthy = BackendStatus(
+        key="graph",
+        installed=True,
+        healthy=True,
+        revision="r",
+        contract_version=1,
+        capabilities=("repository",),
+    )
+    current = {"status": unhealthy}
     monkeypatch.setattr(
         entrypoint,
         "_adapter",
-        lambda key, root, manager: SimpleNamespace(status=lambda: status),
+        lambda key, root, manager: SimpleNamespace(status=lambda: current["status"]),
     )
     with pytest.raises(typer.Exit):
         entrypoint.backend_doctor(tmp_path)
-    status.healthy = True
+    current["status"] = healthy
     entrypoint.backend_doctor(tmp_path)
     entrypoint.backend_status(tmp_path)
 
