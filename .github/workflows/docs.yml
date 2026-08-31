@@ -17,6 +17,10 @@ on:
 permissions:
   contents: read
 
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -33,13 +37,13 @@ jobs:
       - name: Build documentation
         run: mkdocs build --strict
       - name: Upload Pages artifact
-        if: github.event_name == 'workflow_dispatch'
+        if: github.event_name != 'pull_request'
         uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: site
 
   deploy:
-    if: github.event_name == 'workflow_dispatch'
+    if: github.event_name != 'pull_request'
     needs: build
     runs-on: ubuntu-latest
     environment:
