@@ -8,7 +8,6 @@ from typer.testing import CliRunner
 
 from codecortex.entrypoint import app
 
-
 runner = CliRunner()
 
 
@@ -24,8 +23,12 @@ def _project(tmp_path: Path) -> Path:
         encoding="utf-8",
     )
     subprocess.run(["git", "init", "-q"], cwd=root, check=True)
-    subprocess.run(["git", "config", "user.email", "ci@example.invalid"], cwd=root, check=True)
-    subprocess.run(["git", "config", "user.name", "CodeCortex CI"], cwd=root, check=True)
+    subprocess.run(
+        ["git", "config", "user.email", "ci@example.invalid"], cwd=root, check=True
+    )
+    subprocess.run(
+        ["git", "config", "user.name", "CodeCortex CI"], cwd=root, check=True
+    )
     subprocess.run(["git", "add", "."], cwd=root, check=True)
     subprocess.run(["git", "commit", "-qm", "initial"], cwd=root, check=True)
     return root
