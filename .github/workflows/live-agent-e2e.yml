@@ -12,6 +12,10 @@ jobs:
   live-agent:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    env:
+      OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+      ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+      GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
     strategy:
       fail-fast: false
       matrix:
@@ -54,14 +58,23 @@ jobs:
         run: |
           ${{ matrix.configure }}
           command -v ${{ matrix.agent }} || true
-      - name: Run live MCP tool-use check
-        if: ${{ matrix.key_env == 'OPENAI_API_KEY' && secrets.OPENAI_API_KEY != '' || matrix.key_env == 'ANTHROPIC_API_KEY' && secrets.ANTHROPIC_API_KEY != '' || matrix.key_env == 'GEMINI_API_KEY' && secrets.GEMINI_API_KEY != '' }}
+      - name: Check live credential availability
+        id: credential
+        shell: bash
         env:
-          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
-          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          KEY_ENV: ${{ matrix.key_env }}
+        run: |
+          value="${!KEY_ENV:-}"
+          if [ -n "$value" ]; then
+            echo "available=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "available=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Run live MCP tool-use check
+        if: steps.credential.outputs.available == 'true'
+        env:
           CODECORTEX_SOURCE_ROOT: ${{ github.workspace }}
         run: python scripts/live_agent_e2e.py --agent "${{ matrix.agent }}" --command "${{ matrix.command }}"
       - name: Record credential-gated skip
-        if: ${{ !(matrix.key_env == 'OPENAI_API_KEY' && secrets.OPENAI_API_KEY != '' || matrix.key_env == 'ANTHROPIC_API_KEY' && secrets.ANTHROPIC_API_KEY != '' || matrix.key_env == 'GEMINI_API_KEY' && secrets.GEMINI_API_KEY != '') }}
+        if: steps.credential.outputs.available != 'true'
         run: echo "${{ matrix.agent }} installed/configured; live model call skipped because its API secret is not configured." >> "$GITHUB_STEP_SUMMARY"
