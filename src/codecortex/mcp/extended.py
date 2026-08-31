@@ -21,6 +21,14 @@ def _schema(properties: dict[str, Any], required: list[str]) -> dict[str, Any]:
     }
 
 
+_EDIT_TOOLS = {
+    "cortex_rename_symbol",
+    "cortex_replace_symbol_body",
+    "cortex_insert_before_symbol",
+    "cortex_insert_after_symbol",
+}
+
+
 class ExtendedMCPApplication(MCPApplication):
     def tools(self) -> list[dict[str, Any]]:
         tools = super().tools()
@@ -64,12 +72,8 @@ class ExtendedMCPApplication(MCPApplication):
         return tools
 
     async def call(self, name: str, arguments: dict[str, Any]) -> dict[str, Any]:
-        if not name.startswith("cortex_") or name not in {
-            "cortex_rename_symbol",
-            "cortex_replace_symbol_body",
-            "cortex_insert_before_symbol",
-            "cortex_insert_after_symbol",
-        }:
+        self.runtime.telemetry.emit("mcp.tool.called", tool=name)
+        if name not in _EDIT_TOOLS:
             return await super().call(name, arguments)
         service = EditService(self.runtime)
         path = str(arguments["path"])
