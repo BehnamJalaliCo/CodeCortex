@@ -1,0 +1,74 @@
+name: Docker
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "compose.yaml"
+      - ".dockerignore"
+      - "pyproject.toml"
+      - "src/**"
+      - ".github/workflows/docker.yml"
+  pull_request:
+    paths:
+      - "Dockerfile"
+      - "compose.yaml"
+      - ".dockerignore"
+      - "pyproject.toml"
+      - "src/**"
+      - ".github/workflows/docker.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  core-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build core image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: core
+          load: true
+          tags: codecortex:test-core
+          cache-from: type=gha,scope=core
+          cache-to: type=gha,mode=max,scope=core
+      - name: CLI smoke
+        run: |
+          docker run --rm codecortex:test-core --help
+          docker run --rm codecortex:test-core version
+      - name: Runtime smoke
+        run: |
+          docker run --rm -v "$PWD/examples/demo_project:/workspace:ro" codecortex:test-core doctor --path /workspace
+          docker run --rm -v "$PWD/examples/demo_project:/workspace" codecortex:test-core index --path /workspace
+
+  full-image:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: Build full image with pinned backends
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          target: full
+          load: true
+          tags: codecortex:test-full
+          cache-from: type=gha,scope=full
+          cache-to: type=gha,mode=max,scope=full
+      - name: Backend smoke
+        run: |
+          docker run --rm codecortex:test-full backend list
+          docker run --rm -v "$PWD/examples/demo_project:/workspace" codecortex:test-full backend doctor --path /workspace
+      - name: MCP discovery smoke
+        run: |
+          printf '%s\n' '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}' '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' | docker run -i --rm -v "$PWD/examples/demo_project:/workspace" codecortex:test-full mcp --path /workspace | tee /tmp/mcp.out
+          grep -q 'cortex_repository_map' /tmp/mcp.out
+          grep -q 'cortex_rename_symbol' /tmp/mcp.out
