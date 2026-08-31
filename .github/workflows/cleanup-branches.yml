@@ -1,0 +1,22 @@
+name: Cleanup Temporary Branches
+
+on:
+  push:
+    paths:
+      - .github/workflows/cleanup-branches.yml
+
+permissions:
+  contents: write
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - name: Delete temporary branches
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          git push origin --delete hardening/credibility || true
+          git push origin --delete hardening/credibility-2 || true
+          git push origin --delete x || true
