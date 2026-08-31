@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v7
         with:
           python-version: "3.13"
           cache: pip
@@ -30,7 +30,7 @@ jobs:
         run: pytest -q tests/test_security_boundaries.py tests/test_task_trace.py tests/test_agent_configurator.py
       - name: Generate CycloneDX SBOM
         run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: codecortex-sbom-${{ github.sha }}
           path: sbom.cdx.json
