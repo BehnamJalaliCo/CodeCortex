@@ -18,11 +18,15 @@ class BackendSpec:
     command: str
     license_id: str
     capabilities: tuple[str, ...]
+    extras: tuple[str, ...] = ()
     python: str = "3.13"
 
     @property
     def source_requirement(self) -> str:
-        return f"git+{self.source_url}@{self.revision}"
+        if not self.extras:
+            return f"git+{self.source_url}@{self.revision}"
+        extras = ",".join(self.extras)
+        return f"{self.package}[{extras}] @ git+{self.source_url}@{self.revision}"
 
 
 BACKENDS: dict[str, BackendSpec] = {
@@ -52,5 +56,6 @@ BACKENDS: dict[str, BackendSpec] = {
         command="headroom",
         license_id="Apache-2.0",
         capabilities=("compression", "routing", "reversible", "memory", "proxy", "mcp"),
+        extras=("mcp", "code", "memory", "relevance"),
     ),
 }

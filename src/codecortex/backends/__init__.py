@@ -1,5 +1,6 @@
 """Optional isolated backends powered by mature external engines."""
 
+from codecortex.backends.context import ContextBackendAdapter
 from codecortex.backends.graph import GraphBackendAdapter
 from codecortex.backends.manager import BackendManager, BackendProcessError, ProcessResult
 from codecortex.backends.mcp_client import MCPError, MCPStdioClient
@@ -11,6 +12,7 @@ __all__ = [
     "BackendManager",
     "BackendProcessError",
     "BackendSpec",
+    "ContextBackendAdapter",
     "GraphBackendAdapter",
     "MCPError",
     "MCPStdioClient",
