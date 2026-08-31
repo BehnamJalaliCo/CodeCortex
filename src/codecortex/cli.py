@@ -12,10 +12,19 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
-from codecortex.architecture import ArchitectureDriftDetector, ArchitectureInferenceEngine
+from codecortex.architecture import (
+    ArchitectureDriftDetector,
+    ArchitectureFingerprint,
+    ArchitectureInferenceEngine,
+)
 from codecortex.benchmark import BenchmarkSuite, CodeCortexGraphStrategy, FullTextBaseline
 from codecortex.dashboard import run_dashboard
-from codecortex.evaluation import BenchmarkHistory, ExternalEvaluationSuite, RegressionGate, SubprocessEvaluationTarget
+from codecortex.evaluation import (
+    BenchmarkHistory,
+    ExternalEvaluationSuite,
+    RegressionGate,
+    SubprocessEvaluationTarget,
+)
 from codecortex.git_intelligence import GitIntelligence
 from codecortex.indexing.impact import ImpactAnalyzer
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
@@ -45,11 +54,16 @@ def _graph(root: Path):
 def init(path: Annotated[Path, typer.Argument(help="Project directory")] = Path(".")) -> None:
     result = ProjectSetup(_root(path)).run()
     console.print("[bold green]CodeCortex ready.[/bold green]")
-    console.print(f"Tracked files: {result.index.tracked}")
-    console.print(f"Symbols: {result.symbols}")
-    console.print(f"Graph: {result.graph_nodes} nodes / {result.graph_edges} edges")
-    console.print(f"Languages: {', '.join(result.languages) or 'not detected'}")
-    console.print(f"Agents: {', '.join(result.detected_agents) or 'none detected'}")
+    console.print_json(
+        data={
+            "tracked_files": result.index.tracked,
+            "symbols": result.symbols,
+            "graph_nodes": result.graph_nodes,
+            "graph_edges": result.graph_edges,
+            "languages": list(result.languages),
+            "detected_agents": list(result.detected_agents),
+        }
+    )
 
 
 @app.command("index")
@@ -75,8 +89,8 @@ def semantic(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
     limit: Annotated[int, typer.Option("--limit", "-n")] = 20,
 ) -> None:
-    index = RepositorySemanticIndex(_root(path))
-    index.refresh()
+    semantic_index = RepositorySemanticIndex(_root(path))
+    semantic_index.refresh()
     console.print_json(
         data={
             "hits": [
@@ -88,7 +102,7 @@ def semantic(
                     "structural_score": hit.structural_score,
                     "metadata": hit.document.metadata,
                 }
-                for hit in index.search(query, limit)
+                for hit in semantic_index.search(query, limit)
             ]
         }
     )
@@ -106,8 +120,7 @@ def architecture_baseline(
 ) -> None:
     root = _root(path)
     target = root / ".codecortex" / "architecture" / "baseline.json"
-    fingerprint = ArchitectureDriftDetector().fingerprint(_graph(root))
-    fingerprint.save(target)
+    ArchitectureDriftDetector().fingerprint(_graph(root)).save(target)
     console.print(f"Saved: {target}")
 
 
@@ -117,18 +130,14 @@ def architecture_drift(
 ) -> None:
     root = _root(path)
     target = root / ".codecortex" / "architecture" / "baseline.json"
-    baseline = ArchitectureDriftDetector().fingerprint(_graph(root)) if not target.exists() else None
-    if baseline is not None:
-        baseline.save(target)
+    baseline = ArchitectureFingerprint.load(target)
+    detector = ArchitectureDriftDetector()
+    current = detector.fingerprint(_graph(root))
+    if baseline is None:
+        current.save(target)
         console.print("Baseline created; no prior baseline existed.")
         return
-    from codecortex.architecture import ArchitectureFingerprint
-
-    loaded = ArchitectureFingerprint.load(target)
-    if loaded is None:
-        raise typer.BadParameter("Architecture baseline is invalid")
-    detector = ArchitectureDriftDetector()
-    report = detector.compare(loaded, detector.fingerprint(_graph(root)))
+    report = detector.compare(baseline, current)
     console.print_json(data=asdict(report))
     if report.drifted and report.score >= 0.70:
         raise typer.Exit(code=2)
@@ -141,7 +150,8 @@ def symbol_history(
     end: Annotated[int, typer.Argument(help="End line")],
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    console.print_json(data=asdict(GitIntelligence(_root(path)).symbol_history(target, start, end)))
+    report = GitIntelligence(_root(path)).symbol_history(target, start, end)
+    console.print_json(data=asdict(report))
 
 
 @app.command("pr")
@@ -181,8 +191,7 @@ def team_remember(
     namespace: Annotated[str, typer.Option("--namespace")] = "project",
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    root = _root(path)
-    store = TeamMemoryStore(root / ".codecortex" / "memory" / "team.sqlite3")
+    store = TeamMemoryStore(_root(path) / ".codecortex" / "memory" / "team.sqlite3")
     entry = store.put_entry(namespace, key, value, actor=actor)
     console.print_json(data=asdict(entry))
 
@@ -193,9 +202,10 @@ def team_search(
     namespace: Annotated[str, typer.Option("--namespace")] = "project",
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    root = _root(path)
-    store = TeamMemoryStore(root / ".codecortex" / "memory" / "team.sqlite3")
-    console.print_json(data=[asdict(item) for item in store.search_entries(namespace, query, 20)])
+    store = TeamMemoryStore(_root(path) / ".codecortex" / "memory" / "team.sqlite3")
+    console.print_json(
+        data=[asdict(item) for item in store.search_entries(namespace, query, 20)]
+    )
 
 
 @app.command("workspace-add")
@@ -204,8 +214,7 @@ def workspace_add(
     repository: Annotated[Path, typer.Argument()],
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    root = _root(path)
-    workspace = MultiRepositoryWorkspace(root / ".codecortex" / "workspace.json")
+    workspace = MultiRepositoryWorkspace(_root(path) / ".codecortex" / "workspace.json")
     workspace.add_repository(name, repository)
     console.print(f"Added {name}: {_root(repository)}")
 
@@ -215,8 +224,7 @@ def workspace_search(
     query: Annotated[str, typer.Argument()],
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    root = _root(path)
-    workspace = MultiRepositoryWorkspace(root / ".codecortex" / "workspace.json")
+    workspace = MultiRepositoryWorkspace(_root(path) / ".codecortex" / "workspace.json")
     console.print_json(
         data=[
             {
@@ -234,8 +242,7 @@ def trace_summary(
     trace_id: Annotated[str, typer.Argument()],
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    root = _root(path)
-    recorder = TaskTraceRecorder(root / ".codecortex" / "runtime" / "traces.jsonl")
+    recorder = TaskTraceRecorder(_root(path) / ".codecortex" / "runtime" / "traces.jsonl")
     console.print_json(data=asdict(recorder.summarize(trace_id)))
 
 
@@ -274,7 +281,10 @@ def benchmark(
     root = _root(path)
     case_path = cases if cases.is_absolute() else root / cases
     output_path = output if output.is_absolute() else root / output
-    suite = BenchmarkSuite.load(case_path, [FullTextBaseline(root), CodeCortexGraphStrategy(root)])
+    suite = BenchmarkSuite.load(
+        case_path,
+        [FullTextBaseline(root), CodeCortexGraphStrategy(root)],
+    )
     report = suite.run()
     report.save(output_path)
     history_store = BenchmarkHistory(root / ".codecortex" / "benchmarks" / "history.json")
@@ -287,8 +297,9 @@ def benchmark(
 def benchmark_gate(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    root = _root(path)
-    snapshots = BenchmarkHistory(root / ".codecortex" / "benchmarks" / "history.json").load()
+    snapshots = BenchmarkHistory(
+        _root(path) / ".codecortex" / "benchmarks" / "history.json"
+    ).load()
     if len(snapshots) < 2:
         console.print("At least two benchmark snapshots are required.")
         return
@@ -303,7 +314,9 @@ def evaluate_command(
     suite: Annotated[Path, typer.Argument(help="Evaluation suite JSON")],
     command: Annotated[str, typer.Argument(help="Quoted external target command")],
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
-    output: Annotated[Path, typer.Option("--output", "-o")] = Path("benchmarks/external/results.json"),
+    output: Annotated[Path, typer.Option("--output", "-o")] = Path(
+        "benchmarks/external/results.json"
+    ),
 ) -> None:
     root = _root(path)
     suite_path = suite if suite.is_absolute() else root / suite
@@ -332,7 +345,8 @@ def route(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
     runtime = build_runtime(_root(path))
-    console.print_json(data=runtime.gateway.route(query, str(runtime.config.project_root)).model_dump(mode="json"))
+    plan = runtime.gateway.route(query, str(runtime.config.project_root))
+    console.print_json(data=plan.model_dump(mode="json"))
 
 
 @app.command()
