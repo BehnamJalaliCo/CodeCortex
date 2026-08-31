@@ -12,6 +12,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from codecortex.dashboard import run_dashboard
 from codecortex.interfaces.mcp_bridge import MCPBridge
 from codecortex.runtime import build_runtime
 
@@ -121,6 +122,18 @@ def stats(
     for name, count in counts.most_common():
         table.add_row(name, str(count))
     console.print(table)
+
+
+@app.command()
+def dashboard(
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+    host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
+    port: Annotated[int, typer.Option("--port")] = 7331,
+) -> None:
+    """Run the local CodeCortex dashboard."""
+    runtime = build_runtime(_root(path))
+    console.print(f"Dashboard: http://{host}:{port}")
+    run_dashboard(runtime, host=host, port=port)
 
 
 @app.command("mcp-spec")
