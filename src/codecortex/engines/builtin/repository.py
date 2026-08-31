@@ -6,8 +6,12 @@ from collections import Counter
 from pathlib import Path
 
 from codecortex.core.contracts import Engine
-from codecortex.core.models import AgentRequest, Capability, ContextChunk, EngineResult
-
+from codecortex.core.models import (
+    AgentRequest,
+    Capability,
+    ContextChunk,
+    EngineResult,
+)
 
 _EXCLUDED_PARTS = {
     ".git",
@@ -62,9 +66,8 @@ class RepositoryEngine(Engine):
         summary = [
             f"Project root: {self.project_root}",
             f"Files scanned: {len(files)}",
-            "Top file types: " + ", ".join(
-                f"{suffix}={count}" for suffix, count in extension_counts.most_common(10)
-            ),
+            "Top file types: "
+            + ", ".join(f"{suffix}={count}" for suffix, count in extension_counts.most_common(10)),
         ]
         if matches:
             summary.append("Relevant paths:\n" + "\n".join(f"- {path}" for path in matches))
