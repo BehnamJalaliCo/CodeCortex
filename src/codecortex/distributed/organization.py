@@ -132,22 +132,44 @@ class AuditLog:
         actor: str | None = None,
         limit: int = 500,
     ) -> list[AuditEvent]:
-        clauses = ["organization = ?"]
-        params: list[object] = [organization]
-        if workspace is not None:
-            clauses.append("workspace = ?")
-            params.append(workspace)
-        if actor is not None:
-            clauses.append("actor = ?")
-            params.append(actor)
-        params.append(max(1, limit))
-        sql = (
-            "SELECT * FROM audit_events WHERE "
-            + " AND ".join(clauses)
-            + " ORDER BY created_at DESC LIMIT ?"
-        )
+        bounded_limit = max(1, limit)
         with self.db.connect() as connection:
-            rows = connection.execute(sql, tuple(params)).fetchall()
+            if workspace is not None and actor is not None:
+                rows = connection.execute(
+                    """
+                    SELECT * FROM audit_events
+                    WHERE organization = ? AND workspace = ? AND actor = ?
+                    ORDER BY created_at DESC LIMIT ?
+                    """,
+                    (organization, workspace, actor, bounded_limit),
+                ).fetchall()
+            elif workspace is not None:
+                rows = connection.execute(
+                    """
+                    SELECT * FROM audit_events
+                    WHERE organization = ? AND workspace = ?
+                    ORDER BY created_at DESC LIMIT ?
+                    """,
+                    (organization, workspace, bounded_limit),
+                ).fetchall()
+            elif actor is not None:
+                rows = connection.execute(
+                    """
+                    SELECT * FROM audit_events
+                    WHERE organization = ? AND actor = ?
+                    ORDER BY created_at DESC LIMIT ?
+                    """,
+                    (organization, actor, bounded_limit),
+                ).fetchall()
+            else:
+                rows = connection.execute(
+                    """
+                    SELECT * FROM audit_events
+                    WHERE organization = ?
+                    ORDER BY created_at DESC LIMIT ?
+                    """,
+                    (organization, bounded_limit),
+                ).fetchall()
         return [self._row(row) for row in rows]
 
     def prune(self, *, now: datetime | None = None) -> int:
