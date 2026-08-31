@@ -19,16 +19,48 @@ from pathlib import Path
 from time import perf_counter
 from typing import Any, Literal
 
-from codecortex.backends import BackendManager, ContextBackendAdapter, GraphBackendAdapter, SymbolBackendAdapter
+from codecortex.backends import (
+    BackendManager,
+    ContextBackendAdapter,
+    GraphBackendAdapter,
+    SymbolBackendAdapter,
+)
 from codecortex.backends.mcp_client import MCPStdioClient
 
 _TEXT_SUFFIXES = {
-    ".py", ".pyi", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java",
-    ".c", ".h", ".cc", ".cpp", ".hpp", ".cs", ".php", ".rb", ".kt", ".kts",
-    ".scala", ".swift", ".vue", ".svelte", ".md", ".toml", ".yaml", ".yml", ".json",
+    ".py",
+    ".pyi",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".go",
+    ".rs",
+    ".java",
+    ".c",
+    ".h",
+    ".cc",
+    ".cpp",
+    ".hpp",
+    ".cs",
+    ".php",
+    ".rb",
+    ".kt",
+    ".kts",
+    ".scala",
+    ".swift",
+    ".vue",
+    ".svelte",
+    ".md",
+    ".toml",
+    ".yaml",
+    ".yml",
+    ".json",
 }
 _EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build", "target"}
-_PATH_RE = re.compile(r"(?:^|[\s\[(`'\"])([A-Za-z0-9_.@+-]+(?:/[A-Za-z0-9_.@+-]+)+\.[A-Za-z0-9]+)")
+_PATH_RE = re.compile(
+    r"(?:^|[\s\[(`'\"])([A-Za-z0-9_.@+-]+(?:/[A-Za-z0-9_.@+-]+)+\.[A-Za-z0-9]+)"
+)
 
 ScenarioName = Literal["vanilla", "graph", "symbols", "context", "full"]
 
@@ -124,7 +156,9 @@ class ProductionBenchmarkReport:
                 "success_rate": (
                     sum(bool(row.success) for row in scored) / len(scored) if scored else None
                 ),
-                "avg_wall_time_ms": _average(row.metrics.wall_time_ms for row in completed if row.metrics),
+                "avg_wall_time_ms": _average(
+                    row.metrics.wall_time_ms for row in completed if row.metrics
+                ),
                 "avg_estimated_context_tokens": _average(
                     row.metrics.estimated_context_tokens for row in completed if row.metrics
                 ),
@@ -133,8 +167,12 @@ class ProductionBenchmarkReport:
                     for row in completed
                     if row.metrics and row.metrics.files_read is not None
                 ),
-                "avg_files_surfaced": _average(row.metrics.files_surfaced for row in completed if row.metrics),
-                "avg_tool_calls": _average(row.metrics.tool_calls for row in completed if row.metrics),
+                "avg_files_surfaced": _average(
+                    row.metrics.files_surfaced for row in completed if row.metrics
+                ),
+                "avg_tool_calls": _average(
+                    row.metrics.tool_calls for row in completed if row.metrics
+                ),
                 "avg_cost_usd": _average(
                     row.metrics.cost_usd
                     for row in completed
@@ -157,7 +195,10 @@ class ProductionBenchmarkReport:
             "summary": self.summary(),
             "results": [asdict(item) for item in self.results],
         }
-        output.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        output.write_text(
+            json.dumps(payload, indent=2, ensure_ascii=False) + "\n",
+            encoding="utf-8",
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,7 +229,9 @@ class RepositoryCheckout:
         _git(target, "checkout", "--detach", "FETCH_HEAD")
         resolved = _git(target, "rev-parse", "HEAD").strip()
         if resolved != spec.revision:
-            raise RuntimeError(f"revision mismatch for {spec.name}: expected {spec.revision}, got {resolved}")
+            raise RuntimeError(
+                f"revision mismatch for {spec.name}: expected {spec.revision}, got {resolved}"
+            )
         marker.write_text(spec.revision + "\n", encoding="utf-8")
         return target
 
@@ -232,22 +275,37 @@ class ProductionBenchmarkRunner:
             provision_backends=provision_backends,
         )
 
-    def run(self, scenarios: Sequence[ScenarioName] | None = None) -> ProductionBenchmarkReport:
+    def run(
+        self,
+        scenarios: Sequence[ScenarioName] | None = None,
+    ) -> ProductionBenchmarkReport:
         selected = tuple(scenarios or self.scenarios)
         report = ProductionBenchmarkReport()
         for spec in self.specs:
             root = self.checkout.ensure(spec)
-            report.repositories.append({"name": spec.name, "url": spec.url, "revision": spec.revision})
+            report.repositories.append(
+                {"name": spec.name, "url": spec.url, "revision": spec.revision}
+            )
             graph = GraphBackendAdapter(root, self.manager)
             symbols = SymbolBackendAdapter(root, self.manager)
             context = ContextBackendAdapter(root, self.manager)
-            availability = self._prepare(spec, root, selected, graph, symbols, context, report)
+            availability = self._prepare(
+                spec,
+                root,
+                selected,
+                graph,
+                symbols,
+                context,
+                report,
+            )
             for case in spec.cases:
                 baseline: RetrievalObservation | None = None
                 for scenario in selected:
                     if scenario == "vanilla":
                         baseline = self._lexical(root, case)
-                        report.results.append(self._measure(spec, case, scenario, lambda b=baseline: b))
+                        report.results.append(
+                            self._measure(spec, case, scenario, lambda b=baseline: b)
+                        )
                         continue
                     if not availability.get(scenario, False):
                         report.results.append(
@@ -289,7 +347,13 @@ class ProductionBenchmarkRunner:
         context: ContextBackendAdapter,
         report: ProductionBenchmarkReport,
     ) -> dict[ScenarioName, bool]:
-        availability: dict[ScenarioName, bool] = {"vanilla": True, "graph": False, "symbols": False, "context": False, "full": False}
+        availability: dict[ScenarioName, bool] = {
+            "vanilla": True,
+            "graph": False,
+            "symbols": False,
+            "context": False,
+            "full": False,
+        }
         adapters = {"graph": graph, "symbols": symbols, "context": context}
         for key, adapter in adapters.items():
             needed = key in selected or "full" in selected
@@ -326,7 +390,9 @@ class ProductionBenchmarkRunner:
                     detail=detail,
                 )
             )
-        availability["full"] = availability["graph"] and availability["symbols"] and availability["context"]
+        availability["full"] = (
+            availability["graph"] and availability["symbols"] and availability["context"]
+        )
         return availability
 
     def _operation(
@@ -350,15 +416,27 @@ class ProductionBenchmarkRunner:
             return lambda: self._full_observation(graph, symbols, context, case)
         raise ValueError(scenario)
 
-    def _symbol_observation(self, symbols: SymbolBackendAdapter, case: BenchmarkCaseSpec) -> RetrievalObservation:
+    def _symbol_observation(
+        self,
+        symbols: SymbolBackendAdapter,
+        case: BenchmarkCaseSpec,
+    ) -> RetrievalObservation:
         target = case.expected_symbols[0] if case.expected_symbols else case.query
         payload = symbols.call(
             "find_symbol",
             {"name_path_pattern": target, "include_body": True, "depth": 1},
         )
-        return RetrievalObservation(MCPStdioClient.content_text(payload) or json.dumps(payload), None, 1)
+        return RetrievalObservation(
+            MCPStdioClient.content_text(payload) or json.dumps(payload),
+            None,
+            1,
+        )
 
-    def _context_observation(self, context: ContextBackendAdapter, baseline: RetrievalObservation) -> RetrievalObservation:
+    def _context_observation(
+        self,
+        context: ContextBackendAdapter,
+        baseline: RetrievalObservation,
+    ) -> RetrievalObservation:
         payload = context.compress(baseline.text)
         text = MCPStdioClient.content_text(payload) or json.dumps(payload)
         return RetrievalObservation(text, baseline.files_read, baseline.tool_calls + 1)
@@ -377,8 +455,15 @@ class ProductionBenchmarkRunner:
         compressed = MCPStdioClient.content_text(payload) or json.dumps(payload)
         return RetrievalObservation(compressed, None, 3)
 
-    def _lexical(self, root: Path, case: BenchmarkCaseSpec) -> RetrievalObservation:
-        terms = {term.lower() for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", case.query)}
+    def _lexical(
+        self,
+        root: Path,
+        case: BenchmarkCaseSpec,
+    ) -> RetrievalObservation:
+        terms = {
+            term.lower()
+            for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", case.query)
+        }
         scored: list[tuple[int, str, str]] = []
         files_read = 0
         for path in root.rglob("*"):
@@ -394,7 +479,10 @@ class ProductionBenchmarkRunner:
             files_read += 1
             lowered = text.lower()
             path_text = relative.as_posix().lower()
-            score = sum(lowered.count(term) + (5 if term in path_text else 0) for term in terms)
+            score = sum(
+                lowered.count(term) + (5 if term in path_text else 0)
+                for term in terms
+            )
             if score:
                 scored.append((score, relative.as_posix(), text[:8000]))
         scored.sort(key=lambda row: (-row[0], row[1]))
@@ -496,13 +584,14 @@ class InstrumentedAgentRunner:
             env={**os.environ, **dict(environment or {})},
             input=json.dumps(request),
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             timeout=self.timeout_seconds,
             check=False,
         )
         if process.returncode != 0:
-            raise RuntimeError(process.stderr.strip() or f"agent exited with {process.returncode}")
+            raise RuntimeError(
+                process.stderr.strip() or f"agent exited with {process.returncode}"
+            )
         payload = json.loads(process.stdout)
         if not isinstance(payload, dict) or not isinstance(payload.get("answer"), str):
             raise ValueError("agent must return a JSON object containing string field 'answer'")
@@ -513,7 +602,11 @@ class InstrumentedAgentRunner:
             input_tokens=_optional_int(payload.get("input_tokens")),
             output_tokens=_optional_int(payload.get("output_tokens")),
             cost_usd=_optional_float(payload.get("cost_usd")),
-            cost_source=str(payload["cost_source"]) if payload.get("cost_source") is not None else None,
+            cost_source=(
+                str(payload["cost_source"])
+                if payload.get("cost_source") is not None
+                else None
+            ),
         )
 
 
@@ -543,7 +636,11 @@ def _optional_int(value: Any) -> int | None:
 
 
 def _optional_float(value: Any) -> float | None:
-    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
+    return (
+        float(value)
+        if isinstance(value, (int, float)) and not isinstance(value, bool)
+        else None
+    )
 
 
 def _safe_name(value: str) -> str:
@@ -560,8 +657,7 @@ def _git(root: Path, *args: str, timeout: float = 120.0) -> str:
     process = subprocess.run(
         ["git", "-C", str(root), *args],
         text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
+        capture_output=True,
         timeout=timeout,
         check=False,
     )

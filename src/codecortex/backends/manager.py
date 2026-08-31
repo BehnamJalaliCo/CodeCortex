@@ -9,9 +9,9 @@ import subprocess
 import sys
 import time
 import venv
+from collections.abc import Mapping, Sequence
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Mapping, Sequence
 
 from codecortex.backends.spec import BackendSpec
 
@@ -126,8 +126,7 @@ class BackendManager:
             cwd=str(cwd) if cwd else None,
             env={**os.environ, **dict(env or {})},
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             timeout=timeout_seconds or self.timeout_seconds,
             check=False,
         )
@@ -160,8 +159,7 @@ class BackendManager:
             result = subprocess.run(
                 [uv, "venv", "--python", spec.python, str(env_dir)],
                 text=True,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
+                capture_output=True,
                 timeout=self.timeout_seconds,
                 check=False,
             )
@@ -179,8 +177,7 @@ class BackendManager:
         process = subprocess.run(
             argv,
             text=True,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
+            capture_output=True,
             timeout=self.timeout_seconds,
             check=False,
         )
@@ -202,7 +199,7 @@ class BackendManager:
                 return
             except FileExistsError:
                 if time.monotonic() >= deadline:
-                    raise TimeoutError(f"timed out waiting for backend lock: {lock}")
+                    raise TimeoutError(f"timed out waiting for backend lock: {lock}") from None
                 time.sleep(0.1)
 
     @staticmethod
