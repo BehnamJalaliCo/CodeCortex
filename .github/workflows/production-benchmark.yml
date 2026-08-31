@@ -32,7 +32,7 @@ jobs:
       CODECORTEX_BACKEND_HOME: ${{ github.workspace }}/.benchmark-cache/backends
       CODECORTEX_SOURCE_ROOT: ${{ github.workspace }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: actions/setup-python@v5

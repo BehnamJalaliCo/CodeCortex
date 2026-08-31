@@ -22,7 +22,7 @@ jobs:
       matrix:
         backend: [graph, symbols, context]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: actions/setup-python@v5
@@ -45,7 +45,7 @@ jobs:
           - {name: symbols, path: vendor/symbol-engine, install: "uv sync --extra dev", test: "uv run pytest -q test -m 'not slow'"}
           - {name: context, path: vendor/context-engine, install: "uv sync --extra dev --extra mcp --extra code", test: "uv run pytest -q tests"}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
         with:
           submodules: recursive
       - uses: actions/setup-python@v5
