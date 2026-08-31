@@ -1,5 +1,14 @@
-"""Benchmark history and regression policy."""
+"""Benchmark and external evaluation infrastructure."""
 
+from codecortex.evaluation.external import (
+    DeterministicGrader,
+    EvaluationCase,
+    EvaluationExpectation,
+    EvaluationOutput,
+    EvaluationReport,
+    ExternalEvaluationSuite,
+    SubprocessEvaluationTarget,
+)
 from codecortex.evaluation.regression import (
     BenchmarkHistory,
     BenchmarkSnapshot,
@@ -11,7 +20,14 @@ from codecortex.evaluation.regression import (
 __all__ = [
     "BenchmarkHistory",
     "BenchmarkSnapshot",
+    "DeterministicGrader",
+    "EvaluationCase",
+    "EvaluationExpectation",
+    "EvaluationOutput",
+    "EvaluationReport",
+    "ExternalEvaluationSuite",
     "GateReport",
     "MetricPolicy",
     "RegressionGate",
+    "SubprocessEvaluationTarget",
 ]
