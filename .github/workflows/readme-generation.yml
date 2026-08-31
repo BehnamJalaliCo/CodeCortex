@@ -6,6 +6,7 @@ on:
       - feature/finalize-roadmap
     paths:
       - scripts/generate_readme.py
+      - scripts/compact_readme.py
       - .github/workflows/readme-generation.yml
   workflow_dispatch:
 
@@ -24,17 +25,23 @@ jobs:
         with:
           python-version: "3.13"
       - name: Generate canonical README
-        run: python scripts/generate_readme.py
-      - name: Enforce minimum README word count
+        run: |
+          python scripts/generate_readme.py
+          python scripts/compact_readme.py
+      - name: Verify README quality envelope
         run: |
           python - <<'PY'
           import re
           from pathlib import Path
-          text = Path('README.md').read_text(encoding='utf-8')
+          data = Path('README.md').read_bytes()
+          text = data.decode('utf-8')
           count = len(re.findall(r"\b[\w][\w'’-]*\b", text))
           print(f"README words: {count:,}")
+          print(f"README bytes: {len(data):,}")
           if count < 50_000:
               raise SystemExit(f"README must contain at least 50,000 words; found {count}")
+          if len(data) >= 500 * 1024:
+              raise SystemExit(f"README must remain below GitHub's 500 KiB render limit; found {len(data)} bytes")
           PY
       - name: Commit generated README
         shell: bash
