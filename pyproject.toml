@@ -1,0 +1,47 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "codecortex"
+version = "0.1.0a1"
+description = "Context intelligence and orchestration for AI coding agents"
+readme = "README.md"
+requires-python = ">=3.11"
+authors = [{ name = "Behnam Jalali" }]
+dependencies = [
+  "pydantic>=2.8,<3",
+  "typer>=0.12,<1",
+  "rich>=13.7,<15",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2,<9",
+  "pytest-asyncio>=0.23,<1",
+  "ruff>=0.6,<1",
+  "mypy>=1.11,<2",
+]
+
+[project.scripts]
+codecortex = "codecortex.cli:app"
+cortex = "codecortex.cli:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/codecortex"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["codecortex"]
