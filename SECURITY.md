@@ -1,28 +1,33 @@
 # Security Policy
 
-CodeCortex reads source code, launches optional pinned backend processes, and stores local project state. Repository contents, memory, traces, indexes, and benchmark artifacts should be treated as potentially sensitive.
+CodeCortex processes source code and may store local project state, traces, indexes, and benchmark artifacts. Treat those inputs and artifacts as potentially sensitive.
 
 ## Supported versions
 
-Security fixes are applied to the latest release and the current `main` branch during alpha.
+During alpha, security fixes target the latest release and current `main`.
 
 ## Reporting a vulnerability
 
-Please do **not** open a public issue for a suspected vulnerability.
+Do **not** open a public issue for suspected vulnerabilities. Use GitHub **Security → Report a vulnerability** / the private security-advisory flow. Include the affected version or commit, reproduction steps, impact, and suggested mitigation when known.
 
-Use the repository's GitHub **Security → Report a vulnerability** / private security-advisory flow so details remain private until a fix is available. Include the affected version or commit, reproduction steps, impact, and any suggested mitigation.
+The project aims to acknowledge credible reports promptly, coordinate remediation privately, and publish an advisory after a fix is available when disclosure is appropriate.
 
 ## Security defaults
 
 - Project state stays under `.codecortex/`.
-- The dashboard binds to `127.0.0.1` unless the user explicitly changes it.
+- The dashboard binds to `127.0.0.1` by default.
 - Core operation does not require a remote service.
-- Backend commands are revision-pinned and executed without a shell.
-- Semantic edit paths are resolved and constrained to the project root.
+- External adapters are disabled unless explicitly configured.
+- Backend commands execute without a shell.
+- Semantic edit paths are constrained to the project root.
 - Task traces redact common credential/token fields.
-- Agent configuration is merge-safe, backed up before modification, and refuses malformed config files.
+- Agent configuration is merge-safe and refuses malformed configuration.
 - Secrets should never be deliberately stored in project or team memory.
 
-## Automated checks
+## Automated assurance
 
-Pull requests and `main` are checked with dependency auditing, Bandit, security boundary tests, CodeQL, dependency review, and CycloneDX SBOM generation.
+CI includes dependency auditing, Bandit, security-boundary tests, CodeQL, dependency review, OpenSSF Scorecard, coverage reporting, CycloneDX SBOM generation, signed release payloads, and build provenance attestations.
+
+## Supply chain
+
+Release artifacts include checksums and provenance. Consumers should verify release artifacts and avoid installing unreviewed forks or mutable source references in security-sensitive environments.

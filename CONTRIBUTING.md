@@ -1,6 +1,6 @@
 # Contributing
 
-CodeCortex is early, so small and focused changes are easier to review than large rewrites.
+Thank you for improving CodeCortex. Focused, tested changes are easier to review and safer to release.
 
 ## Development
 
@@ -14,6 +14,25 @@ pytest -q
 
 ## Pull requests
 
-Please keep a pull request focused on one problem. Add tests for behavior changes and explain any architecture decision that affects more than one layer.
+Keep each pull request focused on one problem. Add tests for behavior changes, document user-visible changes, and explain architecture decisions that cross subsystem boundaries.
 
-The core should stay independent from specific providers. New integrations belong behind an existing contract or a new small contract with a clear reason to exist.
+Before opening a pull request:
+
+```bash
+ruff check .
+pytest --cov=codecortex --cov-report=term-missing
+```
+
+Never include credentials, customer data, private repository content, or vulnerability details in a public contribution.
+
+## Architecture
+
+Keep provider-specific behavior behind explicit contracts. Prefer deterministic local behavior, bounded side effects, testable adapters, and compatibility-preserving interfaces.
+
+## Security
+
+Potential vulnerabilities must be reported privately according to `SECURITY.md`, not through public issues.
+
+## Community
+
+Participation is governed by `CODE_OF_CONDUCT.md` and project decisions follow `GOVERNANCE.md`.

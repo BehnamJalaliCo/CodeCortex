@@ -30,6 +30,7 @@ parsers = ["tree-sitter-language-pack>=1.15.8,<2"]
 dev = [
   "pytest>=8.2",
   "pytest-asyncio>=1.4.0",
+  "pytest-cov>=6,<8",
   "ruff>=0.16.5",
   "mypy>=1.11",
   "build>=1.2",
@@ -41,6 +42,7 @@ security = ["pip-audit>=2.7", "bandit>=1.7", "cyclonedx-bom>=4"]
 Homepage = "https://github.com/BehnamJalaliCo/CodeCortex"
 Repository = "https://github.com/BehnamJalaliCo/CodeCortex"
 Issues = "https://github.com/BehnamJalaliCo/CodeCortex/issues"
+Security = "https://github.com/BehnamJalaliCo/CodeCortex/security"
 
 [project.scripts]
 codecortex = "codecortex.entrypoint:app"
@@ -53,6 +55,16 @@ packages = ["src/codecortex"]
 pythonpath = ["src"]
 asyncio_mode = "auto"
 testpaths = ["tests"]
+addopts = "--strict-markers"
+
+[tool.coverage.run]
+branch = true
+source = ["codecortex"]
+
+[tool.coverage.report]
+show_missing = true
+skip_covered = true
+fail_under = 70
 
 [tool.ruff]
 target-version = "py311"
