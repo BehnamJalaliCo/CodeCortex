@@ -190,7 +190,9 @@ class AgentConfigurator:
         existing = path.read_text(encoding="utf-8") if path.exists() else ""
         managed = re.compile(re.escape(begin) + r".*?" + re.escape(end), re.DOTALL)
         if managed.search(existing):
-            updated = managed.sub(block, existing)
+            # A callable replacement keeps Windows backslashes literal instead of
+            # letting re.sub interpret them as replacement-string escapes.
+            updated = managed.sub(lambda _match: block, existing)
         else:
             if re.search(r"(?m)^\s*\[mcp_servers\.codecortex\]\s*$", existing):
                 raise AgentConfigurationError(
