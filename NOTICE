@@ -1,2 +1,24 @@
-CodeCortex
+CodeCortex Context Engine
 Copyright 2026 Behnam Jalali
+
+CodeCortex is distributed under the Apache License, Version 2.0. See LICENSE.
+
+Third-party and historical upstream notices
+===========================================
+
+Graphify
+Copyright 2026 Safi Shamsi and the Graphify contributors.
+Licensed under the Apache License, Version 2.0. Portions of Graphify were
+contributed under the MIT License prior to its relicensing; see the upstream
+project and THIRD_PARTY_NOTICES.md for the recorded source lineage.
+
+Serena
+Copyright (c) 2025 Oraios AI.
+Licensed under the MIT License. See THIRD_PARTY_NOTICES.md.
+
+Headroom
+Copyright 2025 Headroom Contributors.
+Licensed under the Apache License, Version 2.0. See THIRD_PARTY_NOTICES.md.
+
+The presence of an attribution in this NOTICE does not imply endorsement by,
+affiliation with, or transfer of copyright from any upstream project.
