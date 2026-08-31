@@ -1,23 +1,28 @@
 # CodeCortex
 
-**Context intelligence for AI coding agents.**
+**The context intelligence layer for AI coding agents.**
 
-I built CodeCortex around a simple problem: coding agents become much less useful when a repository is large enough that they have to choose between reading too much code or missing the part that matters.
+CodeCortex gives coding agents a persistent, queryable model of a software project: symbols, dependency relationships, architecture, history, project memory, change impact and compact task-specific context.
 
-CodeCortex sits between an agent and the codebase. It maps the repository, finds symbols, routes each request to the right capability, keeps context inside a defined budget, remembers useful project decisions, and exposes the result through one stable gateway.
+Instead of repeatedly reading large parts of a repository, an agent can ask CodeCortex for the smallest useful slice of project intelligence and keep the result inside a controlled context budget.
 
-## What it does
+## Highlights
 
-- Maps repository structure and relevant paths
-- Finds code at symbol level
-- Routes requests based on intent
-- Keeps context inside an explicit token budget
-- Stores project-scoped memory locally
-- Runs validation as part of change-oriented routes
-- Exposes a stable tool bridge for coding-agent integrations
-- Tracks routing and context activity locally
-- Includes a lightweight local dashboard
-- Includes a benchmark harness for reproducible measurements
+- Incremental repository and knowledge-graph indexing
+- Multi-language symbol and type intelligence
+- Confidence-scored cross-file call and dependency resolution
+- Hybrid semantic, lexical and structural retrieval
+- Change-impact analysis and affected-test discovery
+- Git history, symbol blame and ownership intelligence
+- Architecture inference and architecture-drift detection
+- Pull-request risk intelligence
+- Local project memory and revisioned shared team memory
+- Federated multi-repository workspaces
+- Query-aware context ranking, deduplication and token budgeting
+- Agent task traces with local observability and sensitive-field redaction
+- Native MCP stdio server with structured tools
+- Reproducible benchmarks, benchmark history and regression gates
+- Agent-neutral external evaluation suites
 
 ## Quick start
 
@@ -29,109 +34,139 @@ source .venv/bin/activate
 pip install -e .
 ```
 
-Initialize it inside a repository:
+Initialize any project:
 
 ```bash
 cortex init /path/to/project
 cortex doctor -p /path/to/project
 ```
 
-Ask CodeCortex how it would handle a task:
-
-```bash
-cortex route "Why does changing UserSession break checkout?" -p /path/to/project
-```
-
-Run the intelligence pipeline:
+Ask for project intelligence:
 
 ```bash
 cortex run "Find the authentication refresh path" -p /path/to/project
+cortex impact AuthService -p /path/to/project
+cortex semantic "where is session rotation handled?" -p /path/to/project
 ```
 
-Store a project decision:
+Run the MCP server:
 
 ```bash
-cortex remember database "PostgreSQL is the primary database" -p /path/to/project
+cortex mcp -p /path/to/project
 ```
-
-Open the local dashboard:
-
-```bash
-cortex dashboard -p /path/to/project
-```
-
-The dashboard is available at `http://127.0.0.1:7331` by default.
 
 ## Architecture
 
 ```text
-Coding Agent / Tool Host
-          |
-          v
-+-----------------------+
-|   CodeCortex Gateway  |
-+-----------+-----------+
-            |
-            v
-+-----------------------+
-|    Adaptive Router    |
-+-----------+-----------+
-            |
-   +--------+---------+-----------+-----------+
-   |                  |           |           |
-   v                  v           v           v
-Repository          Symbols     Memory     Validation
-Intelligence      Intelligence   Engine      Engine
-   |                  |           |           |
-   +--------+---------+-----------+-----------+
-            |
-            v
-+-----------------------+
-|   Context Pipeline    |
-| rank -> fit -> budget |
-+-----------+-----------+
-            |
-            v
-+-----------------------+
-|     Orchestrator      |
-+-----------+-----------+
-            |
-      +-----+-----+
-      |           |
-      v           v
-  Telemetry   Tool Bridge
+Coding Agent / MCP Host / CLI
+             |
+             v
++---------------------------+
+|     CodeCortex Gateway    |
++-------------+-------------+
+              |
+              v
++---------------------------+
+|      Adaptive Router      |
++-------------+-------------+
+              |
+      +-------+--------+------------------+
+      |                |                  |
+      v                v                  v
+ Repository         Symbols          Project Memory
+ Intelligence     & Types           & Team Memory
+      |                |                  |
+      +-------+--------+------------------+
+              |
+              v
++---------------------------+
+|  Knowledge + Change Graph |
+| calls / imports / impact  |
++-------------+-------------+
+              |
+      +-------+---------+----------------+
+      |                 |                |
+      v                 v                v
+ Semantic          Architecture      Git / PR
+ Retrieval         Intelligence      Intelligence
+      |                 |                |
+      +-------+---------+----------------+
+              |
+              v
++---------------------------+
+|      Context Pipeline     |
+| rank -> dedup -> fit      |
++-------------+-------------+
+              |
+              v
++---------------------------+
+| Orchestrator + Task Trace |
++---------------------------+
 ```
 
-The core is intentionally small. Engines sit behind typed contracts, so a capability can be replaced without changing the router, gateway, or host integration.
+More detail is available in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/ADVANCED_INTELLIGENCE.md`](docs/ADVANCED_INTELLIGENCE.md).
 
-More detail is in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md).
-
-## Commands
+## CLI
 
 ```text
 cortex init
+cortex index
 cortex doctor
 cortex route
 cortex run
+cortex semantic
+cortex impact
+cortex history
+cortex symbol-history
+cortex architecture
+cortex architecture-baseline
+cortex architecture-drift
+cortex pr
 cortex remember
+cortex team-remember
+cortex team-search
+cortex workspace-add
+cortex workspace-search
+cortex trace-summary
 cortex stats
 cortex dashboard
-cortex mcp-spec
+cortex benchmark
+cortex benchmark-gate
+cortex evaluate
+cortex mcp
+```
+
+## Semantic retrieval
+
+The default semantic provider is local and deterministic. No external service is required. For the optional neural provider:
+
+```bash
+pip install -e ".[semantic]"
 ```
 
 ## Project state
 
-CodeCortex keeps local runtime data under:
+Runtime state is project-local:
 
 ```text
 .codecortex/
-├── config.json
+├── index/
+│   ├── manifest.json
+│   ├── graph.json
+│   └── semantic.json
+├── architecture/
+│   └── baseline.json
 ├── memory/
-└── runtime/
-    └── events.jsonl
+│   └── team.sqlite3
+├── benchmarks/
+│   └── history.json
+├── runtime/
+│   ├── events.jsonl
+│   └── traces.jsonl
+└── workspace.json
 ```
 
-This directory is ignored by Git by default.
+The `.codecortex/` directory is ignored by Git by default.
 
 ## Development
 
@@ -141,14 +176,14 @@ ruff check .
 pytest -q
 ```
 
-CI runs the test suite on Python 3.11, 3.12, and 3.13.
+CI runs against Python 3.11, 3.12 and 3.13.
+
+## Benchmarks
+
+CodeCortex does not hard-code performance claims. Benchmark and evaluation results are generated from actual runs and can be persisted locally. Regression gates can fail when success/recall degrade or resource use exceeds configured thresholds.
 
 ## Status
 
-CodeCortex is in active development. The current codebase is the architectural foundation for the first public release. The next work is focused on incremental indexing, multi-language symbol intelligence, dependency graphs, stronger context ranking, and a native transport layer.
+The core intelligence and agent-workflow layers are implemented. Current work is focused on production hardening, scale, additional provider integrations and release quality.
 
 See [`ROADMAP.md`](ROADMAP.md) for the current plan.
-
-## License
-
-License information will be added before the first public release.

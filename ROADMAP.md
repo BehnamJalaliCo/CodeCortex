@@ -27,19 +27,29 @@
 
 ## 0.2 — Intelligence
 
-- [ ] Deeper language-native parsing and type resolution
-- [ ] Cross-file call resolution with ambiguity scoring
-- [ ] Incremental graph updates without full graph rebuilds
-- [ ] Semantic retrieval providers
-- [ ] Git-aware symbol history and blame intelligence
-- [ ] Architecture pattern inference with confidence scores
-- [ ] Persistent benchmark history and regression gates
+- [x] Deeper language-native parsing and type resolution
+- [x] Cross-file call resolution with ambiguity scoring
+- [x] Incremental graph updates without full graph rebuilds
+- [x] Semantic retrieval providers
+- [x] Git-aware symbol history and blame intelligence
+- [x] Architecture pattern inference with confidence scores
+- [x] Persistent benchmark history and regression gates
 
 ## 0.3 — Agent workflows
 
-- [ ] Multi-repository context
-- [ ] Shared team memory
-- [ ] Pull request intelligence
-- [ ] Architecture drift detection
-- [ ] Agent task traces
-- [ ] Reproducible external evaluation suites
+- [x] Multi-repository context
+- [x] Shared team memory
+- [x] Pull request intelligence
+- [x] Architecture drift detection
+- [x] Agent task traces
+- [x] Reproducible external evaluation suites
+
+## 0.4 — Production hardening
+
+- [ ] Native parser-provider plugins for deeper language semantics
+- [ ] Remote shared-memory synchronization
+- [ ] Persistent vector-database providers for very large repositories
+- [ ] Hosted/remote MCP transport with authentication and access policy
+- [ ] Large-repository performance corpus and published benchmark history
+- [ ] Signed release artifacts and automated package publishing
+- [ ] Dashboard views for traces, drift, pull-request risk, and evaluation history
