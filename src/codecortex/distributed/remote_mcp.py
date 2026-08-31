@@ -131,8 +131,6 @@ class RemoteMCPServer:
         principal = self.authenticator.authenticate(authorization)
         if principal is None:
             return 401, {"error": "unauthorized"}
-        if not self._quota.acquire(principal):
-            return 429, {"error": "quota_exceeded"}
         tool = payload.get("tool")
         arguments = payload.get("arguments", {})
         if not isinstance(tool, str) or not tool.strip():
@@ -141,6 +139,8 @@ class RemoteMCPServer:
             return 400, {"error": "arguments_must_be_object"}
         if not self.policy.allows(principal, tool):
             return 403, {"error": "forbidden"}
+        if not self._quota.acquire(principal):
+            return 429, {"error": "quota_exceeded"}
         try:
             result = self.dispatcher(tool, arguments)
             if inspect.isawaitable(result):
