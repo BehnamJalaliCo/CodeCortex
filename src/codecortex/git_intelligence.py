@@ -1,4 +1,4 @@
-"""Repository history intelligence built from local Git metadata."""
+"""Repository and symbol history intelligence from local Git metadata."""
 
 from __future__ import annotations
 
@@ -37,9 +37,39 @@ class GitReport:
     recent_files: tuple[str, ...]
 
 
+@dataclass(frozen=True, slots=True)
+class SymbolCommit:
+    sha: str
+    author: str
+    email: str
+    date: str
+    subject: str
+
+
+@dataclass(frozen=True, slots=True)
+class BlameLine:
+    line: int
+    sha: str
+    author: str
+    email: str
+    timestamp: int | None
+    content: str
+
+
+@dataclass(frozen=True, slots=True)
+class SymbolHistory:
+    path: str
+    start_line: int
+    end_line: int
+    commits: tuple[SymbolCommit, ...]
+    blame: tuple[BlameLine, ...]
+    owners: tuple[AuthorActivity, ...]
+
+
 class GitIntelligence:
-    def __init__(self, root: Path) -> None:
+    def __init__(self, root: Path, timeout_seconds: float = 15.0) -> None:
         self.root = root.resolve()
+        self.timeout_seconds = timeout_seconds
 
     def _git(self, *args: str) -> str:
         try:
@@ -50,8 +80,9 @@ class GitIntelligence:
                 text=True,
                 encoding="utf-8",
                 errors="replace",
+                timeout=self.timeout_seconds,
             )
-        except OSError:
+        except (OSError, subprocess.TimeoutExpired):
             return ""
         return result.stdout if result.returncode == 0 else ""
 
@@ -68,7 +99,6 @@ class GitIntelligence:
         )
         if not raw:
             return GitReport(0, (), (), (), ())
-
         file_changes: Counter[str] = Counter()
         pair_changes: Counter[tuple[str, str]] = Counter()
         author_changes: Counter[tuple[str, str]] = Counter()
@@ -99,31 +129,23 @@ class GitIntelligence:
                     current_author = (parts[1], parts[2])
                 continue
             path = line.strip()
-            if not path:
-                continue
-            current_files.append(path)
-            if path not in recent:
-                recent.append(path)
+            if path:
+                current_files.append(path)
+                if path not in recent:
+                    recent.append(path)
         if commits:
             flush()
-
-        hot_files = tuple(
-            FileActivity(path, changes)
-            for path, changes in file_changes.most_common(30)
-        )
-        co_changes = tuple(
-            CoChange(left, right, count)
-            for (left, right), count in pair_changes.most_common(30)
-        )
-        authors = tuple(
-            AuthorActivity(name, email, count)
-            for (name, email), count in author_changes.most_common(20)
-        )
         return GitReport(
             commits=commits,
-            hot_files=hot_files,
-            co_changes=co_changes,
-            authors=authors,
+            hot_files=tuple(FileActivity(path, count) for path, count in file_changes.most_common(30)),
+            co_changes=tuple(
+                CoChange(left, right, count)
+                for (left, right), count in pair_changes.most_common(30)
+            ),
+            authors=tuple(
+                AuthorActivity(name, email, count)
+                for (name, email), count in author_changes.most_common(20)
+            ),
             recent_files=tuple(recent[:50]),
         )
 
@@ -139,15 +161,92 @@ class GitIntelligence:
         result: list[dict[str, str]] = []
         for line in raw.splitlines():
             parts = line.split("|", 4)
-            if len(parts) != 5:
+            if len(parts) == 5:
+                result.append(
+                    {
+                        "sha": parts[0],
+                        "author": parts[1],
+                        "email": parts[2],
+                        "date": parts[3],
+                        "subject": parts[4],
+                    }
+                )
+        return result
+
+    def symbol_history(self, path: str, start_line: int, end_line: int) -> SymbolHistory:
+        if start_line < 1 or end_line < start_line:
+            raise ValueError("invalid symbol line range")
+        commits = self._symbol_commits(path, start_line, end_line)
+        blame = self._blame(path, start_line, end_line)
+        ownership: Counter[tuple[str, str]] = Counter(
+            (line.author, line.email) for line in blame if line.author
+        )
+        owners = tuple(
+            AuthorActivity(name, email, count)
+            for (name, email), count in ownership.most_common()
+        )
+        return SymbolHistory(
+            path=path,
+            start_line=start_line,
+            end_line=end_line,
+            commits=tuple(commits),
+            blame=tuple(blame),
+            owners=owners,
+        )
+
+    def _symbol_commits(self, path: str, start_line: int, end_line: int) -> list[SymbolCommit]:
+        raw = self._git(
+            "log",
+            "--date=iso-strict",
+            "--format=@@C@@%H|%an|%ae|%ad|%s",
+            "-L",
+            f"{start_line},{end_line}:{path}",
+        )
+        commits: list[SymbolCommit] = []
+        seen: set[str] = set()
+        for line in raw.splitlines():
+            if not line.startswith("@@C@@"):
                 continue
-            result.append(
-                {
-                    "sha": parts[0],
-                    "author": parts[1],
-                    "email": parts[2],
-                    "date": parts[3],
-                    "subject": parts[4],
-                }
-            )
+            parts = line[5:].split("|", 4)
+            if len(parts) != 5 or parts[0] in seen:
+                continue
+            seen.add(parts[0])
+            commits.append(SymbolCommit(*parts))
+        return commits
+
+    def _blame(self, path: str, start_line: int, end_line: int) -> list[BlameLine]:
+        raw = self._git(
+            "blame",
+            "--line-porcelain",
+            "-L",
+            f"{start_line},{end_line}",
+            "--",
+            path,
+        )
+        result: list[BlameLine] = []
+        current: dict[str, str] = {}
+        current_line = start_line
+        for line in raw.splitlines():
+            if line.startswith("\t"):
+                timestamp = current.get("author-time")
+                result.append(
+                    BlameLine(
+                        line=current_line,
+                        sha=current.get("sha", ""),
+                        author=current.get("author", ""),
+                        email=current.get("author-mail", "").strip("<>"),
+                        timestamp=int(timestamp) if timestamp and timestamp.isdigit() else None,
+                        content=line[1:],
+                    )
+                )
+                current_line += 1
+                current = {}
+                continue
+            parts = line.split(" ", 1)
+            if len(parts) == 2 and len(parts[0]) >= 7 and all(
+                char in "0123456789abcdef^" for char in parts[0].lower()
+            ):
+                current["sha"] = parts[0].lstrip("^")
+            elif len(parts) == 2:
+                current[parts[0]] = parts[1]
         return result
