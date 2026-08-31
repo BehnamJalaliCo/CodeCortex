@@ -1,0 +1,51 @@
+name: README Generation
+
+on:
+  push:
+    branches:
+      - feature/finalize-roadmap
+    paths:
+      - scripts/generate_readme.py
+      - .github/workflows/readme-generation.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          ref: feature/finalize-roadmap
+          persist-credentials: true
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+      - name: Generate canonical README
+        run: python scripts/generate_readme.py
+      - name: Enforce minimum README word count
+        run: |
+          python - <<'PY'
+          import re
+          from pathlib import Path
+          text = Path('README.md').read_text(encoding='utf-8')
+          count = len(re.findall(r"\b[\w][\w'’-]*\b", text))
+          print(f"README words: {count:,}")
+          if count < 50_000:
+              raise SystemExit(f"README must contain at least 50,000 words; found {count}")
+          PY
+      - name: Commit generated README
+        shell: bash
+        run: |
+          set -euo pipefail
+          git add README.md
+          if git diff --cached --quiet; then
+            echo "README is already current."
+            exit 0
+          fi
+          git config user.name "Behnam Jalali"
+          git config user.email "behnamjalalico@gmail.com"
+          git commit -m "Generate global CodeCortex README"
+          git push origin HEAD:feature/finalize-roadmap
