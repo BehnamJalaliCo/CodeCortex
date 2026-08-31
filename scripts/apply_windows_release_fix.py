@@ -32,10 +32,4 @@ replace_once(
     'version = "0.1.0a3"',
 )
 
-bootstrap = Path(".github/workflows/bootstrap-release.yml")
-bootstrap_text = bootstrap.read_text(encoding="utf-8")
-if "v0.1.0a2" not in bootstrap_text:
-    raise SystemExit("bootstrap release tag target was not found")
-bootstrap.write_text(bootstrap_text.replace("v0.1.0a2", "v0.1.0a3"), encoding="utf-8")
-
 print("Applied Windows path/command compatibility fixes and prepared v0.1.0a3.")
