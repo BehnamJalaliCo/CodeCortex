@@ -47,6 +47,7 @@ Security = "https://github.com/BehnamJalaliCo/CodeCortex/security"
 [project.scripts]
 codecortex = "codecortex.entrypoint:app"
 cortex = "codecortex.entrypoint:app"
+cortex-remote = "codecortex.distributed.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codecortex"]
@@ -64,7 +65,7 @@ source = ["codecortex"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-fail_under = 65
+fail_under = 90
 
 [tool.ruff]
 target-version = "py311"
