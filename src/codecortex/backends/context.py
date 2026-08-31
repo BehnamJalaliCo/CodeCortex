@@ -38,6 +38,16 @@ class ContextBackendAdapter(ManagedAdapterMixin, Engine):
         workspace.mkdir(parents=True, exist_ok=True)
         return {"HEADROOM_WORKSPACE_DIR": str(workspace)}
 
+    def _client(self) -> MCPStdioClient:
+        """Return an unstarted correctly scoped client for compatibility and diagnostics."""
+        return MCPStdioClient(
+            self.manager,
+            self.spec,
+            self.server_args(),
+            cwd=self.project_root,
+            env=self._env(),
+        )
+
     def tools(self) -> list[dict[str, Any]]:
         tools = self.pool.tools(
             self.spec,
