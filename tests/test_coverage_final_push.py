@@ -4,7 +4,6 @@ import ast
 import builtins
 import json
 import sys
-from dataclasses import dataclass
 from pathlib import Path
 from types import ModuleType, SimpleNamespace
 from typing import Any
