@@ -26,7 +26,7 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          git add src/codecortex/distributed/vector_store.py src/codecortex/evaluation/production.py pyproject.toml .github/workflows/bootstrap-release.yml
+          git add src/codecortex/distributed/vector_store.py src/codecortex/evaluation/production.py pyproject.toml
           git diff --cached --check
           if git diff --cached --quiet; then
             echo "No patch changes were required."
