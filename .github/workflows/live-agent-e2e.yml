@@ -38,6 +38,8 @@ jobs:
             key_env: GEMINI_API_KEY
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -58,6 +60,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CODECORTEX_SOURCE_ROOT: ${{ github.workspace }}
         run: python scripts/live_agent_e2e.py --agent "${{ matrix.agent }}" --command "${{ matrix.command }}"
       - name: Record credential-gated skip
         if: ${{ !(matrix.key_env == 'OPENAI_API_KEY' && secrets.OPENAI_API_KEY != '' || matrix.key_env == 'ANTHROPIC_API_KEY' && secrets.ANTHROPIC_API_KEY != '' || matrix.key_env == 'GEMINI_API_KEY' && secrets.GEMINI_API_KEY != '') }}
