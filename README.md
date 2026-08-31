@@ -28,7 +28,7 @@ CodeCortex MCP / Gateway
     └── Validation + Task Tracing
 ```
 
-The orchestration, routing, stable backend contracts, memory, multi-repository workspace, change intelligence, observability, evaluation, and product integration are CodeCortex-owned layers. Optional mature engines are revision-pinned and isolated from the Core dependency graph; licensing details live in `THIRD_PARTY_NOTICES.md`.
+The orchestration, routing, stable backend contracts, memory, multi-repository workspace, change intelligence, observability, evaluation, and product integration are CodeCortex-owned layers. Mature engine sources are pinned to exact revisions and carried under `vendor/`; licensing details live in `THIRD_PARTY_NOTICES.md`.
 
 ## Install
 
@@ -37,7 +37,15 @@ Python 3.11–3.13 is supported.
 ### From source today
 
 ```bash
-uv tool install git+https://github.com/BehnamJalaliCo/CodeCortex.git
+git clone --recurse-submodules https://github.com/BehnamJalaliCo/CodeCortex.git
+cd CodeCortex
+pip install -e ".[dev]"
+```
+
+If the repository was cloned without recursive source checkout:
+
+```bash
+git submodule update --init --recursive
 ```
 
 The release pipeline publishes the Python distribution as `codecortex-context-engine`. After the first successful public package release:
@@ -52,7 +60,7 @@ Initialize a repository:
 cortex init .
 ```
 
-Install the complete optional intelligence stack and configure detected agents:
+Install the complete intelligence stack and configure detected agents:
 
 ```bash
 cortex bootstrap
@@ -68,7 +76,7 @@ cortex agents detect
 cortex agents configure
 ```
 
-Backend environments are isolated and pinned to exact revisions so their dependency trees do not contaminate CodeCortex Core.
+Backend environments are isolated. A source checkout installs its pinned local engine sources first; packaged installs retain a revision-pinned remote fallback.
 
 ## One MCP surface
 
@@ -132,7 +140,7 @@ vanilla + context optimization
 full CodeCortex stack
 ```
 
-The current corpus contains multiple pinned repositories and task cases. Run it with:
+Run it with:
 
 ```bash
 python scripts/run_production_benchmark.py --provision
@@ -162,15 +170,15 @@ docker build --target full -t codecortex:full .
 docker compose up dashboard
 ```
 
-Docker CI smoke-tests Core and Full images, including MCP discovery. Tagged releases publish an attested multi-architecture Core image and an attested Full image to GHCR.
+Docker CI smoke-tests Core and Full images, including MCP discovery. Tagged releases publish attested images to GHCR.
 
 ## Reliability and supply chain
 
 CodeCortex uses layered validation:
 
 - Core CI across Python 3.11, 3.12, and 3.13.
-- Live adapter conformance against exact backend revisions.
-- Scheduled upstream regression suites.
+- Live adapter conformance against exact pinned source revisions.
+- Scheduled source regression suites.
 - Native-parser provider tests.
 - Docker Core/Full integration tests.
 - Dependency audit, Bandit, CodeQL, dependency review, and security-boundary tests.
@@ -182,7 +190,7 @@ Live model-backed agent E2E workflows are credential-gated and verify actual MCP
 ## Development
 
 ```bash
-git clone https://github.com/BehnamJalaliCo/CodeCortex.git
+git clone --recurse-submodules https://github.com/BehnamJalaliCo/CodeCortex.git
 cd CodeCortex
 python -m venv .venv
 . .venv/bin/activate
@@ -207,8 +215,8 @@ python scripts/demo.py
 - `docs/BRAND.md` — canonical project identity and naming policy.
 - `ROADMAP.md` — shipped and future work.
 - `SECURITY.md` — private vulnerability reporting and security defaults.
-- `THIRD_PARTY_NOTICES.md` — optional backend licensing and attribution.
+- `THIRD_PARTY_NOTICES.md` — required third-party licensing and attribution.
 
 ## License
 
-CodeCortex-owned code is licensed under Apache-2.0. Optional backend software remains under its respective upstream license; see `THIRD_PARTY_NOTICES.md`.
+CodeCortex-owned code is licensed under Apache-2.0. Vendored engine software remains under its applicable license; see `THIRD_PARTY_NOTICES.md`.
