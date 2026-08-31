@@ -47,7 +47,7 @@ jobs:
           docker run --rm codecortex:test-core version
       - name: Runtime smoke
         run: |
-          docker run --rm -v "$PWD/examples/demo_project:/workspace:ro" codecortex:test-core doctor --path /workspace
+          docker run --rm -v "$PWD/examples/demo_project:/workspace" codecortex:test-core doctor --path /workspace
           docker run --rm -v "$PWD/examples/demo_project:/workspace" codecortex:test-core index --path /workspace
 
   full-image:
