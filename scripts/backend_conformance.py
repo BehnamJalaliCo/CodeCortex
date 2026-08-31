@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Provision one pinned backend and exercise its real CodeCortex contract."""
+"""Exercise one pinned engine through its real CodeCortex contract."""
 
 from __future__ import annotations
 
@@ -10,23 +10,8 @@ import sys
 import tempfile
 from pathlib import Path
 
-from codecortex.backends import (
-    BACKENDS,
-    BackendManager,
-    ContextBackendAdapter,
-    GraphBackendAdapter,
-    SymbolBackendAdapter,
-)
+from codecortex.backends import BACKENDS, BackendManager, ContextBackendAdapter, GraphBackendAdapter, SymbolBackendAdapter
 from codecortex.backends.mcp_client import MCPStdioClient
-
-
-def _workspace() -> tempfile.TemporaryDirectory[str]:
-    return tempfile.TemporaryDirectory(prefix="codecortex-backend-e2e-")
-
-
-def _copy_fixture(destination: Path) -> None:
-    source = Path.cwd() / "examples" / "demo_project"
-    shutil.copytree(source, destination, dirs_exist_ok=True)
 
 
 def main() -> int:
@@ -34,51 +19,37 @@ def main() -> int:
         print("usage: backend_conformance.py graph|symbols|context", file=sys.stderr)
         return 2
     key = sys.argv[1]
-    manager = BackendManager(timeout_seconds=1200)
+    manager = BackendManager(timeout_seconds=1200, source_root=Path.cwd())
     spec = BACKENDS[key]
+    assert manager.local_source_path(spec) is not None, f"{key}: pinned source checkout is missing"
     manager.ensure(spec)
+    assert (manager.installation_metadata(spec) or {}).get("source_kind") == "vendored"
 
-    with _workspace() as temp:
+    with tempfile.TemporaryDirectory(prefix="codecortex-backend-e2e-") as temp:
         root = Path(temp).resolve()
-        _copy_fixture(root)
+        shutil.copytree(Path.cwd() / "examples" / "demo_project", root, dirs_exist_ok=True)
         if key == "graph":
             adapter = GraphBackendAdapter(root, manager)
             assert asyncio.run(adapter.health())
             payload = adapter.build()
-            assert payload, "graph backend returned an empty graph"
             serialized = json.dumps(payload, ensure_ascii=False)
-            assert "AuthService" in serialized, "graph did not index fixture symbols"
-            print(f"graph: built fixture graph ({len(serialized)} chars)")
+            assert payload and "AuthService" in serialized
         elif key == "symbols":
             adapter = SymbolBackendAdapter(root, manager)
             assert asyncio.run(adapter.health())
-            tools = adapter.tools()
-            adapter.require_tools(tools, adapter.required_tools)
-            result = adapter.call(
-                "find_symbol",
-                {
-                    "name_path_pattern": "AuthService",
-                    "relative_path": "auth/service.py",
-                    "include_body": False,
-                },
-            )
-            text = MCPStdioClient.content_text(result) or json.dumps(result)
-            assert "AuthService" in text, "symbol backend did not resolve fixture symbol"
-            print("symbols: resolved AuthService through live MCP/LSP")
+            adapter.require_tools(adapter.tools(), adapter.required_tools)
+            result = adapter.call("find_symbol", {"name_path_pattern": "AuthService", "relative_path": "auth/service.py", "include_body": False})
+            assert "AuthService" in (MCPStdioClient.content_text(result) or json.dumps(result))
         else:
             adapter = ContextBackendAdapter(root, manager)
             assert asyncio.run(adapter.health())
-            tools = adapter.tools()
-            adapter.require_tools(tools, adapter.required_tools)
+            adapter.require_tools(adapter.tools(), adapter.required_tools)
             content = "\n".join(["AuthService refreshes access tokens through TokenStore."] * 80)
             result = adapter.compress(content)
-            text = MCPStdioClient.content_text(result)
-            assert text.strip(), "context backend returned empty compression"
-            stats = adapter.stats()
-            assert isinstance(stats, dict), "context backend stats must be an object"
-            print(f"context: compressed live payload from {len(content)} to {len(text)} chars")
+            assert MCPStdioClient.content_text(result).strip()
+            assert isinstance(adapter.stats(), dict)
 
-    print(f"{key}: E2E contract verified at {spec.revision}")
+    print(f"{key}: vendored E2E contract verified at {spec.revision}")
     return 0
 
 

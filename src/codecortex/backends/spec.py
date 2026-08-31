@@ -1,8 +1,4 @@
-"""Pinned backend specifications.
-
-Each backend is installed into its own virtual environment so its dependency graph
-cannot destabilize CodeCortex or another backend.
-"""
+"""Pinned backend specifications used by the CodeCortex engine layer."""
 
 from __future__ import annotations
 
@@ -20,9 +16,11 @@ class BackendSpec:
     capabilities: tuple[str, ...]
     extras: tuple[str, ...] = ()
     python: str = "3.13"
+    vendor_path: str | None = None
 
     @property
     def source_requirement(self) -> str:
+        """Remote fallback requirement used when the vendored checkout is absent."""
         if not self.extras:
             return f"git+{self.source_url}@{self.revision}"
         extras = ",".join(self.extras)
@@ -38,6 +36,7 @@ BACKENDS: dict[str, BackendSpec] = {
         command="graphify",
         license_id="Apache-2.0",
         capabilities=("ast", "graph", "query", "path", "explain", "incremental"),
+        vendor_path="vendor/graph-engine",
     ),
     "symbols": BackendSpec(
         key="symbols",
@@ -47,6 +46,7 @@ BACKENDS: dict[str, BackendSpec] = {
         command="serena",
         license_id="MIT",
         capabilities=("lsp", "symbols", "references", "diagnostics", "editing", "refactor"),
+        vendor_path="vendor/symbol-engine",
     ),
     "context": BackendSpec(
         key="context",
@@ -57,5 +57,6 @@ BACKENDS: dict[str, BackendSpec] = {
         license_id="Apache-2.0",
         capabilities=("compression", "routing", "reversible", "memory", "proxy", "mcp"),
         extras=("mcp", "code", "memory", "relevance"),
+        vendor_path="vendor/context-engine",
     ),
 }

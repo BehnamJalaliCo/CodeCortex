@@ -1,0 +1,9 @@
+[submodule "vendor/graph-engine"]
+	path = vendor/graph-engine
+	url = https://github.com/Graphify-Labs/graphify.git
+[submodule "vendor/symbol-engine"]
+	path = vendor/symbol-engine
+	url = https://github.com/oraios/serena.git
+[submodule "vendor/context-engine"]
+	path = vendor/context-engine
+	url = https://github.com/headroomlabs-ai/headroom.git
