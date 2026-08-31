@@ -2,6 +2,9 @@
 
 from __future__ import annotations
 
+import asyncio
+from time import perf_counter
+
 from codecortex.context import BudgetContextProcessor
 from codecortex.core.models import AgentRequest, Capability, EngineResult, ExecutionResult
 from codecortex.engines import EngineRegistry
@@ -11,7 +14,7 @@ from codecortex.tracing import TaskTraceRecorder
 
 
 class Orchestrator:
-    """Route a request, execute available engines, and fit returned context."""
+    """Route requests, execute independent engines concurrently, and fit context."""
 
     def __init__(
         self,
@@ -44,6 +47,48 @@ class Orchestrator:
                 update={"metadata": {**result.metadata, "trace_id": trace_id}}
             )
 
+    async def _run_engine(
+        self,
+        capability: Capability,
+        request: AgentRequest,
+        trace_id: str | None,
+        parent_span: str | None,
+    ) -> EngineResult | None:
+        engine = self.registry.get(capability)
+        if engine is None or not await engine.health():
+            self.telemetry.emit("engine.skipped", capability=capability.value)
+            return None
+        started = perf_counter()
+        try:
+            if self.tracer and trace_id:
+                attrs: dict[str, object] = {"capability": capability.value}
+                async with self.tracer.async_span(
+                    "engine.execute",
+                    trace_id=trace_id,
+                    parent_id=parent_span,
+                    attributes=attrs,
+                ):
+                    result = await engine.execute(request)
+                    attrs["chunks"] = len(result.chunks)
+                    attrs["context_tokens"] = sum(chunk.tokens for chunk in result.chunks)
+            else:
+                result = await engine.execute(request)
+        except Exception as exc:
+            self.telemetry.emit(
+                "engine.failed",
+                capability=capability.value,
+                error_type=type(exc).__name__,
+            )
+            if request.metadata.get("strict_engines"):
+                raise
+            return None
+        self.telemetry.emit(
+            "engine.executed",
+            capability=capability.value,
+            duration_ms=(perf_counter() - started) * 1000,
+        )
+        return result
+
     async def _execute(
         self,
         request: AgentRequest,
@@ -67,31 +112,15 @@ class Orchestrator:
                 },
             )
 
-        results: list[EngineResult] = []
-        all_chunks = []
-        for capability in plan.selected:
-            if capability == Capability.CONTEXT:
-                continue
-            engine = self.registry.get(capability)
-            if engine is None or not await engine.health():
-                self.telemetry.emit("engine.skipped", capability=capability.value)
-                continue
-            if self.tracer and trace_id:
-                attrs: dict[str, object] = {"capability": capability.value}
-                async with self.tracer.async_span(
-                    "engine.execute",
-                    trace_id=trace_id,
-                    parent_id=parent_span,
-                    attributes=attrs,
-                ):
-                    result = await engine.execute(request)
-                    attrs["chunks"] = len(result.chunks)
-                    attrs["context_tokens"] = sum(chunk.tokens for chunk in result.chunks)
-            else:
-                result = await engine.execute(request)
-            results.append(result)
-            all_chunks.extend(result.chunks)
-            self.telemetry.emit("engine.executed", capability=capability.value)
+        capabilities = [item for item in plan.selected if item != Capability.CONTEXT]
+        outcomes = await asyncio.gather(
+            *(
+                self._run_engine(capability, request, trace_id, parent_span)
+                for capability in capabilities
+            )
+        )
+        results = [result for result in outcomes if result is not None]
+        all_chunks = [chunk for result in results for chunk in result.chunks]
 
         original_tokens = sum(chunk.tokens for chunk in all_chunks)
         fitted = await self.context_processor.fit(all_chunks, plan.context_budget)

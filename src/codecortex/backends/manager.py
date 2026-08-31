@@ -47,9 +47,16 @@ def _default_cache_root() -> Path:
 class BackendManager:
     """Provision and execute pinned engines in conflict-free environments."""
 
-    def __init__(self, cache_root: Path | None = None, timeout_seconds: float = 300.0) -> None:
+    def __init__(
+        self,
+        cache_root: Path | None = None,
+        timeout_seconds: float = 300.0,
+        health_ttl_seconds: float = 30.0,
+    ) -> None:
         self.cache_root = (cache_root or _default_cache_root()).expanduser().resolve()
         self.timeout_seconds = timeout_seconds
+        self.health_ttl_seconds = health_ttl_seconds
+        self._probe_cache: dict[tuple[str, str], tuple[float, bool]] = {}
 
     def environment_dir(self, spec: BackendSpec) -> Path:
         return self.cache_root / spec.key / spec.revision[:12]
@@ -97,6 +104,7 @@ class BackendManager:
             command = self.command_path(spec)
             if not command.exists():
                 raise RuntimeError(f"backend installed without expected command: {command}")
+            self._probe_cache.pop((spec.key, spec.revision), None)
             return command
         except Exception:
             if env_dir.exists() and not self.is_installed(spec):
@@ -141,17 +149,32 @@ class BackendManager:
             raise BackendProcessError(result)
         return result
 
-    def probe(self, spec: BackendSpec, provision: bool = False) -> bool:
+    def probe(self, spec: BackendSpec, provision: bool = False, *, force: bool = False) -> bool:
+        key = (spec.key, spec.revision)
+        now = time.monotonic()
+        cached = self._probe_cache.get(key)
+        if not force and cached is not None and now - cached[0] <= self.health_ttl_seconds:
+            return cached[1]
         try:
             if not provision and not self.is_installed(spec):
-                return False
-            result = self.run(spec, ("--help",), timeout_seconds=30, provision=provision, check=False)
+                healthy = False
+            else:
+                result = self.run(
+                    spec,
+                    ("--help",),
+                    timeout_seconds=30,
+                    provision=provision,
+                    check=False,
+                )
+                healthy = result.returncode == 0
         except (OSError, RuntimeError, subprocess.SubprocessError):
-            return False
-        return result.returncode == 0
+            healthy = False
+        self._probe_cache[key] = (now, healthy)
+        return healthy
 
     def remove(self, spec: BackendSpec) -> None:
         shutil.rmtree(self.environment_dir(spec), ignore_errors=True)
+        self._probe_cache.pop((spec.key, spec.revision), None)
 
     def _create_environment(self, env_dir: Path, spec: BackendSpec) -> None:
         uv = shutil.which("uv")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Mapping
 from pathlib import Path
@@ -10,6 +11,7 @@ from typing import Any
 from codecortex.backends.base import ManagedAdapterMixin
 from codecortex.backends.manager import BackendManager
 from codecortex.backends.mcp_client import MCPStdioClient
+from codecortex.backends.pool import BackendSessionPool
 from codecortex.backends.spec import BACKENDS
 from codecortex.core.contracts import Engine
 from codecortex.core.models import AgentRequest, Capability, ContextChunk, EngineResult, RequestKind
@@ -29,9 +31,10 @@ class SymbolBackendAdapter(ManagedAdapterMixin, Engine):
         self.project_root = project_root.resolve()
         self.manager = manager or BackendManager()
         self.spec = BACKENDS["symbols"]
+        self.pool = BackendSessionPool(self.manager)
 
     async def health(self) -> bool:
-        return self.manager.probe(self.spec, provision=False)
+        return await asyncio.to_thread(self.manager.probe, self.spec, False)
 
     def server_args(self) -> tuple[str, ...]:
         return (
@@ -47,14 +50,22 @@ class SymbolBackendAdapter(ManagedAdapterMixin, Engine):
         )
 
     def tools(self) -> list[dict[str, Any]]:
-        with MCPStdioClient(self.manager, self.spec, self.server_args(), cwd=self.project_root) as client:
-            tools = client.tools()
+        tools = self.pool.tools(
+            self.spec,
+            self.server_args(),
+            cwd=self.project_root,
+        )
         self.require_tools(tools, self.required_tools)
         return tools
 
     def call(self, tool: str, arguments: Mapping[str, Any]) -> dict[str, Any]:
-        with MCPStdioClient(self.manager, self.spec, self.server_args(), cwd=self.project_root) as client:
-            return client.call_tool(tool, arguments)
+        return self.pool.call_tool(
+            self.spec,
+            self.server_args(),
+            tool,
+            arguments,
+            cwd=self.project_root,
+        )
 
     def _relative_path(self, value: str) -> str:
         candidate = (self.project_root / value).resolve()
@@ -126,6 +137,9 @@ class SymbolBackendAdapter(ManagedAdapterMixin, Engine):
         )
 
     async def execute(self, request: AgentRequest) -> EngineResult:
+        return await asyncio.to_thread(self._execute_sync, request)
+
+    def _execute_sync(self, request: AgentRequest) -> EngineResult:
         explicit_tool = request.metadata.get("symbol_tool")
         explicit_args = request.metadata.get("symbol_arguments")
         if isinstance(explicit_tool, str):
