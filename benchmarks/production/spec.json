@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "repositories": [
+    {
+      "name": "fastapi",
+      "url": "https://github.com/fastapi/fastapi.git",
+      "revision": "49033471594ea5d99a80abdf1043231b7791ee49",
+      "cases": [
+        {
+          "id": "fastapi-class",
+          "query": "FastAPI",
+          "expected_paths": ["fastapi/applications.py"],
+          "expected_symbols": ["FastAPI"]
+        },
+        {
+          "id": "api-router",
+          "query": "APIRouter",
+          "expected_paths": ["fastapi/routing.py"],
+          "expected_symbols": ["APIRouter"]
+        }
+      ]
+    },
+    {
+      "name": "pydantic",
+      "url": "https://github.com/pydantic/pydantic.git",
+      "revision": "f512b087202f58ec90a9d38c9102858567d72440",
+      "cases": [
+        {
+          "id": "base-model",
+          "query": "BaseModel",
+          "expected_paths": ["pydantic/main.py"],
+          "expected_symbols": ["BaseModel"]
+        }
+      ]
+    },
+    {
+      "name": "flask",
+      "url": "https://github.com/pallets/flask.git",
+      "revision": "d318b683471101618febed18996405ad26462110",
+      "cases": [
+        {
+          "id": "flask-app",
+          "query": "Flask",
+          "expected_paths": ["src/flask/app.py"],
+          "expected_symbols": ["Flask"]
+        }
+      ]
+    }
+  ]
+}

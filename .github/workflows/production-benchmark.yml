@@ -1,0 +1,43 @@
+name: Production Benchmark
+
+on:
+  workflow_dispatch:
+    inputs:
+      provision:
+        description: Provision pinned mature backends
+        required: false
+        default: true
+        type: boolean
+  schedule:
+    - cron: "41 4 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  production-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip uv
+          pip install -e ".[dev]"
+      - name: Run revision-pinned benchmark matrix
+        run: |
+          EXTRA=""
+          if [ "${{ github.event_name }}" = "schedule" ] || [ "${{ inputs.provision }}" = "true" ]; then
+            EXTRA="--provision"
+          fi
+          python scripts/run_production_benchmark.py $EXTRA --output benchmark-results.json
+      - uses: actions/upload-artifact@v4
+        with:
+          name: codecortex-production-benchmark
+          path: benchmark-results.json
+          if-no-files-found: error
+          retention-days: 30

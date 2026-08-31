@@ -9,6 +9,18 @@ from codecortex.evaluation.external import (
     ExternalEvaluationSuite,
     SubprocessEvaluationTarget,
 )
+from codecortex.evaluation.production import (
+    AgentProtocolResult,
+    BenchmarkCaseSpec,
+    InstrumentedAgentRunner,
+    ObservedMetrics,
+    ProductionBenchmarkReport,
+    ProductionBenchmarkRunner,
+    RepositorySpec,
+    ScenarioResult,
+    SetupMeasurement,
+    load_repository_specs,
+)
 from codecortex.evaluation.regression import (
     BenchmarkHistory,
     BenchmarkSnapshot,
@@ -18,6 +30,8 @@ from codecortex.evaluation.regression import (
 )
 
 __all__ = [
+    "AgentProtocolResult",
+    "BenchmarkCaseSpec",
     "BenchmarkHistory",
     "BenchmarkSnapshot",
     "DeterministicGrader",
@@ -27,7 +41,15 @@ __all__ = [
     "EvaluationReport",
     "ExternalEvaluationSuite",
     "GateReport",
+    "InstrumentedAgentRunner",
     "MetricPolicy",
+    "ObservedMetrics",
+    "ProductionBenchmarkReport",
+    "ProductionBenchmarkRunner",
     "RegressionGate",
+    "RepositorySpec",
+    "ScenarioResult",
+    "SetupMeasurement",
     "SubprocessEvaluationTarget",
+    "load_repository_specs",
 ]
