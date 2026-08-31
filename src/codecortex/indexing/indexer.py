@@ -1,11 +1,12 @@
-"""Build a local knowledge graph from repository structure and Python syntax."""
+"""Build the repository knowledge graph."""
 
 from __future__ import annotations
 
-import ast
 from pathlib import Path
 
 from codecortex.indexing.graph import GraphEdge, GraphNode, ProjectGraph
+from codecortex.indexing.relationships import RelationshipExtractor
+from codecortex.symbols import SymbolProviderRegistry
 
 _EXCLUDED = {
     ".git",
@@ -23,6 +24,8 @@ class ProjectIndexer:
     def __init__(self, root: Path, max_files: int = 5_000) -> None:
         self.root = root.resolve()
         self.max_files = max_files
+        self.symbols = SymbolProviderRegistry()
+        self.relationships = RelationshipExtractor()
 
     def _files(self) -> list[Path]:
         files: list[Path] = []
@@ -35,124 +38,106 @@ class ProjectIndexer:
             if any(part in _EXCLUDED for part in relative.parts):
                 continue
             files.append(path)
-        return files
-
-    @staticmethod
-    def _module_name(relative: Path) -> str | None:
-        if relative.suffix != ".py":
-            return None
-        parts = list(relative.with_suffix("").parts)
-        if parts and parts[-1] == "__init__":
-            parts.pop()
-        return ".".join(parts) if parts else None
+        return sorted(files)
 
     def build(self) -> ProjectGraph:
         files = self._files()
         nodes: list[GraphNode] = []
         edges: list[GraphEdge] = []
         node_ids: set[str] = set()
+        names: dict[str, list[str]] = {}
+        file_sources: dict[Path, str] = {}
+        symbol_for_file: dict[tuple[str, str], str] = {}
 
-        module_targets: dict[str, str] = {}
         for path in files:
             relative = path.relative_to(self.root)
             file_id = f"file:{relative.as_posix()}"
-            nodes.append(
-                GraphNode(
-                    id=file_id,
-                    kind="file",
-                    name=relative.name,
-                    path=relative.as_posix(),
-                    metadata={"extension": relative.suffix.lower()},
-                )
-            )
-            node_ids.add(file_id)
-            module_name = self._module_name(relative)
-            if module_name:
-                module_targets[module_name] = file_id
-
-        for path in files:
-            relative = path.relative_to(self.root)
-            if relative.suffix != ".py":
+            self._node(nodes, node_ids, GraphNode(
+                id=file_id,
+                kind="file",
+                name=relative.name,
+                path=relative.as_posix(),
+                metadata={"extension": relative.suffix.lower()},
+            ))
+            if not self.symbols.supports(path):
                 continue
-            file_id = f"file:{relative.as_posix()}"
             try:
                 source = path.read_text(encoding="utf-8")
-                tree = ast.parse(source, filename=str(path))
-            except (OSError, UnicodeDecodeError, SyntaxError):
+            except (OSError, UnicodeDecodeError):
                 continue
+            file_sources[path] = source
+            for symbol in self.symbols.extract(path, source):
+                if symbol.kind in {"import", "export"}:
+                    continue
+                symbol_id = (
+                    f"symbol:{relative.as_posix()}:{symbol.line}:{symbol.kind}:{symbol.name}"
+                )
+                self._node(nodes, node_ids, GraphNode(
+                    id=symbol_id,
+                    kind=symbol.kind,
+                    name=symbol.name,
+                    path=relative.as_posix(),
+                    line=symbol.line,
+                    metadata={
+                        "language": symbol.language,
+                        "container": symbol.container,
+                    },
+                ))
+                edges.append(GraphEdge(source=file_id, target=symbol_id, kind="contains"))
+                names.setdefault(symbol.name, []).append(symbol_id)
+                symbol_for_file[(relative.as_posix(), symbol.name)] = symbol_id
 
-            for item in ast.walk(tree):
-                if isinstance(item, ast.ClassDef):
-                    self._add_symbol(nodes, edges, node_ids, file_id, relative, item.name, "class", item.lineno)
-                elif isinstance(item, ast.AsyncFunctionDef):
-                    self._add_symbol(
-                        nodes,
-                        edges,
-                        node_ids,
+        for path, source in file_sources.items():
+            relative = path.relative_to(self.root)
+            file_id = f"file:{relative.as_posix()}"
+            for relation in self.relationships.extract(path, source):
+                source_id = file_id
+                if relation.source_symbol:
+                    source_id = symbol_for_file.get(
+                        (relative.as_posix(), relation.source_symbol),
                         file_id,
-                        relative,
-                        item.name,
-                        "async_function",
-                        item.lineno,
                     )
-                elif isinstance(item, ast.FunctionDef):
-                    self._add_symbol(
-                        nodes,
-                        edges,
-                        node_ids,
-                        file_id,
-                        relative,
-                        item.name,
-                        "function",
-                        item.lineno,
-                    )
-                elif isinstance(item, ast.Import):
-                    for alias in item.names:
-                        self._add_import(nodes, edges, node_ids, module_targets, file_id, alias.name)
-                elif isinstance(item, ast.ImportFrom) and item.module:
-                    self._add_import(nodes, edges, node_ids, module_targets, file_id, item.module)
+                target_id = self._resolve_target(
+                    relation.target,
+                    relation.kind,
+                    names,
+                    nodes,
+                    node_ids,
+                )
+                edges.append(GraphEdge(
+                    source=source_id,
+                    target=target_id,
+                    kind=relation.kind,
+                    metadata={"line": relation.line},
+                ))
 
-        return ProjectGraph(nodes=nodes, edges=edges)
+        unique_edges = {
+            (edge.source, edge.target, edge.kind): edge
+            for edge in edges
+            if edge.source != edge.target
+        }
+        return ProjectGraph(nodes=nodes, edges=list(unique_edges.values()))
 
     @staticmethod
-    def _add_symbol(
-        nodes: list[GraphNode],
-        edges: list[GraphEdge],
-        node_ids: set[str],
-        file_id: str,
-        relative: Path,
-        name: str,
+    def _node(nodes: list[GraphNode], node_ids: set[str], node: GraphNode) -> None:
+        if node.id not in node_ids:
+            node_ids.add(node.id)
+            nodes.append(node)
+
+    @staticmethod
+    def _resolve_target(
+        target: str,
         kind: str,
-        line: int,
-    ) -> None:
-        symbol_id = f"symbol:{relative.as_posix()}:{line}:{name}"
-        if symbol_id in node_ids:
-            return
-        node_ids.add(symbol_id)
-        nodes.append(
-            GraphNode(
-                id=symbol_id,
-                kind=kind,
-                name=name,
-                path=relative.as_posix(),
-                line=line,
-            )
-        )
-        edges.append(GraphEdge(source=file_id, target=symbol_id, kind="defines"))
-
-    @staticmethod
-    def _add_import(
+        names: dict[str, list[str]],
         nodes: list[GraphNode],
-        edges: list[GraphEdge],
         node_ids: set[str],
-        module_targets: dict[str, str],
-        file_id: str,
-        module: str,
-    ) -> None:
-        target = module_targets.get(module)
-        if target is None:
-            target = f"module:{module}"
-            if target not in node_ids:
-                node_ids.add(target)
-                nodes.append(GraphNode(id=target, kind="module", name=module))
-        edges.append(GraphEdge(source=file_id, target=target, kind="imports"))
+    ) -> str:
+        candidates = names.get(target)
+        if candidates and len(candidates) == 1:
+            return candidates[0]
+        prefix = "module" if kind == "imports" else "reference"
+        target_id = f"{prefix}:{target}"
+        if target_id not in node_ids:
+            node_ids.add(target_id)
+            nodes.append(GraphNode(id=target_id, kind=prefix, name=target))
+        return target_id
