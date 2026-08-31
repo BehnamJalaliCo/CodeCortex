@@ -6,11 +6,12 @@ import json
 import re
 import time
 import uuid
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, AsyncIterator, Iterator
+from typing import Any
 
 _SENSITIVE = re.compile(r"(?:secret|password|passwd|token|api[_-]?key|authorization|cookie)", re.I)
 

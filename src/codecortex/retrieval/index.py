@@ -35,6 +35,10 @@ class SemanticIndex:
         if path and path.exists():
             self.load()
 
+    @property
+    def document_ids(self) -> set[str]:
+        return set(self._documents)
+
     def upsert(self, documents: list[SemanticDocument]) -> None:
         if not documents:
             return
@@ -43,6 +47,13 @@ class SemanticIndex:
             self._documents[document.id] = document
             self._vectors[document.id] = vector
         if self.path:
+            self.save()
+
+    def replace(self, documents: list[SemanticDocument]) -> None:
+        self._documents.clear()
+        self._vectors.clear()
+        self.upsert(documents)
+        if not documents and self.path:
             self.save()
 
     def delete(self, ids: set[str]) -> None:

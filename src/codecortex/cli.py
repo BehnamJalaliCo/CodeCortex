@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import shlex
+from dataclasses import asdict
 from pathlib import Path
 from typing import Annotated
 
@@ -10,16 +12,22 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from codecortex.architecture import ArchitectureDriftDetector, ArchitectureInferenceEngine
 from codecortex.benchmark import BenchmarkSuite, CodeCortexGraphStrategy, FullTextBaseline
 from codecortex.dashboard import run_dashboard
+from codecortex.evaluation import BenchmarkHistory, ExternalEvaluationSuite, RegressionGate, SubprocessEvaluationTarget
 from codecortex.git_intelligence import GitIntelligence
 from codecortex.indexing.impact import ImpactAnalyzer
-from codecortex.indexing.incremental import IncrementalIndex
-from codecortex.indexing.indexer import ProjectIndexer
+from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.mcp.server import run_stdio
+from codecortex.memory import TeamMemoryStore
 from codecortex.memory.knowledge import ProjectKnowledgeExtractor
+from codecortex.pr_intelligence import PRIntelligence
+from codecortex.retrieval import RepositorySemanticIndex
 from codecortex.runtime import build_runtime
 from codecortex.setup import ProjectSetup
+from codecortex.tracing import TaskTraceRecorder
+from codecortex.workspace import MultiRepositoryWorkspace
 
 app = typer.Typer(no_args_is_help=True, add_completion=False)
 console = Console()
@@ -29,9 +37,12 @@ def _root(path: Path) -> Path:
     return path.expanduser().resolve()
 
 
+def _graph(root: Path):
+    return IncrementalGraphIndex(root).refresh()[0]
+
+
 @app.command()
 def init(path: Annotated[Path, typer.Argument(help="Project directory")] = Path(".")) -> None:
-    """Initialize and index a project."""
     result = ProjectSetup(_root(path)).run()
     console.print("[bold green]CodeCortex ready.[/bold green]")
     console.print(f"Tracked files: {result.index.tracked}")
@@ -43,15 +54,189 @@ def init(path: Annotated[Path, typer.Argument(help="Project directory")] = Path(
 
 @app.command("index")
 def index_command(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
-    """Update the incremental index and knowledge graph."""
-    root = _root(path)
-    stats = IncrementalIndex(root).refresh()
-    graph = ProjectIndexer(root).build()
-    graph.save(root / ".codecortex" / "index" / "graph.json")
-    console.print(
-        f"Tracked {stats.tracked} | +{len(stats.added)} "
-        f"~{len(stats.changed)} -{len(stats.removed)} | {stats.duration_ms:.1f}ms"
+    graph, stats = IncrementalGraphIndex(_root(path)).refresh()
+    console.print_json(
+        data={
+            "tracked": stats.index.tracked,
+            "added": len(stats.index.added),
+            "changed": len(stats.index.changed),
+            "removed": len(stats.index.removed),
+            "files_reparsed": stats.files_reparsed,
+            "full_rebuild": stats.full_rebuild,
+            "graph_nodes": len(graph.nodes),
+            "graph_edges": len(graph.edges),
+        }
     )
+
+
+@app.command()
+def semantic(
+    query: Annotated[str, typer.Argument(help="Semantic repository query")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+    limit: Annotated[int, typer.Option("--limit", "-n")] = 20,
+) -> None:
+    index = RepositorySemanticIndex(_root(path))
+    index.refresh()
+    console.print_json(
+        data={
+            "hits": [
+                {
+                    "id": hit.document.id,
+                    "score": hit.score,
+                    "vector_score": hit.vector_score,
+                    "lexical_score": hit.lexical_score,
+                    "structural_score": hit.structural_score,
+                    "metadata": hit.document.metadata,
+                }
+                for hit in index.search(query, limit)
+            ]
+        }
+    )
+
+
+@app.command()
+def architecture(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
+    report = ArchitectureInferenceEngine().analyze(_graph(_root(path)))
+    console.print_json(data=asdict(report))
+
+
+@app.command("architecture-baseline")
+def architecture_baseline(
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    target = root / ".codecortex" / "architecture" / "baseline.json"
+    fingerprint = ArchitectureDriftDetector().fingerprint(_graph(root))
+    fingerprint.save(target)
+    console.print(f"Saved: {target}")
+
+
+@app.command("architecture-drift")
+def architecture_drift(
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    target = root / ".codecortex" / "architecture" / "baseline.json"
+    baseline = ArchitectureDriftDetector().fingerprint(_graph(root)) if not target.exists() else None
+    if baseline is not None:
+        baseline.save(target)
+        console.print("Baseline created; no prior baseline existed.")
+        return
+    from codecortex.architecture import ArchitectureFingerprint
+
+    loaded = ArchitectureFingerprint.load(target)
+    if loaded is None:
+        raise typer.BadParameter("Architecture baseline is invalid")
+    detector = ArchitectureDriftDetector()
+    report = detector.compare(loaded, detector.fingerprint(_graph(root)))
+    console.print_json(data=asdict(report))
+    if report.drifted and report.score >= 0.70:
+        raise typer.Exit(code=2)
+
+
+@app.command("symbol-history")
+def symbol_history(
+    target: Annotated[str, typer.Argument(help="Repository-relative path")],
+    start: Annotated[int, typer.Argument(help="Start line")],
+    end: Annotated[int, typer.Argument(help="End line")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    console.print_json(data=asdict(GitIntelligence(_root(path)).symbol_history(target, start, end)))
+
+
+@app.command("pr")
+def pr_command(
+    base: Annotated[str, typer.Argument(help="Base Git ref")],
+    head: Annotated[str, typer.Option("--head")] = "HEAD",
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    report = PRIntelligence(root, _graph(root)).analyze(base, head)
+    console.print_json(
+        data={
+            "base_ref": report.base_ref,
+            "head_ref": report.head_ref,
+            "risk_score": report.risk_score,
+            "risk_level": report.risk_level,
+            "affected_tests": list(report.affected_tests),
+            "files": [asdict(item) for item in report.files],
+            "symbols": [
+                {
+                    "node": item.node.model_dump(mode="json"),
+                    "impact_risk": item.impact_risk,
+                    "affected_nodes": item.affected_nodes,
+                    "affected_tests": item.affected_tests,
+                }
+                for item in report.symbols
+            ],
+        }
+    )
+
+
+@app.command("team-remember")
+def team_remember(
+    key: Annotated[str, typer.Argument()],
+    value: Annotated[str, typer.Argument()],
+    actor: Annotated[str, typer.Option("--actor")] = "user",
+    namespace: Annotated[str, typer.Option("--namespace")] = "project",
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    store = TeamMemoryStore(root / ".codecortex" / "memory" / "team.sqlite3")
+    entry = store.put_entry(namespace, key, value, actor=actor)
+    console.print_json(data=asdict(entry))
+
+
+@app.command("team-search")
+def team_search(
+    query: Annotated[str, typer.Argument()],
+    namespace: Annotated[str, typer.Option("--namespace")] = "project",
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    store = TeamMemoryStore(root / ".codecortex" / "memory" / "team.sqlite3")
+    console.print_json(data=[asdict(item) for item in store.search_entries(namespace, query, 20)])
+
+
+@app.command("workspace-add")
+def workspace_add(
+    name: Annotated[str, typer.Argument()],
+    repository: Annotated[Path, typer.Argument()],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    workspace = MultiRepositoryWorkspace(root / ".codecortex" / "workspace.json")
+    workspace.add_repository(name, repository)
+    console.print(f"Added {name}: {_root(repository)}")
+
+
+@app.command("workspace-search")
+def workspace_search(
+    query: Annotated[str, typer.Argument()],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    workspace = MultiRepositoryWorkspace(root / ".codecortex" / "workspace.json")
+    console.print_json(
+        data=[
+            {
+                "repository": hit.repository,
+                "score": hit.score,
+                "node": hit.node.model_dump(mode="json"),
+            }
+            for hit in workspace.search(query)
+        ]
+    )
+
+
+@app.command("trace-summary")
+def trace_summary(
+    trace_id: Annotated[str, typer.Argument()],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    recorder = TaskTraceRecorder(root / ".codecortex" / "runtime" / "traces.jsonl")
+    console.print_json(data=asdict(recorder.summarize(trace_id)))
 
 
 @app.command()
@@ -59,9 +244,7 @@ def impact(
     query: Annotated[str, typer.Argument(help="Symbol or file")],
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    """Analyze change impact."""
-    report = ImpactAnalyzer(ProjectIndexer(_root(path)).build()).analyze(query)
-    console.print(report.to_text())
+    console.print(ImpactAnalyzer(_graph(_root(path))).analyze(query).to_text())
 
 
 @app.command()
@@ -69,19 +252,16 @@ def history(
     target: Annotated[str, typer.Argument(help="Repository path")],
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    """Show Git history for one path."""
     console.print_json(data=GitIntelligence(_root(path)).file_history(target))
 
 
 @app.command()
 def knowledge(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
-    """Extract project knowledge."""
     console.print_json(data=ProjectKnowledgeExtractor(_root(path)).extract().facts())
 
 
 @app.command()
 def mcp(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
-    """Run the native MCP server over stdio."""
     run_stdio(_root(path))
 
 
@@ -91,23 +271,51 @@ def benchmark(
     cases: Annotated[Path, typer.Option("--cases")] = Path("benchmarks/cases.json"),
     output: Annotated[Path, typer.Option("--output", "-o")] = Path("benchmarks/results.json"),
 ) -> None:
-    """Run measured repository intelligence benchmarks."""
     root = _root(path)
     case_path = cases if cases.is_absolute() else root / cases
     output_path = output if output.is_absolute() else root / output
-    suite = BenchmarkSuite.load(
-        case_path,
-        [FullTextBaseline(root), CodeCortexGraphStrategy(root)],
-    )
+    suite = BenchmarkSuite.load(case_path, [FullTextBaseline(root), CodeCortexGraphStrategy(root)])
     report = suite.run()
     report.save(output_path)
+    history_store = BenchmarkHistory(root / ".codecortex" / "benchmarks" / "history.json")
+    history_store.append(report.summary())
     console.print_json(data=report.summary())
     console.print(f"Saved: {output_path}")
 
 
+@app.command("benchmark-gate")
+def benchmark_gate(
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    root = _root(path)
+    snapshots = BenchmarkHistory(root / ".codecortex" / "benchmarks" / "history.json").load()
+    if len(snapshots) < 2:
+        console.print("At least two benchmark snapshots are required.")
+        return
+    report = RegressionGate().evaluate(snapshots[-1], snapshots[-2])
+    console.print_json(data=asdict(report))
+    if not report.passed:
+        raise typer.Exit(code=2)
+
+
+@app.command("evaluate")
+def evaluate_command(
+    suite: Annotated[Path, typer.Argument(help="Evaluation suite JSON")],
+    command: Annotated[str, typer.Argument(help="Quoted external target command")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+    output: Annotated[Path, typer.Option("--output", "-o")] = Path("benchmarks/external/results.json"),
+) -> None:
+    root = _root(path)
+    suite_path = suite if suite.is_absolute() else root / suite
+    output_path = output if output.is_absolute() else root / output
+    target = SubprocessEvaluationTarget("external", tuple(shlex.split(command)), cwd=root)
+    report = asyncio.run(ExternalEvaluationSuite.load(suite_path).run(target))
+    report.save(output_path)
+    console.print_json(data=report.summary())
+
+
 @app.command()
 def doctor(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
-    """Check engine health."""
     runtime = build_runtime(_root(path))
     health = asyncio.run(runtime.gateway.health())
     table = Table(title="CodeCortex Health")
@@ -124,8 +332,7 @@ def route(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
     runtime = build_runtime(_root(path))
-    plan = runtime.gateway.route(query, str(runtime.config.project_root))
-    console.print_json(data=plan.model_dump(mode="json"))
+    console.print_json(data=runtime.gateway.route(query, str(runtime.config.project_root)).model_dump(mode="json"))
 
 
 @app.command()
@@ -137,6 +344,8 @@ def run(
     result = asyncio.run(runtime.gateway.query(query, str(runtime.config.project_root)))
     console.print(f"[bold]Route:[/bold] {', '.join(item.value for item in result.plan.selected)}")
     console.print(f"[bold]Context:[/bold] {result.context_tokens}/{result.plan.context_budget} tokens")
+    if trace_id := result.metadata.get("trace_id"):
+        console.print(f"[bold]Trace:[/bold] {trace_id}")
     for engine_result in result.results:
         console.rule(engine_result.capability.value)
         console.print(engine_result.content)
@@ -157,17 +366,18 @@ def remember(
 def stats(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
     root = _root(path)
     runtime = build_runtime(root)
-    graph = ProjectIndexer(root).build()
+    graph, graph_stats = IncrementalGraphIndex(root).refresh()
     git = GitIntelligence(root).analyze(300)
-    index_stats = IncrementalIndex(root).refresh()
-    console.print_json(data={
-        "files": index_stats.tracked,
-        "graph_nodes": len(graph.nodes),
-        "graph_edges": len(graph.edges),
-        "graph_counts": graph.counts(),
-        "git_commits": git.commits,
-        "health": asyncio.run(runtime.gateway.health()),
-    })
+    console.print_json(
+        data={
+            "files": graph_stats.index.tracked,
+            "graph_nodes": len(graph.nodes),
+            "graph_edges": len(graph.edges),
+            "graph_counts": graph.counts(),
+            "git_commits": git.commits,
+            "health": asyncio.run(runtime.gateway.health()),
+        }
+    )
 
 
 @app.command()

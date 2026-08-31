@@ -13,6 +13,7 @@ from codecortex.memory import JsonMemoryStore
 from codecortex.orchestrator import Orchestrator
 from codecortex.router import AdaptiveRouter
 from codecortex.telemetry import TelemetryCollector
+from codecortex.tracing import TaskTraceRecorder
 
 
 @dataclass(slots=True)
@@ -22,6 +23,7 @@ class CortexRuntime:
     registry: EngineRegistry
     router: AdaptiveRouter
     telemetry: TelemetryCollector
+    tracer: TaskTraceRecorder
     orchestrator: Orchestrator
     gateway: CodeCortexGateway
 
@@ -36,10 +38,12 @@ def build_runtime(project_root: Path | None = None) -> CortexRuntime:
         enabled=config.telemetry_enabled,
         log_path=config.state_dir / "runtime" / "events.jsonl",
     )
+    tracer = TaskTraceRecorder(config.state_dir / "runtime" / "traces.jsonl")
     orchestrator = Orchestrator(
         registry=registry,
         router=router,
         telemetry=telemetry,
+        tracer=tracer,
     )
     gateway = CodeCortexGateway(
         router=router,
@@ -53,6 +57,7 @@ def build_runtime(project_root: Path | None = None) -> CortexRuntime:
         registry=registry,
         router=router,
         telemetry=telemetry,
+        tracer=tracer,
         orchestrator=orchestrator,
         gateway=gateway,
     )
