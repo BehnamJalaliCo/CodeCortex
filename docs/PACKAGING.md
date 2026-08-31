@@ -1,15 +1,17 @@
 # Packaging
 
-The public brand and CLI remain **CodeCortex** and `cortex`.
+The public product remains **CodeCortex** and the primary executable remains `cortex`.
 
-The Python distribution is published as **`codecortex-ai`** to avoid colliding with unrelated packages already using the `codecortex` distribution name.
+The Python distribution is **`codecortex-context-engine`**. A distinct distribution name is intentional because multiple unrelated projects already occupy shorter CodeCortex-like names on package registries.
 
-Install from PyPI after the first release:
+After the first published release:
 
 ```bash
-uv tool install codecortex-ai
+uv tool install codecortex-context-engine
 # or
-pipx install codecortex-ai
+pipx install codecortex-context-engine
 ```
 
-The import package remains `codecortex` and the executables remain `cortex` and `codecortex`.
+The Python import remains `codecortex` and the console executables remain `cortex` and `codecortex`.
+
+Release artifacts are checksumed, Sigstore-signed, and receive GitHub build-provenance attestations. Container images are published separately to GHCR.

@@ -3,7 +3,7 @@ requires = ["hatchling>=1.25"]
 build-backend = "hatchling.build"
 
 [project]
-name = "codecortex-ai"
+name = "codecortex-context-engine"
 version = "0.1.0a1"
 description = "Context intelligence layer for AI coding agents"
 readme = "README.md"
