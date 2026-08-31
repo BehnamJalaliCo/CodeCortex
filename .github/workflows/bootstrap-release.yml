@@ -7,21 +7,24 @@ on:
 
 permissions:
   contents: write
+  actions: write
 
 jobs:
-  tag:
+  release:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           fetch-depth: 0
-      - name: Create v0.1.0a1 tag
+      - name: Ensure v0.1.0a1 tag exists
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          if git rev-parse "v0.1.0a1" >/dev/null 2>&1; then
-            echo "Tag already exists"
-          else
+          if ! git rev-parse "v0.1.0a1" >/dev/null 2>&1; then
             git tag -a v0.1.0a1 -m "CodeCortex Context Engine v0.1.0a1"
             git push origin v0.1.0a1
           fi
+      - name: Dispatch release workflow
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh workflow run release.yml --ref main -f tag=v0.1.0a1
