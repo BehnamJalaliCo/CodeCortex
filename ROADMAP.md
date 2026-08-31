@@ -27,7 +27,7 @@
 
 ## 0.2 — Intelligence
 
-- [x] Deeper language-native parsing and type resolution
+- [x] Deeper language-aware parsing and type resolution
 - [x] Cross-file call resolution with ambiguity scoring
 - [x] Incremental graph updates without full graph rebuilds
 - [x] Semantic retrieval providers
@@ -38,18 +38,35 @@
 ## 0.3 — Agent workflows
 
 - [x] Multi-repository context
-- [x] Shared team memory
+- [x] Shared local team memory
 - [x] Pull request intelligence
 - [x] Architecture drift detection
 - [x] Agent task traces
 - [x] Reproducible external evaluation suites
+- [x] Guarded language-server semantic editing
+- [x] Live coding-agent MCP E2E harness
 
 ## 0.4 — Production hardening
 
-- [ ] Native parser-provider plugins for deeper language semantics
-- [ ] Remote shared-memory synchronization
+- [x] Native Tree-sitter parser providers with structural fallback
+- [x] Warm persistent backend sessions and concurrent orchestration
+- [x] Live backend conformance against pinned revisions
+- [x] Docker Core/Full integration CI
+- [x] Expanded real-repository benchmark corpus and CI artifacts
+- [x] Signed/attested release pipeline and automated package/container publishing
+- [x] Security audit, CodeQL, dependency review, SBOM, and path-boundary tests
+- [x] Observatory dashboard for traces, drift, graph health, benchmark history, and PR risk
+- [x] Canonical package/brand identity policy
+
+## 0.5 — Distributed scale
+
+- [ ] Remote shared-memory synchronization with conflict resolution
 - [ ] Persistent vector-database providers for very large repositories
-- [ ] Hosted/remote MCP transport with authentication and access policy
-- [ ] Large-repository performance corpus and published benchmark history
-- [ ] Signed release artifacts and automated package publishing
-- [ ] Dashboard views for traces, drift, pull-request risk, and evaluation history
+- [ ] Hosted/remote MCP transport with authentication, TLS, quotas, and access policy
+- [ ] Multi-node indexing and retrieval workers
+- [ ] Published longitudinal performance history from scheduled reproducible runs
+- [ ] Organization-level policy, audit retention, and workspace administration
+
+## Release gates
+
+A public release is considered evidence-backed only when the exact release commit has passed Core CI, backend conformance, parser-provider tests, Docker integration, security checks, and the relevant benchmark run. Credential-gated external services must be reported as skipped rather than silently treated as passed.
