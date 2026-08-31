@@ -28,7 +28,6 @@ from codecortex.evaluation.production import (
     temporary_benchmark_workspace,
 )
 
-
 REV = "1" * 40
 
 
@@ -46,18 +45,17 @@ def _spec() -> RepositorySpec:
 
 
 def test_specs_helpers_report_and_save(tmp_path: Path) -> None:
-    case = BenchmarkCaseSpec.from_dict(
-        {
-            "id": "x",
-            "query": "query",
-            "expected_paths": ["src/x.py"],
-            "expected_symbols": ["X"],
-        }
-    )
+    case_payload = {
+        "id": "x",
+        "query": "query",
+        "expected_paths": ["src/x.py"],
+        "expected_symbols": ["X"],
+    }
+    case = BenchmarkCaseSpec.from_dict(case_payload)
     repo = RepositorySpec.from_dict(
-        {"name": "repo", "url": "u", "revision": REV, "cases": [case.__dict__]}
+        {"name": "repo", "url": "u", "revision": REV, "cases": [case_payload]}
     )
-    assert repo.cases[0].id == "x"
+    assert case.id == "x" and repo.cases[0].id == "x"
     assert _evidence_recall((), "") == 1.0
     assert _evidence_recall(("X", "Y"), "x only") == 0.5
     assert "src/x.py" in _extract_paths("see [src/x.py] now")
@@ -70,7 +68,9 @@ def test_specs_helpers_report_and_save(tmp_path: Path) -> None:
 
     metrics = ObservedMetrics(10, 20, 5, 2, 1, 3, cost_usd=0.25)
     ok = ScenarioResult("repo", REV, "x", "vanilla", "ok", True, 1.0, 1.0, metrics)
-    skipped = ScenarioResult("repo", REV, "y", "vanilla", "skipped", None, None, None, None)
+    skipped = ScenarioResult(
+        "repo", REV, "y", "vanilla", "skipped", None, None, None, None
+    )
     report = ProductionBenchmarkReport(
         repositories=[{"name": "repo", "url": "u", "revision": REV}],
         setup=[SetupMeasurement("repo", "graph", 2.0, "ok", "healthy")],
@@ -100,6 +100,8 @@ def test_specs_helpers_report_and_save(tmp_path: Path) -> None:
         encoding="utf-8",
     )
     assert load_repository_specs(spec_path)[0].name == "repo"
+    loaded = ProductionBenchmarkRunner.load(spec_path, workspace=tmp_path / "loaded")
+    assert loaded.specs[0].name == "repo"
     with temporary_benchmark_workspace() as workspace:
         assert Path(workspace).exists()
 
@@ -130,18 +132,34 @@ def test_lexical_measure_and_operations(tmp_path: Path) -> None:
 
     graph = SimpleNamespace(query=lambda query: f"src/service.py {query}")
     symbols = SimpleNamespace(
-        call=lambda _name, _args: {"content": [{"type": "text", "text": "Service"}]}
+        call=lambda _name, _args: {
+            "content": [{"type": "text", "text": "Service"}]
+        }
     )
     context = SimpleNamespace(
         compress=lambda text: {"content": [{"type": "text", "text": text[:50]}]}
     )
     baseline = RetrievalObservation("src/service.py Service", 1, 1)
-    assert runner._operation("graph", case, root, graph, symbols, context, baseline)().tool_calls == 1
-    assert runner._operation("symbols", case, root, graph, symbols, context, baseline)().tool_calls == 1
-    assert runner._operation("context", case, root, graph, symbols, context, baseline)().tool_calls == 2
-    assert runner._operation("full", case, root, graph, symbols, context, baseline)().tool_calls == 3
+    assert (
+        runner._operation("graph", case, root, graph, symbols, context, baseline)().tool_calls
+        == 1
+    )
+    assert (
+        runner._operation("symbols", case, root, graph, symbols, context, baseline)().tool_calls
+        == 1
+    )
+    assert (
+        runner._operation("context", case, root, graph, symbols, context, baseline)().tool_calls
+        == 2
+    )
+    assert (
+        runner._operation("full", case, root, graph, symbols, context, baseline)().tool_calls
+        == 3
+    )
     with pytest.raises(ValueError):
-        runner._operation("invalid", case, root, graph, symbols, context, baseline)  # type: ignore[arg-type]
+        runner._operation(
+            "invalid", case, root, graph, symbols, context, baseline  # type: ignore[arg-type]
+        )
 
 
 def test_prepare_availability(tmp_path: Path) -> None:
@@ -154,9 +172,11 @@ def test_prepare_availability(tmp_path: Path) -> None:
 
         def probe(self, spec, provision=False) -> bool:
             del provision
-            return spec.key != "symbols-bad"
+            return bool(self.installed.get(spec.key))
 
     class Adapter:
+        required_tools = ("tool",)
+
         def __init__(self, key: str) -> None:
             self.spec = SimpleNamespace(key=key)
             self.built = False
@@ -167,17 +187,23 @@ def test_prepare_availability(tmp_path: Path) -> None:
         def tools(self):
             return ("tool",)
 
-        required_tools = ("tool",)
-
         def require_tools(self, tools, required) -> None:
             assert tools and required
 
     manager = Manager()
-    runner = ProductionBenchmarkRunner((), workspace=tmp_path, backend_manager=manager)  # type: ignore[arg-type]
+    runner = ProductionBenchmarkRunner(
+        (), workspace=tmp_path, backend_manager=manager  # type: ignore[arg-type]
+    )
     graph, symbols, context = Adapter("graph"), Adapter("symbols"), Adapter("context")
     report = ProductionBenchmarkReport()
     availability = runner._prepare(
-        _spec(), tmp_path, ("full",), graph, symbols, context, report  # type: ignore[arg-type]
+        _spec(),
+        tmp_path,
+        ("full",),
+        graph,  # type: ignore[arg-type]
+        symbols,  # type: ignore[arg-type]
+        context,  # type: ignore[arg-type]
+        report,
     )
     assert availability["graph"] and availability["symbols"]
     assert not availability["context"] and not availability["full"]
@@ -185,11 +211,14 @@ def test_prepare_availability(tmp_path: Path) -> None:
 
 
 def test_instrumented_agent_runner_success_and_errors(tmp_path: Path) -> None:
-    command = (
-        f'{sys.executable} -c "import json,sys; r=json.load(sys.stdin); '
-        "print(json.dumps({'answer':'ok','files_read':2,'tool_calls':3,'cost_usd':0.1}))\""
+    good_script = tmp_path / "agent.py"
+    good_script.write_text(
+        "import json, sys\n"
+        "json.load(sys.stdin)\n"
+        "print(json.dumps({'answer': 'ok', 'files_read': 2, 'tool_calls': 3, 'cost_usd': 0.1}))\n",
+        encoding="utf-8",
     )
-    runner = InstrumentedAgentRunner(command)
+    runner = InstrumentedAgentRunner(f"{sys.executable} {good_script}")
     result = runner.run(scenario="vanilla", repository=tmp_path, case=_case())
     assert isinstance(result, AgentProtocolResult)
     assert result.answer == "ok" and result.files_read == 2 and result.cost_usd == 0.1
@@ -197,6 +226,17 @@ def test_instrumented_agent_runner_success_and_errors(tmp_path: Path) -> None:
     with pytest.raises(ValueError):
         InstrumentedAgentRunner("")
 
-    bad = InstrumentedAgentRunner(f'{sys.executable} -c "print(\'not-json\')"')
+    bad_script = tmp_path / "bad.py"
+    bad_script.write_text("print('not-json')\n", encoding="utf-8")
+    bad = InstrumentedAgentRunner(f"{sys.executable} {bad_script}")
     with pytest.raises(json.JSONDecodeError):
         bad.run(scenario="vanilla", repository=tmp_path, case=_case())
+
+    failing_script = tmp_path / "fail.py"
+    failing_script.write_text(
+        "import sys\nsys.stderr.write('agent failed')\nraise SystemExit(2)\n",
+        encoding="utf-8",
+    )
+    failing = InstrumentedAgentRunner(f"{sys.executable} {failing_script}")
+    with pytest.raises(RuntimeError, match="agent failed"):
+        failing.run(scenario="vanilla", repository=tmp_path, case=_case())
