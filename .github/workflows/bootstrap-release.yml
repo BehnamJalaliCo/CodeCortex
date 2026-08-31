@@ -1,7 +1,8 @@
-name: Bootstrap First Release
+name: Bootstrap Release
 
 on:
   push:
+    branches: [main]
     paths:
       - .github/workflows/bootstrap-release.yml
 
@@ -13,16 +14,23 @@ jobs:
   release:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           fetch-depth: 0
-      - name: Point v0.1.0a1 at the validated release commit
+          persist-credentials: true
+      - name: Create v0.1.0a2 release tag from validated main
+        shell: bash
         run: |
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git tag -fa v0.1.0a1 -m "CodeCortex Context Engine v0.1.0a1"
-          git push --force origin refs/tags/v0.1.0a1
+          set -euo pipefail
+          git config user.name "Behnam Jalali"
+          git config user.email "behnamjalalico@gmail.com"
+          if git rev-parse -q --verify refs/tags/v0.1.0a2 >/dev/null; then
+            echo "v0.1.0a2 already exists"
+          else
+            git tag -a v0.1.0a2 -m "CodeCortex Context Engine v0.1.0a2"
+            git push origin refs/tags/v0.1.0a2
+          fi
       - name: Dispatch release workflow
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run release.yml --ref main -f tag=v0.1.0a1
+        run: gh workflow run release.yml --ref main -f tag=v0.1.0a2
