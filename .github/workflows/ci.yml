@@ -32,7 +32,7 @@ jobs:
       - name: Tests
         run: |
           if [ "${{ matrix.python-version }}" = "3.13" ]; then
-            pytest -q --cov=codecortex --cov-report=xml --cov-report=term-missing --cov-fail-under=65
+            pytest -q --cov=codecortex --cov-report=xml --cov-report=term-missing --cov-fail-under=90
           else
             pytest -q
           fi

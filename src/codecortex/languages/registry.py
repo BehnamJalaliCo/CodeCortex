@@ -135,7 +135,7 @@ class LanguageRegistry:
                         references=refs,
                         annotations={
                             arg.arg: ast.unparse(arg.annotation)
-                            for arg in node.args.args
+                            for arg in node.args.posonlyargs + node.args.args
                             if arg.annotation is not None
                         },
                     )
