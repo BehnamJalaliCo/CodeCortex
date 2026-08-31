@@ -84,6 +84,7 @@ class ProjectIndexer:
                     },
                 ))
                 edges.append(GraphEdge(source=file_id, target=symbol_id, kind="contains"))
+                edges.append(GraphEdge(source=file_id, target=symbol_id, kind="defines"))
                 names.setdefault(symbol.name, []).append(symbol_id)
                 symbol_for_file[(relative.as_posix(), symbol.name)] = symbol_id
 
