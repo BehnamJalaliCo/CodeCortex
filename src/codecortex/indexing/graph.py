@@ -29,12 +29,25 @@ class ProjectGraph(BaseModel):
     nodes: list[GraphNode] = Field(default_factory=list)
     edges: list[GraphEdge] = Field(default_factory=list)
 
+    @classmethod
+    def load(cls, path: Path) -> ProjectGraph:
+        try:
+            payload = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError, ValueError):
+            return cls()
+        try:
+            return cls.model_validate(payload)
+        except ValueError:
+            return cls()
+
     def save(self, path: Path) -> None:
         path.parent.mkdir(parents=True, exist_ok=True)
-        path.write_text(
+        temp = path.with_suffix(path.suffix + ".tmp")
+        temp.write_text(
             json.dumps(self.model_dump(mode="json"), ensure_ascii=False, indent=2),
             encoding="utf-8",
         )
+        temp.replace(path)
 
     def search(self, query: str, limit: int = 40) -> list[GraphNode]:
         terms = {
@@ -60,3 +73,6 @@ class ProjectGraph(BaseModel):
         for node in self.nodes:
             result[node.kind] = result.get(node.kind, 0) + 1
         return result
+
+    def nodes_for_path(self, path: str) -> list[GraphNode]:
+        return [node for node in self.nodes if node.path == path]
