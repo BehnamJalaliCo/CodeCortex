@@ -7,6 +7,8 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from codecortex.languages.native import TreeSitterParserProvider
+
 
 @dataclass(frozen=True, slots=True)
 class ParsedUnit:
@@ -31,26 +33,28 @@ class LanguageSpec:
 
 
 class LanguageRegistry:
-    """Extract richer language-native structure with zero mandatory native dependencies.
-
-    The registry is deliberately dependency-light. Python uses the standard AST for
-    precise extraction. Other languages use conservative structural patterns and keep
-    the API ready for native parser providers when installed by downstream users.
-    """
+    """Use precise Python AST, optional Tree-sitter grammars, then conservative fallback."""
 
     _SPECS = (
         LanguageSpec("python", (".py",), "python_ast"),
-        LanguageSpec("typescript", (".ts", ".tsx"), "structural"),
-        LanguageSpec("javascript", (".js", ".jsx", ".mjs", ".cjs"), "structural"),
-        LanguageSpec("go", (".go",), "structural"),
-        LanguageSpec("rust", (".rs",), "structural"),
-        LanguageSpec("java", (".java",), "structural"),
-        LanguageSpec("c", (".c", ".h"), "structural"),
-        LanguageSpec("cpp", (".cc", ".cpp", ".cxx", ".hpp", ".hh"), "structural"),
-        LanguageSpec("csharp", (".cs",), "structural"),
-        LanguageSpec("php", (".php",), "structural"),
-        LanguageSpec("ruby", (".rb",), "structural"),
+        LanguageSpec("typescript", (".ts", ".tsx"), "native"),
+        LanguageSpec("javascript", (".js", ".jsx", ".mjs", ".cjs"), "native"),
+        LanguageSpec("go", (".go",), "native"),
+        LanguageSpec("rust", (".rs",), "native"),
+        LanguageSpec("java", (".java",), "native"),
+        LanguageSpec("c", (".c", ".h"), "native"),
+        LanguageSpec("cpp", (".cc", ".cpp", ".cxx", ".hpp", ".hh"), "native"),
+        LanguageSpec("csharp", (".cs",), "native"),
+        LanguageSpec("php", (".php",), "native"),
+        LanguageSpec("ruby", (".rb",), "native"),
     )
+
+    def __init__(self, *, native: bool = True) -> None:
+        self.native = (
+            TreeSitterParserProvider()
+            if native and TreeSitterParserProvider.available()
+            else None
+        )
 
     def language_for(self, path: Path) -> LanguageSpec | None:
         suffix = path.suffix.lower()
@@ -62,6 +66,25 @@ class LanguageRegistry:
             return []
         if spec.parser == "python_ast":
             return self._parse_python(source)
+        if self.native is not None:
+            try:
+                units = self.native.parse(spec.name, source)
+            except Exception:
+                units = []
+            if units:
+                return [
+                    ParsedUnit(
+                        name=item.name,
+                        kind=item.kind,
+                        line=item.line,
+                        end_line=item.end_line,
+                        signature=item.signature,
+                        return_type=item.return_type,
+                        bases=item.bases,
+                        references=item.references,
+                    )
+                    for item in units
+                ]
         return self._parse_structural(spec.name, source)
 
     def _parse_python(self, source: str) -> list[ParsedUnit]:
@@ -100,7 +123,11 @@ class LanguageRegistry:
                 units.append(
                     ParsedUnit(
                         name=node.name,
-                        kind="async_function" if isinstance(node, ast.AsyncFunctionDef) else "function",
+                        kind=(
+                            "async_function"
+                            if isinstance(node, ast.AsyncFunctionDef)
+                            else "function"
+                        ),
                         line=node.lineno,
                         end_line=getattr(node, "end_lineno", None),
                         signature=f"({', '.join(args)})",
@@ -173,11 +200,19 @@ class LanguageRegistry:
         if language == "ruby":
             return (("class", ruby_class), ("function", function_keyword))
         if language in {"typescript", "javascript"}:
-            return (("class", common_class), ("function", function_keyword), ("function", arrow), ("function", c_like_function))
-        return (("class", common_class), ("function", function_keyword), ("function", c_like_function))
+            return (
+                ("class", common_class),
+                ("function", function_keyword),
+                ("function", arrow),
+                ("function", c_like_function),
+            )
+        return (
+            ("class", common_class),
+            ("function", function_keyword),
+            ("function", c_like_function),
+        )
 
     def resolve_types(self, units: list[ParsedUnit]) -> dict[str, set[str]]:
-        """Return a conservative local type-reference index."""
         names = {unit.name for unit in units}
         resolved: dict[str, set[str]] = {}
         for unit in units:
@@ -188,7 +223,10 @@ class LanguageRegistry:
             matches = {
                 name
                 for name in names
-                if any(re.search(rf"\b{re.escape(name)}\b", candidate) for candidate in candidates)
+                if any(
+                    re.search(rf"\b{re.escape(name)}\b", candidate)
+                    for candidate in candidates
+                )
             }
             resolved[unit.name] = matches
         return resolved
