@@ -3,8 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import json
-from collections import Counter
 from pathlib import Path
 from typing import Annotated
 
@@ -12,6 +10,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+from codecortex.benchmark import BenchmarkSuite, CodeCortexGraphStrategy, FullTextBaseline
 from codecortex.dashboard import run_dashboard
 from codecortex.git_intelligence import GitIntelligence
 from codecortex.indexing.impact import ImpactAnalyzer
@@ -71,21 +70,39 @@ def history(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
     """Show Git history for one path."""
-    rows = GitIntelligence(_root(path)).file_history(target)
-    console.print_json(data=rows)
+    console.print_json(data=GitIntelligence(_root(path)).file_history(target))
 
 
 @app.command()
 def knowledge(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
     """Extract project knowledge."""
-    extracted = ProjectKnowledgeExtractor(_root(path)).extract()
-    console.print_json(data=extracted.facts())
+    console.print_json(data=ProjectKnowledgeExtractor(_root(path)).extract().facts())
 
 
 @app.command()
 def mcp(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
     """Run the native MCP server over stdio."""
     run_stdio(_root(path))
+
+
+@app.command()
+def benchmark(
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+    cases: Annotated[Path, typer.Option("--cases")] = Path("benchmarks/cases.json"),
+    output: Annotated[Path, typer.Option("--output", "-o")] = Path("benchmarks/results.json"),
+) -> None:
+    """Run measured repository intelligence benchmarks."""
+    root = _root(path)
+    case_path = cases if cases.is_absolute() else root / cases
+    output_path = output if output.is_absolute() else root / output
+    suite = BenchmarkSuite.load(
+        case_path,
+        [FullTextBaseline(root), CodeCortexGraphStrategy(root)],
+    )
+    report = suite.run()
+    report.save(output_path)
+    console.print_json(data=report.summary())
+    console.print(f"Saved: {output_path}")
 
 
 @app.command()

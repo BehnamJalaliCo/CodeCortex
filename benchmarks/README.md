@@ -1,16 +1,13 @@
 # Benchmarks
 
-Benchmarks in CodeCortex are intended to measure the system, not advertise it.
+The benchmark suite measures repository retrieval behavior with real executions. It does not ship fabricated performance claims.
 
-Every published benchmark should include:
+Run:
 
-- repository and commit used for the run
-- task or query set
-- machine details
-- CodeCortex version
-- total context tokens
-- engine calls
-- elapsed time
-- task outcome when an agent is involved
+```bash
+cortex benchmark --path . --cases benchmarks/cases.json --output benchmarks/results.json
+```
 
-Numbers should be reproducible. Comparisons should use the same repository, task set, model, and environment.
+The report records success rate, path and symbol recall, elapsed time, context tokens, files read, and tool calls for each strategy.
+
+Use larger external repositories and task sets before publishing comparative numbers.

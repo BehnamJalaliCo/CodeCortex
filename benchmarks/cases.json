@@ -1,0 +1,22 @@
+{
+  "cases": [
+    {
+      "id": "incremental-index",
+      "query": "incremental repository index hash manifest",
+      "expected_paths": ["src/codecortex/indexing/incremental.py"],
+      "expected_symbols": ["IncrementalIndex"]
+    },
+    {
+      "id": "impact-analysis",
+      "query": "impact analysis reverse dependencies risk",
+      "expected_paths": ["src/codecortex/indexing/impact.py"],
+      "expected_symbols": ["ImpactAnalyzer"]
+    },
+    {
+      "id": "mcp-server",
+      "query": "native MCP server tools call stdio",
+      "expected_paths": ["src/codecortex/mcp/server.py"],
+      "expected_symbols": ["MCPServer"]
+    }
+  ]
+}
