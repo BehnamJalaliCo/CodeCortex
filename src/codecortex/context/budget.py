@@ -7,21 +7,56 @@ from codecortex.core.models import ContextChunk
 
 
 class BudgetContextProcessor(ContextProcessor):
-    """Keep the highest-value chunks while respecting a hard token budget."""
+    """Deduplicate, rank, and fit useful context inside a token budget."""
 
     async def fit(self, chunks: list[ContextChunk], budget: int) -> list[ContextChunk]:
+        unique = self._deduplicate(chunks)
         ranked = sorted(
-            chunks,
+            unique,
             key=lambda chunk: (chunk.relevance, -chunk.tokens),
             reverse=True,
         )
+
         selected: list[ContextChunk] = []
-        used = 0
+        remaining = budget
         for chunk in ranked:
-            if chunk.tokens > budget:
+            if remaining <= 0:
+                break
+            if chunk.tokens <= remaining:
+                selected.append(chunk)
+                remaining -= chunk.tokens
                 continue
-            if used + chunk.tokens > budget:
+            if remaining < 32:
                 continue
-            selected.append(chunk)
-            used += chunk.tokens
+            selected.append(self._truncate(chunk, remaining))
+            remaining = 0
         return selected
+
+    @staticmethod
+    def _deduplicate(chunks: list[ContextChunk]) -> list[ContextChunk]:
+        by_content: dict[str, ContextChunk] = {}
+        for chunk in chunks:
+            key = " ".join(chunk.content.split())
+            current = by_content.get(key)
+            if current is None or chunk.relevance > current.relevance:
+                by_content[key] = chunk
+        return list(by_content.values())
+
+    @staticmethod
+    def _truncate(chunk: ContextChunk, tokens: int) -> ContextChunk:
+        char_limit = max(1, tokens * 4)
+        content = chunk.content[:char_limit].rstrip()
+        metadata = dict(chunk.metadata)
+        metadata.update(
+            {
+                "truncated": True,
+                "original_tokens": chunk.tokens,
+            }
+        )
+        return chunk.model_copy(
+            update={
+                "content": content,
+                "tokens": tokens,
+                "metadata": metadata,
+            }
+        )

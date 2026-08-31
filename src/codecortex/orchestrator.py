@@ -46,6 +46,7 @@ class Orchestrator:
             all_chunks.extend(result.chunks)
             self.telemetry.emit("engine.executed", capability=capability.value)
 
+        original_tokens = sum(chunk.tokens for chunk in all_chunks)
         fitted = await self.context_processor.fit(all_chunks, plan.context_budget)
         fitted_sources = {(chunk.source, chunk.content) for chunk in fitted}
         normalized_results: list[EngineResult] = []
@@ -59,7 +60,9 @@ class Orchestrator:
         self.telemetry.emit(
             "context.fitted",
             budget=plan.context_budget,
+            original=original_tokens,
             used=context_tokens,
+            saved=max(0, original_tokens - context_tokens),
             chunks=len(fitted),
         )
         return ExecutionResult(
@@ -67,4 +70,8 @@ class Orchestrator:
             plan=plan,
             results=normalized_results,
             context_tokens=context_tokens,
+            metadata={
+                "original_context_tokens": original_tokens,
+                "context_tokens_saved": max(0, original_tokens - context_tokens),
+            },
         )

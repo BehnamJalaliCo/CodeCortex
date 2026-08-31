@@ -17,3 +17,29 @@ async def test_context_processor_respects_budget() -> None:
 
     assert sum(chunk.tokens for chunk in result) <= 100
     assert result[0].source == "a"
+
+
+@pytest.mark.asyncio
+async def test_context_processor_deduplicates_content() -> None:
+    processor = BudgetContextProcessor()
+    chunks = [
+        ContextChunk(source="a", content="same content", tokens=20, relevance=0.5),
+        ContextChunk(source="b", content="same   content", tokens=20, relevance=0.9),
+    ]
+
+    result = await processor.fit(chunks, budget=100)
+
+    assert len(result) == 1
+    assert result[0].source == "b"
+
+
+@pytest.mark.asyncio
+async def test_context_processor_truncates_large_chunk() -> None:
+    processor = BudgetContextProcessor()
+    chunk = ContextChunk(source="large", content="x" * 800, tokens=200, relevance=1.0)
+
+    result = await processor.fit([chunk], budget=100)
+
+    assert len(result) == 1
+    assert result[0].tokens == 100
+    assert result[0].metadata["truncated"] is True
