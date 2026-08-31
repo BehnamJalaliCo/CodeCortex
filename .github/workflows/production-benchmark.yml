@@ -11,6 +11,8 @@ on:
   push:
     branches: [main]
     paths:
+      - ".gitmodules"
+      - "vendor/**"
       - "benchmarks/production/**"
       - "scripts/run_production_benchmark.py"
       - "src/codecortex/evaluation/production.py"
@@ -28,8 +30,11 @@ jobs:
     timeout-minutes: 120
     env:
       CODECORTEX_BACKEND_HOME: ${{ github.workspace }}/.benchmark-cache/backends
+      CODECORTEX_SOURCE_ROOT: ${{ github.workspace }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          submodules: recursive
       - uses: actions/setup-python@v5
         with:
           python-version: "3.13"
@@ -37,7 +42,7 @@ jobs:
       - uses: actions/cache@v4
         with:
           path: .benchmark-cache
-          key: codecortex-benchmark-${{ runner.os }}-${{ hashFiles('src/codecortex/backends/spec.py') }}
+          key: codecortex-benchmark-${{ runner.os }}-${{ hashFiles('src/codecortex/backends/spec.py', '.gitmodules') }}
           restore-keys: |
             codecortex-benchmark-${{ runner.os }}-
       - name: Install tooling
