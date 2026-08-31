@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1.7
-FROM python:3.13-slim AS base
+FROM python:3.13-slim@sha256:7ce4b6dfe35e55397b7cda544f8a13f191b7ae28dc5aad71fe664dbc9bc2623f AS base
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
@@ -29,7 +29,7 @@ CMD ["--help"]
 FROM base AS full
 RUN python -m pip install --no-cache-dir ".[semantic,parsers]" \
     && useradd --create-home --uid 10001 cortex \
-    && mkdir -p /workspace \
+    && mkdir -p /workspace /opt/codecortex/backends \
     && chown -R cortex:cortex /workspace /opt/codecortex/backends
 USER cortex
 WORKDIR /workspace

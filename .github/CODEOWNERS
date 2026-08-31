@@ -1,0 +1,10 @@
+# Default ownership
+* @BehnamJalaliCo
+
+# Security and release-sensitive surfaces
+/.github/ @BehnamJalaliCo
+/SECURITY.md @BehnamJalaliCo
+/LICENSE @BehnamJalaliCo
+/pyproject.toml @BehnamJalaliCo
+/src/codecortex/backends/ @BehnamJalaliCo
+/src/codecortex/mcp/ @BehnamJalaliCo

@@ -1,12 +1,20 @@
 version: 2
 updates:
   - package-ecosystem: pip
-    directory: /
+    directory: "/"
     schedule:
       interval: weekly
-    open-pull-requests-limit: 5
+    open-pull-requests-limit: 10
+    labels: ["dependencies"]
   - package-ecosystem: github-actions
-    directory: /
+    directory: "/"
+    schedule:
+      interval: weekly
+    open-pull-requests-limit: 10
+    labels: ["dependencies", "github-actions"]
+  - package-ecosystem: docker
+    directory: "/"
     schedule:
       interval: weekly
     open-pull-requests-limit: 5
+    labels: ["dependencies", "docker"]

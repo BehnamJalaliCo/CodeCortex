@@ -1,0 +1,26 @@
+site_name: CodeCortex Context Engine
+site_description: Context intelligence infrastructure for AI coding agents
+repo_name: BehnamJalaliCo/CodeCortex
+repo_url: https://github.com/BehnamJalaliCo/CodeCortex
+site_url: https://behnamjalalico.github.io/CodeCortex/
+theme:
+  name: material
+  features:
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+markdown_extensions:
+  - admonition
+  - attr_list
+  - tables
+  - toc:
+      permalink: true
+nav:
+  - Home: index.md
+  - Architecture: ARCHITECTURE.md
+  - Advanced Intelligence: ADVANCED_INTELLIGENCE.md
+  - Quality: QUALITY.md
+  - Testing: TESTING.md
+  - Packaging: PACKAGING.md
+  - Release: RELEASE.md
+  - OpenSSF: OPENSSF.md

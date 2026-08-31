@@ -1,30 +1,22 @@
 name: Bug report
-description: Report a reproducible problem
+description: Report a reproducible CodeCortex problem
 title: "[Bug]: "
-labels: [bug]
+labels: ["bug"]
 body:
   - type: markdown
     attributes:
-      value: Thanks for helping improve CodeCortex. Please remove secrets from logs and traces.
+      value: "Thanks for helping improve CodeCortex. Do not include secrets or vulnerability details here."
   - type: input
     id: version
     attributes:
-      label: CodeCortex version
-      placeholder: cortex --version or package version
-    validations:
-      required: true
-  - type: dropdown
-    id: os
-    attributes:
-      label: Operating system
-      options: [Linux, macOS, Windows, WSL, Other]
+      label: Version or commit
     validations:
       required: true
   - type: textarea
     id: reproduce
     attributes:
       label: Reproduction
-      description: Minimal commands and repository characteristics needed to reproduce the problem.
+      description: Minimal steps or repository-independent example.
     validations:
       required: true
   - type: textarea
@@ -34,7 +26,13 @@ body:
     validations:
       required: true
   - type: textarea
-    id: logs
+    id: actual
     attributes:
-      label: Sanitized logs
-      render: shell
+      label: Actual behavior
+    validations:
+      required: true
+  - type: input
+    id: environment
+    attributes:
+      label: Environment
+      description: OS, Python version, and relevant agent/CLI.

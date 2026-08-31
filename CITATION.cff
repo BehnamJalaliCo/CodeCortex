@@ -1,0 +1,17 @@
+cff-version: 1.2.0
+message: "If you use CodeCortex in research or published engineering work, please cite it."
+title: "CodeCortex Context Engine"
+type: software
+authors:
+  - family-names: Jalali
+    given-names: Behnam
+repository-code: "https://github.com/BehnamJalaliCo/CodeCortex"
+url: "https://github.com/BehnamJalaliCo/CodeCortex"
+license: Apache-2.0
+version: 0.1.0a1
+date-released: 2026-08-31
+keywords:
+  - AI coding agents
+  - code intelligence
+  - context engineering
+  - MCP
