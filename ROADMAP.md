@@ -60,12 +60,12 @@
 
 ## 0.5 — Distributed scale
 
-- [ ] Remote shared-memory synchronization with conflict resolution
-- [ ] Persistent vector-database providers for very large repositories
-- [ ] Hosted/remote MCP transport with authentication, TLS, quotas, and access policy
-- [ ] Multi-node indexing and retrieval workers
-- [ ] Published longitudinal performance history from scheduled reproducible runs
-- [ ] Organization-level policy, audit retention, and workspace administration
+- [x] Remote shared-memory synchronization with conflict resolution
+- [x] Persistent vector-database providers for very large repositories
+- [x] Hosted/remote MCP transport with authentication, TLS, quotas, and access policy
+- [x] Multi-node indexing and retrieval workers
+- [x] Published longitudinal performance history from scheduled reproducible runs
+- [x] Organization-level policy, audit retention, and workspace administration
 
 ## Release gates
 

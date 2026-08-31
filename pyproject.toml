@@ -4,13 +4,13 @@ build-backend = "hatchling.build"
 
 [project]
 name = "codecortex-context-engine"
-version = "0.1.0a1"
-description = "Context intelligence layer for AI coding agents"
+version = "0.1.0a2"
+description = "Context intelligence infrastructure for AI coding agents"
 readme = "README.md"
 requires-python = ">=3.11"
 license = {file = "LICENSE"}
 authors = [{name = "Behnam Jalali"}]
-keywords = ["ai", "coding-agents", "mcp", "code-intelligence", "context-engine"]
+keywords = ["ai", "coding-agents", "mcp", "code-intelligence", "context-engine", "distributed-context"]
 classifiers = [
   "Development Status :: 3 - Alpha",
   "License :: OSI Approved :: Apache Software License",
@@ -43,10 +43,12 @@ Homepage = "https://github.com/BehnamJalaliCo/CodeCortex"
 Repository = "https://github.com/BehnamJalaliCo/CodeCortex"
 Issues = "https://github.com/BehnamJalaliCo/CodeCortex/issues"
 Security = "https://github.com/BehnamJalaliCo/CodeCortex/security"
+Documentation = "https://behnamjalalico.github.io/CodeCortex/"
 
 [project.scripts]
 codecortex = "codecortex.entrypoint:app"
 cortex = "codecortex.entrypoint:app"
+cortex-remote = "codecortex.distributed.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codecortex"]
@@ -64,7 +66,7 @@ source = ["codecortex"]
 [tool.coverage.report]
 show_missing = true
 skip_covered = true
-fail_under = 65
+fail_under = 90
 
 [tool.ruff]
 target-version = "py311"
