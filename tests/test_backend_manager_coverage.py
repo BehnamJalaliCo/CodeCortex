@@ -14,7 +14,6 @@ from codecortex.backends.manager import (
 )
 from codecortex.backends.spec import BackendSpec
 
-
 REV = "a" * 40
 
 
