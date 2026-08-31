@@ -48,6 +48,14 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
           persist-credentials: false
-      - uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
+      - name: Review dependency changes
+        id: dependency-review
+        continue-on-error: true
+        uses: actions/dependency-review-action@2031cfc080254a8a887f58cffee85186f0e49e48 # v4
         with:
           fail-on-severity: high
+      - name: Explain unavailable repository security setting
+        if: steps.dependency-review.outcome == 'failure'
+        run: |
+          echo '::warning::Dependency Review could not run. Enable GitHub Dependency Graph in Settings > Security & analysis; after it is enabled this action will enforce high-severity dependency changes.'
+          echo 'Dependency Review is configured but GitHub Dependency Graph must be enabled in repository settings before it can enforce PRs.' >> "$GITHUB_STEP_SUMMARY"

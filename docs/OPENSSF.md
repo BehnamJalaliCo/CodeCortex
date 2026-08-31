@@ -11,6 +11,7 @@ CodeCortex is structured to pursue both the OpenSSF Best Practices metal-series 
 - Dependency auditing, CodeQL, Bandit, SBOM generation, Scorecard, and release provenance.
 - Private vulnerability-reporting instructions.
 - Reproducible release workflow with checksums, signing, and attestations.
+- GitHub Actions pinned to immutable commit SHAs.
 
 ## External enrollment
 
@@ -20,4 +21,10 @@ Do not display an OpenSSF Best Practices badge in the README until the external 
 
 ## Repository administration still required
 
-Configure a GitHub ruleset for `main` requiring pull requests, required CI/security checks, conversation resolution, and protection against deletion and force-push. Repository-administration controls cannot be represented truthfully by files alone; they must be enabled in GitHub settings.
+In GitHub repository settings:
+
+1. Enable **Dependency Graph** under Security & analysis so the configured Dependency Review job can enforce dependency changes.
+2. Configure a ruleset for `main` requiring pull requests, required CI/security checks, conversation resolution, and protection against deletion and force-push.
+3. Prefer signed commits/tags for release operations.
+
+Repository-administration controls cannot be represented truthfully by files alone; they must be enabled in GitHub settings.
