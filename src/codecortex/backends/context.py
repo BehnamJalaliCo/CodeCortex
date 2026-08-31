@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -36,6 +36,10 @@ class ContextBackendAdapter(Engine):
 
     def compress(self, content: str) -> dict[str, Any]:
         return self.call("headroom_compress", {"content": content})
+
+    def compress_batch(self, contents: Sequence[str]) -> list[dict[str, Any]]:
+        with self._client() as client:
+            return [client.call_tool("headroom_compress", {"content": content}) for content in contents]
 
     def retrieve(self, hash_key: str) -> dict[str, Any]:
         return self.call("headroom_retrieve", {"hash": hash_key})
