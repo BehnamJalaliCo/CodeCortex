@@ -1,4 +1,4 @@
-"""Extended public CLI surface for packaging, backends, and agent setup."""
+"""Extended public CLI surface for packaging, backends, agent setup, and edits."""
 
 from __future__ import annotations
 
@@ -11,6 +11,7 @@ import typer
 from rich.console import Console
 from rich.table import Table
 
+import codecortex.cli as cli_module
 from codecortex.backends import (
     BACKENDS,
     BackendManager,
@@ -19,14 +20,21 @@ from codecortex.backends import (
     SymbolBackendAdapter,
 )
 from codecortex.cli import app
+from codecortex.editing import EditService
 from codecortex.integrations import AgentConfigurator, AgentTarget
+from codecortex.mcp.extended import run_stdio as extended_run_stdio
+from codecortex.runtime import build_runtime
 from codecortex.setup import ProjectSetup
+
+cli_module.run_stdio = extended_run_stdio
 
 console = Console()
 backend_app = typer.Typer(help="Install and inspect isolated intelligence backends.")
 agents_app = typer.Typer(help="Detect and configure coding-agent integrations.")
+edit_app = typer.Typer(help="Perform guarded language-server semantic edits.")
 app.add_typer(backend_app, name="backend")
 app.add_typer(agents_app, name="agents")
+app.add_typer(edit_app, name="edit")
 
 
 def _manager() -> BackendManager:
@@ -51,10 +59,14 @@ def _adapter(key: str, root: Path, manager: BackendManager):
     raise KeyError(key)
 
 
+def _edit_service(path: Path) -> EditService:
+    return EditService(build_runtime(path.expanduser().resolve()))
+
+
 @app.command("version")
 def version_command() -> None:
     try:
-        current = version("codecortex")
+        current = version("codecortex-ai")
     except PackageNotFoundError:
         current = "0+unknown"
     console.print(current)
@@ -158,10 +170,59 @@ def agents_configure(
     selected = tuple(AgentTarget) if all_supported else tuple(target or configurator.detect())
     mutations = configurator.configure(selected, dry_run=dry_run)
     for item in mutations:
-        state = "would update" if dry_run and item.changed else "updated" if item.changed else "unchanged"
+        state = (
+            "would update"
+            if dry_run and item.changed
+            else "updated"
+            if item.changed
+            else "unchanged"
+        )
         console.print(f"{item.target.value}: {state} {item.path}")
         if item.backup:
             console.print(f"  backup: {item.backup}")
+
+
+@edit_app.command("rename")
+def edit_rename(
+    relative_path: Annotated[str, typer.Argument(help="Repository-relative file")],
+    name_path: Annotated[str, typer.Argument(help="Semantic symbol name path")],
+    new_name: Annotated[str, typer.Argument(help="New symbol name")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    console.print_json(data=_edit_service(path).rename(relative_path, name_path, new_name))
+
+
+@edit_app.command("replace")
+def edit_replace(
+    relative_path: Annotated[str, typer.Argument()],
+    name_path: Annotated[str, typer.Argument()],
+    body_file: Annotated[Path, typer.Option("--body-file")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    body = body_file.read_text(encoding="utf-8")
+    console.print_json(data=_edit_service(path).replace(relative_path, name_path, body))
+
+
+@edit_app.command("insert-before")
+def edit_insert_before(
+    relative_path: Annotated[str, typer.Argument()],
+    name_path: Annotated[str, typer.Argument()],
+    body_file: Annotated[Path, typer.Option("--body-file")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    body = body_file.read_text(encoding="utf-8")
+    console.print_json(data=_edit_service(path).insert_before(relative_path, name_path, body))
+
+
+@edit_app.command("insert-after")
+def edit_insert_after(
+    relative_path: Annotated[str, typer.Argument()],
+    name_path: Annotated[str, typer.Argument()],
+    body_file: Annotated[Path, typer.Option("--body-file")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    body = body_file.read_text(encoding="utf-8")
+    console.print_json(data=_edit_service(path).insert_after(relative_path, name_path, body))
 
 
 @app.command("bootstrap")

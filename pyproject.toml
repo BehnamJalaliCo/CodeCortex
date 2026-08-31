@@ -42,8 +42,8 @@ Repository = "https://github.com/BehnamJalaliCo/CodeCortex"
 Issues = "https://github.com/BehnamJalaliCo/CodeCortex/issues"
 
 [project.scripts]
-codecortex = "codecortex.cli:app"
-cortex = "codecortex.cli:app"
+codecortex = "codecortex.entrypoint:app"
+cortex = "codecortex.entrypoint:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codecortex"]
