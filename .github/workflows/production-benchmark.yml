@@ -67,7 +67,7 @@ jobs:
           for name,row in p.get('summary',{}).items():
               print(f"| {name} | {row.get('completed')} | {row.get('success_rate')} | {row.get('avg_wall_time_ms')} | {row.get('avg_estimated_context_tokens')} |")
           PY
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: codecortex-production-benchmark-${{ github.sha }}
           path: benchmark-results.json
