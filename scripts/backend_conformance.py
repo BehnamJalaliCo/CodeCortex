@@ -10,7 +10,13 @@ import sys
 import tempfile
 from pathlib import Path
 
-from codecortex.backends import BACKENDS, BackendManager, ContextBackendAdapter, GraphBackendAdapter, SymbolBackendAdapter
+from codecortex.backends import (
+    BACKENDS,
+    BackendManager,
+    ContextBackendAdapter,
+    GraphBackendAdapter,
+    SymbolBackendAdapter,
+)
 from codecortex.backends.mcp_client import MCPStdioClient
 
 
@@ -38,7 +44,14 @@ def main() -> int:
             adapter = SymbolBackendAdapter(root, manager)
             assert asyncio.run(adapter.health())
             adapter.require_tools(adapter.tools(), adapter.required_tools)
-            result = adapter.call("find_symbol", {"name_path_pattern": "AuthService", "relative_path": "auth/service.py", "include_body": False})
+            result = adapter.call(
+                "find_symbol",
+                {
+                    "name_path_pattern": "AuthService",
+                    "relative_path": "auth/service.py",
+                    "include_body": False,
+                },
+            )
             assert "AuthService" in (MCPStdioClient.content_text(result) or json.dumps(result))
         else:
             adapter = ContextBackendAdapter(root, manager)
