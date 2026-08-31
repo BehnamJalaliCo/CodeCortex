@@ -26,7 +26,7 @@ class BenchmarkCase:
     expected_symbols: tuple[str, ...] = ()
 
     @classmethod
-    def from_dict(cls, value: dict[str, object]) -> "BenchmarkCase":
+    def from_dict(cls, value: dict[str, object]) -> BenchmarkCase:
         return cls(
             id=str(value["id"]),
             query=str(value["query"]),
@@ -197,7 +197,7 @@ class BenchmarkSuite:
         self.strategies = strategies
 
     @classmethod
-    def load(cls, path: Path, strategies: list[BenchmarkStrategy]) -> "BenchmarkSuite":
+    def load(cls, path: Path, strategies: list[BenchmarkStrategy]) -> BenchmarkSuite:
         payload = json.loads(path.read_text(encoding="utf-8"))
         cases = [BenchmarkCase.from_dict(item) for item in payload["cases"]]
         return cls(cases, strategies)
