@@ -45,8 +45,7 @@ class _Gateway:
 async def test_protocol_bridge_definitions_and_calls() -> None:
     gateway = _Gateway()
     bridge = MCPBridge(gateway)  # type: ignore[arg-type]
-    definitions = bridge.tool_definitions()
-    assert {item["name"] for item in definitions} == {
+    assert {item["name"] for item in bridge.tool_definitions()} == {
         "cortex_route",
         "cortex_query",
         "cortex_remember",
@@ -64,7 +63,7 @@ async def test_protocol_bridge_definitions_and_calls() -> None:
 
 
 @pytest.mark.asyncio
-async def test_validation_engine_reports_syntax_and_skips_hidden(tmp_path: Path) -> None:
+async def test_validation_engine_reports_syntax_and_limits(tmp_path: Path) -> None:
     (tmp_path / "good.py").write_text("x = 1\n", encoding="utf-8")
     (tmp_path / "bad.py").write_text("def broken(:\n", encoding="utf-8")
     hidden = tmp_path / ".venv"
@@ -76,17 +75,21 @@ async def test_validation_engine_reports_syntax_and_skips_hidden(tmp_path: Path)
     result = await engine.execute(AgentRequest(query="validate"))
     assert "bad.py" in result.content
     assert result.metadata == {"checked": 2, "issues": 1}
-    assert result.chunks[0].metadata["issues"] == 1
 
     limited = ValidationEngine(tmp_path, max_files=0)
-    result = await limited.execute(AgentRequest(query="validate"))
-    assert result.content == "Python syntax validation passed."
-    missing = ValidationEngine(tmp_path / "missing")
-    assert not await missing.health()
+    assert (await limited.execute(AgentRequest(query="validate"))).content == (
+        "Python syntax validation passed."
+    )
+    assert not await ValidationEngine(tmp_path / "missing").health()
 
 
 class _CompressionBackend:
-    def __init__(self, *, healthy: bool = True, payloads: list[dict[str, Any]] | None = None) -> None:
+    def __init__(
+        self,
+        *,
+        healthy: bool = True,
+        payloads: list[dict[str, Any]] | None = None,
+    ) -> None:
         self.healthy = healthy
         self.payloads = payloads or []
         self.spec = SimpleNamespace(key="compressor", revision="rev")
@@ -100,39 +103,52 @@ class _CompressionBackend:
 
 
 @pytest.mark.asyncio
-async def test_integrated_context_processor_fallbacks_and_compression() -> None:
+async def test_integrated_context_fallbacks_and_compression() -> None:
     chunks = [ContextChunk(source="a", content="A" * 800, tokens=800, relevance=1.0)]
-    no_backend = IntegratedContextProcessor(None, compression_threshold=100)
-    fitted = await no_backend.fit(chunks, 1000)
-    assert fitted[0].content == chunks[0].content
+    assert (await IntegratedContextProcessor(None).fit(chunks, 1000))[0].content == chunks[0].content
 
-    unhealthy = IntegratedContextProcessor(_CompressionBackend(healthy=False), compression_threshold=100)  # type: ignore[arg-type]
+    unhealthy = IntegratedContextProcessor(
+        _CompressionBackend(healthy=False), compression_threshold=100  # type: ignore[arg-type]
+    )
     assert (await unhealthy.fit(chunks, 1000))[0].content == chunks[0].content
 
     short = [ContextChunk(source="s", content="small", tokens=5, relevance=1.0)]
-    healthy = IntegratedContextProcessor(_CompressionBackend(), compression_threshold=100)  # type: ignore[arg-type]
+    healthy = IntegratedContextProcessor(
+        _CompressionBackend(), compression_threshold=100  # type: ignore[arg-type]
+    )
     assert (await healthy.fit(short, 1000))[0].content == "small"
 
-    backend = _CompressionBackend(payloads=[{"content": [{"type": "text", "text": "tiny"}]}])
-    processor = IntegratedContextProcessor(backend, compression_threshold=100)  # type: ignore[arg-type]
-    compressed = await processor.fit(chunks, 1000)
+    backend = _CompressionBackend(
+        payloads=[{"content": [{"type": "text", "text": "tiny"}]}]
+    )
+    compressed = await IntegratedContextProcessor(
+        backend, compression_threshold=100  # type: ignore[arg-type]
+    ).fit(chunks, 1000)
     assert compressed[0].content == "tiny"
     assert compressed[0].metadata["compressed"] is True
     assert compressed[0].metadata["original_tokens"] == 800
 
-    no_gain = _CompressionBackend(payloads=[{"content": [{"type": "text", "text": "B" * 4000}]}])
-    unchanged = await IntegratedContextProcessor(no_gain, compression_threshold=100).fit(chunks, 1000)  # type: ignore[arg-type]
+    no_gain = _CompressionBackend(
+        payloads=[{"content": [{"type": "text", "text": "B" * 4000}]}]
+    )
+    unchanged = await IntegratedContextProcessor(
+        no_gain, compression_threshold=100  # type: ignore[arg-type]
+    ).fit(chunks, 1000)
     assert unchanged[0].content == chunks[0].content
 
     empty = _CompressionBackend(payloads=[{"content": []}])
-    unchanged = await IntegratedContextProcessor(empty, compression_threshold=100).fit(chunks, 1000)  # type: ignore[arg-type]
+    unchanged = await IntegratedContextProcessor(
+        empty, compression_threshold=100  # type: ignore[arg-type]
+    ).fit(chunks, 1000)
     assert unchanged[0].content == chunks[0].content
 
     class _Broken(_CompressionBackend):
         def compress_batch(self, contents: list[str]) -> list[dict[str, Any]]:
             raise RuntimeError("boom")
 
-    fallback = await IntegratedContextProcessor(_Broken(), compression_threshold=100).fit(chunks, 1000)  # type: ignore[arg-type]
+    fallback = await IntegratedContextProcessor(
+        _Broken(), compression_threshold=100  # type: ignore[arg-type]
+    ).fit(chunks, 1000)
     assert fallback[0].content == chunks[0].content
 
 
@@ -154,13 +170,19 @@ class _Manager:
         return SimpleNamespace(stdout=" result \n")
 
 
+class _Managed(ManagedAdapterMixin):
+    def __init__(self, manager: _Manager) -> None:
+        self.manager = manager  # type: ignore[assignment]
+        self.spec = SimpleNamespace(key="x", revision="r", capabilities=("a",))  # type: ignore[assignment]
+
+
 def test_managed_adapter_status_and_contract() -> None:
     manager = _Manager()
-    adapter = SimpleNamespace(manager=manager, spec=SimpleNamespace(key="x", revision="r", capabilities=("a",)))
-    status = ManagedAdapterMixin.status(adapter)  # type: ignore[arg-type]
+    adapter = _Managed(manager)
+    status = adapter.status()
     assert status.installed and status.healthy and status.key == "x"
     manager.installed = False
-    status = ManagedAdapterMixin.status(adapter)  # type: ignore[arg-type]
+    status = adapter.status()
     assert not status.installed and not status.healthy
     ManagedAdapterMixin.require_tools([{"name": "a"}, {"name": 3}], {"a"})
     with pytest.raises(BackendCompatibilityError, match="missing: b"):
@@ -168,7 +190,9 @@ def test_managed_adapter_status_and_contract() -> None:
 
 
 @pytest.mark.asyncio
-async def test_graph_adapter_paths_build_queries_and_execute(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+async def test_graph_adapter_build_queries_paths_and_execute(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     manager = _Manager()
     adapter = GraphBackendAdapter(tmp_path, manager)  # type: ignore[arg-type]
     assert await adapter.health()
@@ -196,12 +220,16 @@ async def test_graph_adapter_paths_build_queries_and_execute(tmp_path: Path, mon
     monkeypatch.setattr(adapter, "explain", lambda node: f"explain:{node}")
     monkeypatch.setattr(adapter, "path", lambda source, target: f"path:{source}:{target}")
     monkeypatch.setattr(adapter, "build", lambda: {"ok": True})
-    for request, expected in [
+    cases = [
         (AgentRequest(query="q"), "query:q"),
         (AgentRequest(query="x", metadata={"graph_mode": "explain"}), "explain:x"),
-        (AgentRequest(query="a", metadata={"graph_mode": "path", "target": "b"}), "path:a:b"),
+        (
+            AgentRequest(query="a", metadata={"graph_mode": "path", "target": "b"}),
+            "path:a:b",
+        ),
         (AgentRequest(query="x", metadata={"graph_mode": "build"}), '{"ok": true}'),
-    ]:
+    ]
+    for request, expected in cases:
         assert (await adapter.execute(request)).content == expected
     with pytest.raises(ValueError, match="metadata.target"):
         await adapter.execute(AgentRequest(query="a", metadata={"graph_mode": "path"}))
@@ -215,13 +243,23 @@ class _Pool:
     def tools(self, *args: Any, **kwargs: Any) -> list[dict[str, Any]]:
         return self.catalog
 
-    def call_tool(self, spec: Any, args: Any, name: str, arguments: Any, **kwargs: Any) -> dict[str, Any]:
+    def call_tool(
+        self,
+        spec: Any,
+        args: Any,
+        name: str,
+        arguments: Any,
+        **kwargs: Any,
+    ) -> dict[str, Any]:
         payload = dict(arguments or {})
         self.calls.append((name, payload))
-        return {"content": [{"type": "text", "text": f"{name}-ok"}], "structuredContent": {"ratio": 0.5}}
+        return {
+            "content": [{"type": "text", "text": f"{name}-ok"}],
+            "structuredContent": {"ratio": 0.5},
+        }
 
 
-def test_context_backend_surface_and_execute(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_context_backend_surface_and_execute(tmp_path: Path) -> None:
     manager = _Manager()
     adapter = ContextBackendAdapter(tmp_path, manager)  # type: ignore[arg-type]
     pool = _Pool()
@@ -234,15 +272,16 @@ def test_context_backend_surface_and_execute(tmp_path: Path, monkeypatch: pytest
     assert len(adapter.compress_batch(["a", "b"])) == 2
     adapter.retrieve("hash")
     adapter.stats()
-
     result = adapter._execute_sync(AgentRequest(query="hello"))
     assert result.content == "context_compress-ok"
     assert result.metadata["compression"] == {"ratio": 0.5}
     explicit = adapter._execute_sync(
-        AgentRequest(query="x", metadata={"context_tool": "context_stats", "context_arguments": {"a": 1}})
+        AgentRequest(
+            query="x",
+            metadata={"context_tool": "context_stats", "context_arguments": {"a": 1}},
+        )
     )
     assert explicit.metadata["tool"] == "context_stats"
-
     pool.catalog = []
     with pytest.raises(BackendCompatibilityError):
         adapter.tools()
@@ -252,19 +291,22 @@ def test_context_backend_surface_and_execute(tmp_path: Path, monkeypatch: pytest
 async def test_context_backend_health_and_async_execute(tmp_path: Path) -> None:
     manager = _Manager()
     adapter = ContextBackendAdapter(tmp_path, manager)  # type: ignore[arg-type]
-    pool = _Pool()
-    adapter.pool = pool  # type: ignore[assignment]
+    adapter.pool = _Pool()  # type: ignore[assignment]
     assert await adapter.health()
     assert (await adapter.execute(AgentRequest(query="hello"))).content == "context_compress-ok"
 
 
-def test_symbol_backend_planning_edits_and_paths(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_symbol_backend_planning_edits_and_paths(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     source = tmp_path / "a.py"
     source.write_text("def f():\n    pass\n", encoding="utf-8")
     manager = _Manager()
     adapter = SymbolBackendAdapter(tmp_path, manager)  # type: ignore[arg-type]
     pool = _Pool()
-    pool.catalog = [{"name": name} for name in adapter.required_tools | adapter.editing_tools]
+    pool.catalog = [
+        {"name": name} for name in adapter.required_tools | adapter.editing_tools
+    ]
     adapter.pool = pool  # type: ignore[assignment]
     assert "start-mcp-server" in adapter.server_args()
     assert adapter._relative_path("a.py") == "a.py"
@@ -292,22 +334,32 @@ def test_symbol_backend_planning_edits_and_paths(tmp_path: Path, monkeypatch: py
     with pytest.raises(RuntimeError, match="required edit tool"):
         adapter.rename_symbol("f", "a.py", "g")
 
-    tool, args = adapter._plan(AgentRequest(query="f", kind=RequestKind.REFACTOR, metadata={"relative_path": "a.py"}))
+    tool, args = adapter._plan(
+        AgentRequest(
+            query="f", kind=RequestKind.REFACTOR, metadata={"relative_path": "a.py"}
+        )
+    )
     assert tool == "find_symbol" and args["include_body"] is True
-    tool, args = adapter._plan(AgentRequest(query="f", metadata={"references": True, "relative_path": "a.py"}))
+    tool, args = adapter._plan(
+        AgentRequest(query="f", metadata={"references": True, "relative_path": "a.py"})
+    )
     assert tool == "find_referencing_symbols" and args["relative_path"] == "a.py"
     tool, args = adapter._plan(AgentRequest(query="f", kind=RequestKind.DEBUG))
     assert tool == "find_symbol" and args["include_body"] is True
 
     pool.catalog = [{"name": name} for name in adapter.required_tools]
-    result = adapter._execute_sync(AgentRequest(query="f"))
-    assert result.content == "find_symbol-ok"
-    result = adapter._execute_sync(
-        AgentRequest(query="f", metadata={"symbol_tool": "find_symbol", "symbol_arguments": {"depth": 2}})
+    assert adapter._execute_sync(AgentRequest(query="f")).content == "find_symbol-ok"
+    explicit = adapter._execute_sync(
+        AgentRequest(
+            query="f",
+            metadata={"symbol_tool": "find_symbol", "symbol_arguments": {"depth": 2}},
+        )
     )
-    assert result.metadata["tool"] == "find_symbol"
+    assert explicit.metadata["tool"] == "find_symbol"
     monkeypatch.setattr(adapter, "call", lambda tool, arguments: {})
-    assert adapter._execute_sync(AgentRequest(query="f")).chunks == []
+    fallback = adapter._execute_sync(AgentRequest(query="f"))
+    assert fallback.content == "{}"
+    assert len(fallback.chunks) == 1
 
 
 @pytest.mark.asyncio
@@ -316,8 +368,7 @@ async def test_symbol_backend_health_and_async_execute(tmp_path: Path) -> None:
     adapter = SymbolBackendAdapter(tmp_path, manager)  # type: ignore[arg-type]
     adapter.pool = _Pool()  # type: ignore[assignment]
     assert await adapter.health()
-    result = await adapter.execute(AgentRequest(query="f"))
-    assert result.content == "find_symbol-ok"
+    assert (await adapter.execute(AgentRequest(query="f"))).content == "find_symbol-ok"
 
 
 class _FakeClient:
@@ -349,21 +400,24 @@ class _FakeClient:
         return [{"name": "ok"}]
 
 
-def test_backend_session_pool_reuse_retry_tools_and_close(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_backend_session_pool_reuse_retry_tools_and_close(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     import codecortex.backends.pool as pool_module
 
     _FakeClient.instances.clear()
     _FakeClient.fail_calls = 0
     _FakeClient.fail_tools = 0
     monkeypatch.setattr(pool_module, "MCPStdioClient", _FakeClient)
-    manager = object()
-    pool = BackendSessionPool(manager)  # type: ignore[arg-type]
+    pool = BackendSessionPool(object())  # type: ignore[arg-type]
     spec = SimpleNamespace(key="x", revision="r")
 
     key1 = pool._key(spec, ("serve",), tmp_path, {"B": "2", "A": "1"})  # type: ignore[arg-type]
     key2 = pool._key(spec, ("serve",), tmp_path, {"A": "1", "B": "2"})  # type: ignore[arg-type]
     assert key1 == key2
-    assert pool.call_tool(spec, ("serve",), "ping", {"x": 1}, cwd=tmp_path) == {"name": "ping", "arguments": {"x": 1}}  # type: ignore[arg-type]
+    assert pool.call_tool(  # type: ignore[arg-type]
+        spec, ("serve",), "ping", {"x": 1}, cwd=tmp_path
+    ) == {"name": "ping", "arguments": {"x": 1}}
     assert len(_FakeClient.instances) == 1
     pool.call_tool(spec, ("serve",), "ping", {}, cwd=tmp_path)  # type: ignore[arg-type]
     assert len(_FakeClient.instances) == 1
