@@ -11,6 +11,9 @@ permissions:
 jobs:
   test:
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     strategy:
       fail-fast: false
       matrix:
@@ -40,8 +43,6 @@ jobs:
           use_oidc: true
           files: ./coverage.xml
           fail_ci_if_error: false
-        permissions:
-          id-token: write
 
   package:
     runs-on: ubuntu-latest
