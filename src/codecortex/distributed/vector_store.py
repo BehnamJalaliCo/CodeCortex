@@ -165,6 +165,15 @@ def open_vector_store(uri: str | Path) -> PersistentVectorStore:
         return SQLiteVectorStore(Path(uri))
     scheme = parsed.scheme.lower()
     if scheme == "sqlite":
+        local_part = unquote(uri[len("sqlite://") :])
+        if (
+            len(local_part) >= 3
+            and local_part[0].isalpha()
+            and local_part[1] == ":"
+            and local_part[2] in {"/", "\\"}
+        ):
+            return SQLiteVectorStore(Path(local_part))
+
         raw_path = unquote(parsed.path)
         netloc = unquote(parsed.netloc)
         if netloc:
