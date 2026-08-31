@@ -114,7 +114,7 @@ jobs:
           set -euo pipefail
           if gh release view "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" >/dev/null 2>&1; then
             gh release upload "${{ env.RELEASE_TAG }}" dist/* --repo "${{ github.repository }}" --clobber
-            gh release edit "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --generate-notes --title "CodeCortex Context Engine ${{ env.RELEASE_TAG }}"
+            gh release edit "${{ env.RELEASE_TAG }}" --repo "${{ github.repository }}" --title "CodeCortex Context Engine ${{ env.RELEASE_TAG }}"
           else
             gh release create "${{ env.RELEASE_TAG }}" dist/* --repo "${{ github.repository }}" --verify-tag --generate-notes --title "CodeCortex Context Engine ${{ env.RELEASE_TAG }}"
           fi
