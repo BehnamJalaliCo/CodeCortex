@@ -1,14 +1,17 @@
 from __future__ import annotations
 
-import json
-import os
 import subprocess
 from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 
-from codecortex.backends.manager import BackendManager, BackendProcessError, ProcessResult, _discover_source_root
+from codecortex.backends.manager import (
+    BackendManager,
+    BackendProcessError,
+    ProcessResult,
+    _discover_source_root,
+)
 from codecortex.backends.spec import BackendSpec
 
 
@@ -47,11 +50,15 @@ def test_paths_metadata_and_unconfigured(tmp_path: Path) -> None:
         manager.ensure(_spec(package=""))
 
 
-def test_local_source_validation_and_requirement(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_local_source_validation_and_requirement(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     source = tmp_path / "source"
     local = source / "vendor" / "demo"
     local.mkdir(parents=True)
-    (local / "pyproject.toml").write_text("[project]\nname='demo'\nversion='0'\n", encoding="utf-8")
+    (local / "pyproject.toml").write_text(
+        "[project]\nname='demo'\nversion='0'\n", encoding="utf-8"
+    )
     manager = BackendManager(cache_root=tmp_path / "cache", source_root=source)
 
     monkeypatch.setattr(manager, "_git_revision", lambda _path: REV)
@@ -75,11 +82,14 @@ def test_local_source_validation_and_requirement(tmp_path: Path, monkeypatch: py
     assert manager.local_source_path(_spec(vendor_path="missing")) is None
 
 
-def test_ensure_install_probe_remove_and_cache(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_ensure_install_probe_remove_and_cache(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     manager = BackendManager(cache_root=tmp_path, source_root=tmp_path, health_ttl_seconds=60)
     spec = _spec()
 
     def create_environment(env_dir: Path, _spec_value: BackendSpec) -> None:
+        del env_dir
         manager.command_path(spec).parent.mkdir(parents=True, exist_ok=True)
         manager.command_path(spec).write_text("placeholder", encoding="utf-8")
 
@@ -112,7 +122,9 @@ def test_ensure_install_probe_remove_and_cache(tmp_path: Path, monkeypatch: pyte
     assert not manager.probe(spec, provision=False, force=True)
 
 
-def test_run_error_and_probe_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_run_error_and_probe_exception(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     manager = BackendManager(cache_root=tmp_path, source_root=tmp_path)
     spec = _spec()
     command = manager.command_path(spec)
@@ -122,7 +134,9 @@ def test_run_error_and_probe_exception(tmp_path: Path, monkeypatch: pytest.Monke
     monkeypatch.setattr(
         subprocess,
         "run",
-        lambda *_args, **_kwargs: SimpleNamespace(returncode=3, stdout="", stderr="boom"),
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=3, stdout="", stderr="boom"
+        ),
     )
     with pytest.raises(BackendProcessError, match="boom"):
         manager.run(spec, (), provision=False)
@@ -130,7 +144,11 @@ def test_run_error_and_probe_exception(tmp_path: Path, monkeypatch: pytest.Monke
     assert unchecked.returncode == 3
 
     monkeypatch.setattr(manager, "is_installed", lambda _spec_value: True)
-    monkeypatch.setattr(manager, "run", lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("bad")))
+    monkeypatch.setattr(
+        manager,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError("bad")),
+    )
     assert not manager.probe(spec, force=True)
 
     missing = BackendManager(cache_root=tmp_path / "missing", source_root=tmp_path)
@@ -138,12 +156,17 @@ def test_run_error_and_probe_exception(tmp_path: Path, monkeypatch: pytest.Monke
         missing.run(spec, (), provision=False)
 
 
-def test_environment_install_metadata_git_and_locks(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_environment_install_metadata_git_and_locks(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     manager = BackendManager(cache_root=tmp_path, source_root=tmp_path, timeout_seconds=0.01)
     spec = _spec()
     env_dir = manager.environment_dir(spec)
 
-    monkeypatch.setattr("codecortex.backends.manager.shutil.which", lambda name: "/usr/bin/uv" if name == "uv" else None)
+    monkeypatch.setattr(
+        "codecortex.backends.manager.shutil.which",
+        lambda name: "/usr/bin/uv" if name == "uv" else None,
+    )
     monkeypatch.setattr(
         subprocess,
         "run",
@@ -165,10 +188,16 @@ def test_environment_install_metadata_git_and_locks(tmp_path: Path, monkeypatch:
     monkeypatch.setattr(
         subprocess,
         "run",
-        lambda *_args, **_kwargs: SimpleNamespace(returncode=0, stdout=REV + "\n", stderr=""),
+        lambda *_args, **_kwargs: SimpleNamespace(
+            returncode=0, stdout=REV + "\n", stderr=""
+        ),
     )
     assert manager._git_revision(tmp_path) == REV
-    monkeypatch.setattr(subprocess, "run", lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError()))
+    monkeypatch.setattr(
+        subprocess,
+        "run",
+        lambda *_args, **_kwargs: (_ for _ in ()).throw(OSError()),
+    )
     assert manager._git_revision(tmp_path) is None
 
     lock = tmp_path / "lock"
