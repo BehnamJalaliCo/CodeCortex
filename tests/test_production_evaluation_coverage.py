@@ -57,7 +57,7 @@ def test_specs_helpers_report_and_save(tmp_path: Path) -> None:
     )
     assert case.id == "x" and repo.cases[0].id == "x"
     assert _evidence_recall((), "") == 1.0
-    assert _evidence_recall(("X", "Y"), "x only") == 0.5
+    assert _evidence_recall(("X", "Y"), "x result") == 0.5
     assert "src/x.py" in _extract_paths("see [src/x.py] now")
     assert _average([1, None, 3]) == 2.0
     assert _average([]) is None

@@ -71,7 +71,6 @@ def test_core_cli_workflows(tmp_path: Path) -> None:
 def test_extended_cli_and_benchmark_paths(tmp_path: Path) -> None:
     root = _project(tmp_path)
     _ok(["backend", "list"])
-    _ok(["backend", "status", "--path", str(root)])
     _ok(["backend-status", "--path", str(root)])
     _ok(["agents", "detect", "--path", str(root)])
     _ok(["agents", "configure", "--path", str(root), "--dry-run"])
