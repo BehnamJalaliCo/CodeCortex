@@ -29,7 +29,7 @@ class TreeSitterParserProvider:
         "java": "java",
         "c": "c",
         "cpp": "cpp",
-        "csharp": "c_sharp",
+        "csharp": "csharp",
         "php": "php",
         "ruby": "ruby",
     }
