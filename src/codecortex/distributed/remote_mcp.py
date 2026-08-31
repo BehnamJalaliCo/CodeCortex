@@ -16,6 +16,7 @@ from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
 from urllib.error import HTTPError
+from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
 ToolDispatcher = Callable[[str, dict[str, Any]], dict[str, Any] | Awaitable[dict[str, Any]]]
@@ -246,7 +247,13 @@ class RemoteMCPClient:
         timeout_seconds: float = 30.0,
         ssl_context: ssl.SSLContext | None = None,
     ) -> None:
-        self.base_url = base_url.rstrip("/")
+        normalized = base_url.rstrip("/")
+        parsed = urlsplit(normalized)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            raise ValueError("base_url must use http or https and include a hostname")
+        if parsed.username is not None or parsed.password is not None:
+            raise ValueError("base_url must not contain embedded credentials")
+        self.base_url = normalized
         self.token = token
         self.timeout_seconds = timeout_seconds
         self.ssl_context = ssl_context
@@ -263,7 +270,8 @@ class RemoteMCPClient:
             },
         )
         try:
-            with urlopen(
+            # base_url is constrained to HTTP(S) during initialization.
+            with urlopen(  # nosec B310
                 request, timeout=self.timeout_seconds, context=self.ssl_context
             ) as response:
                 payload = json.loads(response.read())
