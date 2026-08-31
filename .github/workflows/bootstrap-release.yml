@@ -1,0 +1,27 @@
+name: Bootstrap First Release
+
+on:
+  push:
+    paths:
+      - .github/workflows/bootstrap-release.yml
+
+permissions:
+  contents: write
+
+jobs:
+  tag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          fetch-depth: 0
+      - name: Create v0.1.0a1 tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          if git rev-parse "v0.1.0a1" >/dev/null 2>&1; then
+            echo "Tag already exists"
+          else
+            git tag -a v0.1.0a1 -m "CodeCortex Context Engine v0.1.0a1"
+            git push origin v0.1.0a1
+          fi
