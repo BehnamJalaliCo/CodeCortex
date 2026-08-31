@@ -13,7 +13,11 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-_SENSITIVE = re.compile(r"(?:secret|password|passwd|token|api[_-]?key|authorization|cookie)", re.I)
+_SENSITIVE = re.compile(
+    r"^(?:secret|password|passwd|api[_-]?key|authorization|cookie|token)$"
+    r"|(?:^|[_-])(?:access|refresh|auth)[_-]?token(?:$|[_-])",
+    re.I,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -190,7 +194,8 @@ class TaskTraceRecorder:
             duration_ms=sum(record.duration_ms for record in records),
             tool_calls=sum(record.name.startswith("tool.") for record in records),
             context_tokens=sum(
-                int(record.attributes.get("context_tokens", 0) or 0) for record in records
+                self._integer_metric(record.attributes.get("context_tokens"))
+                for record in records
             ),
             names=tuple(record.name for record in records),
         )
@@ -215,3 +220,16 @@ class TaskTraceRecorder:
                 serialized = json.dumps(value, ensure_ascii=False, default=str)
                 sanitized[str(key)] = serialized[: self.max_attribute_chars]
         return sanitized
+
+    @staticmethod
+    def _integer_metric(value: Any) -> int:
+        if isinstance(value, bool):
+            return int(value)
+        if isinstance(value, (int, float)):
+            return int(value)
+        if isinstance(value, str):
+            try:
+                return int(float(value))
+            except ValueError:
+                return 0
+        return 0

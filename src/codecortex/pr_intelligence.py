@@ -9,6 +9,7 @@ from pathlib import Path
 
 from codecortex.indexing.graph import GraphNode, ProjectGraph
 from codecortex.indexing.impact import ImpactAnalyzer
+from codecortex.languages import LanguageRegistry
 
 _HUNK = re.compile(r"^@@ -\d+(?:,\d+)? \+(?P<start>\d+)(?:,(?P<count>\d+))? @@")
 
@@ -20,6 +21,9 @@ class LineRange:
 
     def contains(self, line: int | None) -> bool:
         return line is not None and self.start <= line <= self.end
+
+    def overlaps(self, other: LineRange) -> bool:
+        return self.start <= other.end and other.start <= self.end
 
 
 @dataclass(frozen=True, slots=True)
@@ -56,6 +60,7 @@ class PRIntelligence:
         self.root = root.resolve()
         self.graph = graph
         self.timeout_seconds = timeout_seconds
+        self.languages = LanguageRegistry()
 
     def _git(self, *args: str) -> str:
         try:
@@ -78,15 +83,24 @@ class PRIntelligence:
         symbols: list[ChangedSymbol] = []
         tests: set[str] = set()
         analyzer = ImpactAnalyzer(self.graph)
+        ranges_by_path: dict[str, dict[tuple[str, int], LineRange]] = {}
 
         for node in self.graph.nodes:
             if not node.path or node.path not in changed_by_path:
                 continue
-            if node.kind in {"file", "module", "reference"}:
+            if node.kind in {"file", "module", "reference"} or node.line is None:
                 continue
             change = changed_by_path[node.path]
+            symbol_ranges = ranges_by_path.setdefault(
+                node.path,
+                self._symbol_ranges(node.path),
+            )
+            symbol_range = symbol_ranges.get(
+                (node.name, node.line),
+                LineRange(node.line, node.line),
+            )
             direct = not change.changed_ranges or any(
-                item.contains(node.line) for item in change.changed_ranges
+                symbol_range.overlaps(changed) for changed in change.changed_ranges
             )
             if not direct:
                 continue
@@ -133,6 +147,27 @@ class PRIntelligence:
             risk_score=round(risk_score, 4),
             risk_level=level,
         )
+
+    def _symbol_ranges(self, relative: str) -> dict[tuple[str, int], LineRange]:
+        path = self.root / relative
+        try:
+            source = path.read_text(encoding="utf-8")
+        except (OSError, UnicodeDecodeError):
+            return {}
+        units = sorted(
+            self.languages.parse(path, source),
+            key=lambda item: (item.line, item.name),
+        )
+        total_lines = max(1, len(source.splitlines()))
+        ranges: dict[tuple[str, int], LineRange] = {}
+        for index, unit in enumerate(units):
+            if unit.end_line is not None:
+                end = unit.end_line
+            else:
+                next_line = units[index + 1].line if index + 1 < len(units) else total_lines + 1
+                end = max(unit.line, next_line - 1)
+            ranges[(unit.name, unit.line)] = LineRange(unit.line, end)
+        return ranges
 
     def _file_changes(self, base_ref: str, head_ref: str) -> list[PRFileChange]:
         range_ref = f"{base_ref}...{head_ref}"
