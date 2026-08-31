@@ -21,7 +21,7 @@ jobs:
           python-version: "3.13"
           cache: pip
       - name: Install package and security tooling
-        run: pip install -e ".[security]"
+        run: pip install -e ".[dev,security]"
       - name: Dependency vulnerability audit
         run: pip-audit
       - name: Static security analysis

@@ -66,7 +66,7 @@ def _edit_service(path: Path) -> EditService:
 @app.command("version")
 def version_command() -> None:
     try:
-        current = version("codecortex-ai")
+        current = version("codecortex-context-engine")
     except PackageNotFoundError:
         current = "0+unknown"
     console.print(current)

@@ -1,5 +1,3 @@
-import json
-
 from codecortex.dashboard import _event_stats, _overview, _recent_traces
 from codecortex.runtime import build_runtime
 

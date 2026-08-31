@@ -37,6 +37,7 @@ class TreeSitterParserProvider:
     kinds = {
         "class_declaration": "class",
         "class_definition": "class",
+        "class_specifier": "class",
         "interface_declaration": "interface",
         "trait_item": "interface",
         "struct_item": "struct",
