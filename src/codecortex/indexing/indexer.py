@@ -6,6 +6,7 @@ from pathlib import Path
 
 from codecortex.indexing.graph import GraphEdge, GraphNode, ProjectGraph
 from codecortex.indexing.relationships import RelationshipExtractor
+from codecortex.indexing.resolution import CrossFileResolver
 from codecortex.symbols import SymbolProviderRegistry
 
 _EXCLUDED = {
@@ -26,6 +27,7 @@ class ProjectIndexer:
         self.max_files = max_files
         self.symbols = SymbolProviderRegistry()
         self.relationships = RelationshipExtractor()
+        self.resolver = CrossFileResolver()
 
     def _files(self) -> list[Path]:
         files: list[Path] = []
@@ -45,20 +47,24 @@ class ProjectIndexer:
         nodes: list[GraphNode] = []
         edges: list[GraphEdge] = []
         node_ids: set[str] = set()
-        names: dict[str, list[str]] = {}
+        names: dict[str, list[GraphNode]] = {}
         file_sources: dict[Path, str] = {}
         symbol_for_file: dict[tuple[str, str], str] = {}
 
         for path in files:
             relative = path.relative_to(self.root)
             file_id = f"file:{relative.as_posix()}"
-            self._node(nodes, node_ids, GraphNode(
-                id=file_id,
-                kind="file",
-                name=relative.name,
-                path=relative.as_posix(),
-                metadata={"extension": relative.suffix.lower()},
-            ))
+            self._node(
+                nodes,
+                node_ids,
+                GraphNode(
+                    id=file_id,
+                    kind="file",
+                    name=relative.name,
+                    path=relative.as_posix(),
+                    metadata={"extension": relative.suffix.lower()},
+                ),
+            )
             if not self.symbols.supports(path):
                 continue
             try:
@@ -69,10 +75,8 @@ class ProjectIndexer:
             for symbol in self.symbols.extract(path, source):
                 if symbol.kind in {"import", "export"}:
                     continue
-                symbol_id = (
-                    f"symbol:{relative.as_posix()}:{symbol.line}:{symbol.kind}:{symbol.name}"
-                )
-                self._node(nodes, node_ids, GraphNode(
+                symbol_id = f"symbol:{relative.as_posix()}:{symbol.line}:{symbol.kind}:{symbol.name}"
+                node = GraphNode(
                     id=symbol_id,
                     kind=symbol.kind,
                     name=symbol.name,
@@ -82,35 +86,41 @@ class ProjectIndexer:
                         "language": symbol.language,
                         "container": symbol.container,
                     },
-                ))
+                )
+                self._node(nodes, node_ids, node)
                 edges.append(GraphEdge(source=file_id, target=symbol_id, kind="contains"))
                 edges.append(GraphEdge(source=file_id, target=symbol_id, kind="defines"))
-                names.setdefault(symbol.name, []).append(symbol_id)
+                names.setdefault(symbol.name, []).append(node)
                 symbol_for_file[(relative.as_posix(), symbol.name)] = symbol_id
 
         for path, source in file_sources.items():
             relative = path.relative_to(self.root)
-            file_id = f"file:{relative.as_posix()}"
+            source_path = relative.as_posix()
+            file_id = f"file:{source_path}"
             for relation in self.relationships.extract(path, source):
                 source_id = file_id
                 if relation.source_symbol:
                     source_id = symbol_for_file.get(
-                        (relative.as_posix(), relation.source_symbol),
+                        (source_path, relation.source_symbol),
                         file_id,
                     )
-                target_id = self._resolve_target(
+                target_id, metadata = self._resolve_target(
                     relation.target,
                     relation.kind,
+                    source_path,
                     names,
                     nodes,
                     node_ids,
                 )
-                edges.append(GraphEdge(
-                    source=source_id,
-                    target=target_id,
-                    kind=relation.kind,
-                    metadata={"line": relation.line},
-                ))
+                metadata["line"] = relation.line
+                edges.append(
+                    GraphEdge(
+                        source=source_id,
+                        target=target_id,
+                        kind=relation.kind,
+                        metadata=metadata,
+                    )
+                )
 
         unique_edges = {
             (edge.source, edge.target, edge.kind): edge
@@ -125,20 +135,38 @@ class ProjectIndexer:
             node_ids.add(node.id)
             nodes.append(node)
 
-    @staticmethod
     def _resolve_target(
+        self,
         target: str,
         kind: str,
-        names: dict[str, list[str]],
+        source_path: str,
+        names: dict[str, list[GraphNode]],
         nodes: list[GraphNode],
         node_ids: set[str],
-    ) -> str:
-        candidates = names.get(target)
-        if candidates and len(candidates) == 1:
-            return candidates[0]
+    ) -> tuple[str, dict[str, object]]:
+        candidates = names.get(target, [])
+        result = self.resolver.resolve(target, source_path, candidates, kind)
+        if result.target_id is not None:
+            return result.target_id, {
+                "resolution_confidence": round(result.confidence, 4),
+                "ambiguity": round(result.ambiguity, 4),
+                "candidate_count": len(result.candidates),
+                "candidates": [
+                    {
+                        "id": item.node_id,
+                        "score": round(item.score, 4),
+                        "reasons": list(item.reasons),
+                    }
+                    for item in result.candidates
+                ],
+            }
         prefix = "module" if kind == "imports" else "reference"
         target_id = f"{prefix}:{target}"
         if target_id not in node_ids:
             node_ids.add(target_id)
             nodes.append(GraphNode(id=target_id, kind=prefix, name=target))
-        return target_id
+        return target_id, {
+            "resolution_confidence": 0.0,
+            "ambiguity": 1.0,
+            "candidate_count": 0,
+        }
