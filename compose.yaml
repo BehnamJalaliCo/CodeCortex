@@ -1,0 +1,27 @@
+services:
+  dashboard:
+    build:
+      context: .
+      target: core
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+      - codecortex-backends:/home/cortex/.cache/codecortex/backends
+    ports:
+      - "7331:7331"
+    command: ["dashboard", "--host", "0.0.0.0", "--port", "7331", "--path", "/workspace"]
+
+  dashboard-full:
+    profiles: ["full"]
+    build:
+      context: .
+      target: full
+    working_dir: /workspace
+    volumes:
+      - .:/workspace
+    ports:
+      - "7332:7331"
+    command: ["dashboard", "--host", "0.0.0.0", "--port", "7331", "--path", "/workspace"]
+
+volumes:
+  codecortex-backends:

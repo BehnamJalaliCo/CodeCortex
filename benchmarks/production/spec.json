@@ -1,0 +1,46 @@
+{
+  "schema_version": 2,
+  "repositories": [
+    {
+      "name": "fastapi",
+      "url": "https://github.com/fastapi/fastapi.git",
+      "revision": "49033471594ea5d99a80abdf1043231b7791ee49",
+      "cases": [
+        {"id":"fastapi-class","query":"FastAPI","expected_paths":["fastapi/applications.py"],"expected_symbols":["FastAPI"]},
+        {"id":"api-router","query":"APIRouter","expected_paths":["fastapi/routing.py"],"expected_symbols":["APIRouter"]},
+        {"id":"depends","query":"Depends","expected_paths":["fastapi/param_functions.py"],"expected_symbols":["Depends"]},
+        {"id":"http-exception","query":"HTTPException","expected_paths":["fastapi/exceptions.py"],"expected_symbols":["HTTPException"]}
+      ]
+    },
+    {
+      "name": "pydantic",
+      "url": "https://github.com/pydantic/pydantic.git",
+      "revision": "f512b087202f58ec90a9d38c9102858567d72440",
+      "cases": [
+        {"id":"base-model","query":"BaseModel","expected_paths":["pydantic/main.py"],"expected_symbols":["BaseModel"]},
+        {"id":"type-adapter","query":"TypeAdapter","expected_paths":["pydantic/type_adapter.py"],"expected_symbols":["TypeAdapter"]},
+        {"id":"field-info","query":"FieldInfo","expected_paths":["pydantic/fields.py"],"expected_symbols":["FieldInfo"]}
+      ]
+    },
+    {
+      "name": "flask",
+      "url": "https://github.com/pallets/flask.git",
+      "revision": "d318b683471101618febed18996405ad26462110",
+      "cases": [
+        {"id":"flask-app","query":"Flask","expected_paths":["src/flask/app.py"],"expected_symbols":["Flask"]},
+        {"id":"blueprint","query":"Blueprint","expected_paths":["src/flask/blueprints.py"],"expected_symbols":["Blueprint"]},
+        {"id":"request","query":"Request","expected_paths":["src/flask/wrappers.py"],"expected_symbols":["Request"]},
+        {"id":"render-template","query":"render_template","expected_paths":["src/flask/templating.py"],"expected_symbols":["render_template"]}
+      ]
+    },
+    {
+      "name": "httpx",
+      "url": "https://github.com/encode/httpx.git",
+      "revision": "b5addb64f0161ff6bfe94c124ef76f6a1fba5254",
+      "cases": [
+        {"id":"httpx-client","query":"Client","expected_paths":["httpx/_client.py"],"expected_symbols":["Client"]},
+        {"id":"httpx-request","query":"Request","expected_paths":["httpx/_models.py"],"expected_symbols":["Request"]}
+      ]
+    }
+  ]
+}

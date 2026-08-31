@@ -1,0 +1,7 @@
+{
+  "success_rate": {"direction": "higher", "max_absolute_regression": 0.02},
+  "avg_path_recall": {"direction": "higher", "max_absolute_regression": 0.03},
+  "avg_symbol_recall": {"direction": "higher", "max_absolute_regression": 0.03},
+  "avg_duration_ms": {"direction": "lower", "max_relative_regression": 0.20},
+  "avg_context_tokens": {"direction": "lower", "max_relative_regression": 0.10}
+}

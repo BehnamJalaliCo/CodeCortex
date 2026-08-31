@@ -1,0 +1,67 @@
+name: Live Agent E2E
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "13 6 * * 2"
+
+permissions:
+  contents: read
+
+jobs:
+  live-agent:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - agent: opencode
+            install: npm install -g opencode-ai
+            configure: cortex agents configure --target opencode
+            command: opencode run {prompt}
+            key_env: OPENAI_API_KEY
+          - agent: codex
+            install: npm install -g @openai/codex
+            configure: cortex agents configure --target codex
+            command: codex exec {prompt}
+            key_env: OPENAI_API_KEY
+          - agent: claude
+            install: npm install -g @anthropic-ai/claude-code
+            configure: cortex agents configure --target claude
+            command: claude -p {prompt}
+            key_env: ANTHROPIC_API_KEY
+          - agent: gemini
+            install: npm install -g @google/gemini-cli
+            configure: cortex agents configure --target gemini
+            command: gemini -p {prompt}
+            key_env: GEMINI_API_KEY
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          submodules: recursive
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: pip install -e ".[dev]"
+      - run: cortex init .
+      - name: Install agent
+        run: ${{ matrix.install }}
+      - name: Verify agent binary and generate MCP config
+        run: |
+          ${{ matrix.configure }}
+          command -v ${{ matrix.agent }} || true
+      - name: Run live MCP tool-use check
+        if: ${{ matrix.key_env == 'OPENAI_API_KEY' && secrets.OPENAI_API_KEY != '' || matrix.key_env == 'ANTHROPIC_API_KEY' && secrets.ANTHROPIC_API_KEY != '' || matrix.key_env == 'GEMINI_API_KEY' && secrets.GEMINI_API_KEY != '' }}
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+          CODECORTEX_SOURCE_ROOT: ${{ github.workspace }}
+        run: python scripts/live_agent_e2e.py --agent "${{ matrix.agent }}" --command "${{ matrix.command }}"
+      - name: Record credential-gated skip
+        if: ${{ !(matrix.key_env == 'OPENAI_API_KEY' && secrets.OPENAI_API_KEY != '' || matrix.key_env == 'ANTHROPIC_API_KEY' && secrets.ANTHROPIC_API_KEY != '' || matrix.key_env == 'GEMINI_API_KEY' && secrets.GEMINI_API_KEY != '') }}
+        run: echo "${{ matrix.agent }} installed/configured; live model call skipped because its API secret is not configured." >> "$GITHUB_STEP_SUMMARY"

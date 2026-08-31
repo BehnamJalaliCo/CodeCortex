@@ -1,0 +1,68 @@
+[build-system]
+requires = ["hatchling>=1.25"]
+build-backend = "hatchling.build"
+
+[project]
+name = "codecortex-context-engine"
+version = "0.1.0a1"
+description = "Context intelligence layer for AI coding agents"
+readme = "README.md"
+requires-python = ">=3.11"
+license = {file = "LICENSE"}
+authors = [{name = "Behnam Jalali"}]
+keywords = ["ai", "coding-agents", "mcp", "code-intelligence", "context-engine"]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "License :: OSI Approved :: Apache Software License",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+]
+dependencies = [
+  "pydantic>=2.8,<3",
+  "typer>=0.27.1,<1",
+  "rich>=13.7,<15",
+]
+
+[project.optional-dependencies]
+semantic = ["sentence-transformers>=3,<6"]
+parsers = ["tree-sitter-language-pack>=1.15.8,<2"]
+dev = [
+  "pytest>=8.2",
+  "pytest-asyncio>=1.4.0",
+  "ruff>=0.16.5",
+  "mypy>=1.11",
+  "build>=1.2",
+  "twine>=7.0.0",
+]
+security = ["pip-audit>=2.7", "bandit>=1.7", "cyclonedx-bom>=4"]
+
+[project.urls]
+Homepage = "https://github.com/BehnamJalaliCo/CodeCortex"
+Repository = "https://github.com/BehnamJalaliCo/CodeCortex"
+Issues = "https://github.com/BehnamJalaliCo/CodeCortex/issues"
+
+[project.scripts]
+codecortex = "codecortex.entrypoint:app"
+cortex = "codecortex.entrypoint:app"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/codecortex"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+target-version = "py311"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["E501"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+packages = ["codecortex"]

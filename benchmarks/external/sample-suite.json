@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "name": "repository-understanding-smoke",
+  "cases": [
+    {
+      "id": "locate-entrypoint",
+      "prompt": "Locate the main application entry point and explain why it is the entry point.",
+      "expectation": {
+        "max_tool_calls": 20,
+        "max_tokens": 12000
+      },
+      "metadata": {
+        "category": "repository-understanding"
+      }
+    }
+  ]
+}

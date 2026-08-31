@@ -1,0 +1,54 @@
+name: Production Benchmark
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "benchmarks/production/**"
+      - "scripts/run_production_benchmark.py"
+      - "src/codecortex/evaluation/production.py"
+      - "src/codecortex/backends/**"
+      - ".github/workflows/production-benchmark.yml"
+  schedule:
+    - cron: "41 4 * * 0"
+
+permissions:
+  contents: read
+
+jobs:
+  production-benchmark:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    env:
+      CODECORTEX_SOURCE_ROOT: ${{ github.workspace }}
+      CODECORTEX_BACKENDS: builtin
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install tooling
+        run: |
+          python -m pip install --upgrade pip uv
+          pip install -e ".[dev]"
+      - name: Run benchmark matrix
+        run: python scripts/run_production_benchmark.py --output benchmark-results.json
+      - name: Publish benchmark summary
+        run: |
+          python - <<'PY' >> "$GITHUB_STEP_SUMMARY"
+          import json
+          p=json.load(open('benchmark-results.json', encoding='utf-8'))
+          print('# CodeCortex production benchmark')
+          print('| Scenario | Completed | Success | Avg ms | Avg est. tokens |')
+          print('|---|---:|---:|---:|---:|')
+          for name,row in p.get('summary',{}).items():
+              print(f"| {name} | {row.get('completed')} | {row.get('success_rate')} | {row.get('avg_wall_time_ms')} | {row.get('avg_estimated_context_tokens')} |")
+          PY
+      - uses: actions/upload-artifact@v7
+        with:
+          name: codecortex-production-benchmark-${{ github.sha }}
+          path: benchmark-results.json
+          if-no-files-found: error
+          retention-days: 90

@@ -1,0 +1,16 @@
+.git
+.github
+.codecortex
+.venv
+venv
+__pycache__
+*.pyc
+*.pyo
+.pytest_cache
+.mypy_cache
+.ruff_cache
+build
+dist
+*.egg-info
+benchmarks/production/results.json
+benchmarks/production/agent-results.json

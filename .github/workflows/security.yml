@@ -1,0 +1,49 @@
+name: Security
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+  schedule:
+    - cron: "29 3 * * 3"
+
+permissions:
+  contents: read
+
+jobs:
+  python-security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - name: Install package and security tooling
+        run: pip install -e ".[dev,security]"
+      - name: Dependency vulnerability audit
+        run: pip-audit
+      - name: Static security analysis
+        run: bandit -q -r src -x tests -ll
+      - name: Security boundary tests
+        run: pytest -q tests/test_security_boundaries.py tests/test_task_trace.py tests/test_agent_configurator.py
+      - name: Generate CycloneDX SBOM
+        run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
+      - uses: actions/upload-artifact@v7
+        with:
+          name: codecortex-sbom-${{ github.sha }}
+          path: sbom.cdx.json
+          retention-days: 90
+
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v7
+      - uses: actions/dependency-review-action@v4
+        with:
+          fail-on-severity: high
