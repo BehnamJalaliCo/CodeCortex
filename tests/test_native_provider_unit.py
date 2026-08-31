@@ -17,8 +17,8 @@ class Node:
     end_byte: int
     start_point: Point
     end_point: Point
-    children: list["Node"] = field(default_factory=list)
-    fields: dict[str, "Node"] = field(default_factory=dict)
+    children: list[Node] = field(default_factory=list)
+    fields: dict[str, Node] = field(default_factory=dict)
 
     def child_by_field_name(self, name: str):
         return self.fields.get(name)
@@ -79,11 +79,8 @@ def test_parse_native_tree_and_helpers() -> None:
     root = Node("module", 0, len(source), Point(0), Point(2), children=[klass])
 
     provider = object.__new__(TreeSitterParserProvider)
-    provider._get_parser = lambda alias: Parser(root)
-    units = provider.parse("python" if "python" in provider.aliases else "javascript", source)
-    if not units:
-        provider.aliases = {**provider.aliases, "test": "test"}
-        units = provider.parse("test", source)
+    provider._get_parser = lambda _alias: Parser(root)
+    units = provider.parse("javascript", source)
 
     names = {unit.name for unit in units}
     assert {"Service", "run"} <= names
@@ -93,10 +90,12 @@ def test_parse_native_tree_and_helpers() -> None:
     assert "run" in service.references or "helper" in service.references
 
     nameless = Node("class_definition", 0, 5, Point(0), Point(0))
-    provider._get_parser = lambda _alias: Parser(Node("module", 0, 5, Point(0), Point(0), children=[nameless]))
+    provider._get_parser = lambda _alias: Parser(
+        Node("module", 0, 5, Point(0), Point(0), children=[nameless])
+    )
     provider.aliases = {**provider.aliases, "test": "test"}
     assert provider.parse("test", "class") == []
 
 
-def test_available_and_init_error(monkeypatch) -> None:
+def test_available() -> None:
     assert isinstance(TreeSitterParserProvider.available(), bool)
