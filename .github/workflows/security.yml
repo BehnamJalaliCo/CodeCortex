@@ -1,0 +1,21 @@
+name: Security
+
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: "29 3 * * 3"
+
+permissions:
+  contents: read
+
+jobs:
+  audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+      - run: python -m pip install --upgrade pip pip-audit
+      - run: pip install .
+      - run: pip-audit

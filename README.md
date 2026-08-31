@@ -1,189 +1,179 @@
-# CodeCortex
+# CodeCortex 🧠
 
-**The context intelligence layer for AI coding agents.**
+### The context intelligence layer for AI coding agents.
 
-CodeCortex gives coding agents a persistent, queryable model of a software project: symbols, dependency relationships, architecture, history, project memory, change impact and compact task-specific context.
+CodeCortex gives coding agents a unified view of repository architecture, symbols, dependencies, history, impact, memory, and compact task-specific context through one MCP surface.
 
-Instead of repeatedly reading large parts of a repository, an agent can ask CodeCortex for the smallest useful slice of project intelligence and keep the result inside a controlled context budget.
+**Map. Understand. Edit. Compress. Remember.**
 
-## Highlights
+> Alpha software. The architecture is usable today, but public performance claims are only published after reproducible benchmark runs.
 
-- Incremental repository and knowledge-graph indexing
-- Multi-language symbol and type intelligence
-- Confidence-scored cross-file call and dependency resolution
-- Hybrid semantic, lexical and structural retrieval
-- Change-impact analysis and affected-test discovery
-- Git history, symbol blame and ownership intelligence
-- Architecture inference and architecture-drift detection
-- Pull-request risk intelligence
-- Local project memory and revisioned shared team memory
-- Federated multi-repository workspaces
-- Query-aware context ranking, deduplication and token budgeting
-- Agent task traces with local observability and sensitive-field redaction
-- Native MCP stdio server with structured tools
-- Reproducible benchmarks, benchmark history and regression gates
-- Agent-neutral external evaluation suites
+## Why CodeCortex
 
-## Quick start
+Large codebases make agents spend too much context rediscovering structure, reading irrelevant files, and rebuilding knowledge between tasks. CodeCortex sits between the agent and the repository and routes each request to the right intelligence capability.
+
+```text
+Coding Agent
+    │
+    ▼
+CodeCortex MCP / Gateway
+    │
+    ├── Adaptive Router
+    ├── Repository Intelligence
+    ├── Symbol Intelligence
+    ├── Context Intelligence
+    ├── Unified Memory
+    ├── Git + PR Intelligence
+    └── Validation + Tracing
+```
+
+The orchestration, routing, stable backend contracts, unified memory, multi-repository workspace, change intelligence, traces, evaluation, and product integration are CodeCortex-owned layers. Optional mature engines are revision-pinned, isolated from the Core dependency graph, and documented in `THIRD_PARTY_NOTICES.md`.
+
+## Install
+
+Python 3.11–3.13 is supported.
+
+```bash
+uv tool install git+https://github.com/BehnamJalaliCo/CodeCortex.git
+```
+
+Initialize the current repository:
+
+```bash
+cortex init .
+```
+
+For the complete intelligence stack and detected agent configuration:
+
+```bash
+cortex bootstrap
+```
+
+Or manage pieces explicitly:
+
+```bash
+cortex backend list
+cortex backend install all
+cortex backend doctor
+cortex agents detect
+cortex agents configure
+```
+
+Backend environments are isolated and pinned to exact revisions, so their dependency trees do not contaminate the CodeCortex Core environment.
+
+## Agent integration
+
+CodeCortex exposes a single MCP server:
+
+```bash
+cortex mcp --path /path/to/repository
+```
+
+`cortex agents configure` performs merge-safe project configuration for supported coding agents. Existing JSON/TOML settings are preserved; modified files receive backups, invalid configs are refused rather than overwritten, and an existing unmanaged Codex server entry is never silently replaced.
+
+The agent sees CodeCortex tools such as repository mapping, symbol discovery, dependency analysis, semantic search, impact analysis, context construction, architecture inference, project/team memory, PR intelligence, trace summaries, validation, and runtime stats.
+
+## Core commands
+
+```bash
+cortex index
+cortex semantic "authentication refresh"
+cortex impact AuthService
+cortex architecture
+cortex architecture-drift
+cortex symbol-history src/auth.py 10 80
+cortex pr main --head HEAD
+cortex workspace-add backend ../backend
+cortex workspace-search "payment service"
+cortex benchmark
+cortex dashboard
+cortex doctor
+```
+
+## Real repository benchmarks
+
+The production benchmark uses immutable revisions of real repositories and compares five scenarios:
+
+```text
+vanilla
+repository intelligence only
+symbol intelligence only
+vanilla + context optimization
+full CodeCortex stack
+```
+
+Run it with:
+
+```bash
+python scripts/run_production_benchmark.py --provision
+```
+
+For a real coding agent with provider-reported usage and cost:
+
+```bash
+python scripts/run_agent_matrix.py --command "./my-instrumented-agent"
+```
+
+The benchmark never invents missing token, file-read, or cost values. Generated result artifacts are not treated as published evidence until they come from a reproducible run. See `benchmarks/production/README.md`.
+
+## Docker
+
+Core image:
+
+```bash
+docker build --target core -t codecortex:core .
+```
+
+Full backend image:
+
+```bash
+docker build --target full -t codecortex:full .
+```
+
+Dashboard:
+
+```bash
+docker compose up dashboard
+```
+
+## Reliability
+
+CodeCortex uses three test rings:
+
+- Core CI across supported Python versions.
+- Adapter conformance against exact backend revisions.
+- Scheduled upstream regression suites.
+
+Release smoke tests run on Linux, macOS, and Windows. The repository also includes a scheduled dependency security audit and automated dependency update configuration.
+
+## Development
 
 ```bash
 git clone https://github.com/BehnamJalaliCo/CodeCortex.git
 cd CodeCortex
 python -m venv .venv
-source .venv/bin/activate
-pip install -e .
-```
-
-Initialize any project:
-
-```bash
-cortex init /path/to/project
-cortex doctor -p /path/to/project
-```
-
-Ask for project intelligence:
-
-```bash
-cortex run "Find the authentication refresh path" -p /path/to/project
-cortex impact AuthService -p /path/to/project
-cortex semantic "where is session rotation handled?" -p /path/to/project
-```
-
-Run the MCP server:
-
-```bash
-cortex mcp -p /path/to/project
-```
-
-## Architecture
-
-```text
-Coding Agent / MCP Host / CLI
-             |
-             v
-+---------------------------+
-|     CodeCortex Gateway    |
-+-------------+-------------+
-              |
-              v
-+---------------------------+
-|      Adaptive Router      |
-+-------------+-------------+
-              |
-      +-------+--------+------------------+
-      |                |                  |
-      v                v                  v
- Repository         Symbols          Project Memory
- Intelligence     & Types           & Team Memory
-      |                |                  |
-      +-------+--------+------------------+
-              |
-              v
-+---------------------------+
-|  Knowledge + Change Graph |
-| calls / imports / impact  |
-+-------------+-------------+
-              |
-      +-------+---------+----------------+
-      |                 |                |
-      v                 v                v
- Semantic          Architecture      Git / PR
- Retrieval         Intelligence      Intelligence
-      |                 |                |
-      +-------+---------+----------------+
-              |
-              v
-+---------------------------+
-|      Context Pipeline     |
-| rank -> dedup -> fit      |
-+-------------+-------------+
-              |
-              v
-+---------------------------+
-| Orchestrator + Task Trace |
-+---------------------------+
-```
-
-More detail is available in [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) and [`docs/ADVANCED_INTELLIGENCE.md`](docs/ADVANCED_INTELLIGENCE.md).
-
-## CLI
-
-```text
-cortex init
-cortex index
-cortex doctor
-cortex route
-cortex run
-cortex semantic
-cortex impact
-cortex history
-cortex symbol-history
-cortex architecture
-cortex architecture-baseline
-cortex architecture-drift
-cortex pr
-cortex remember
-cortex team-remember
-cortex team-search
-cortex workspace-add
-cortex workspace-search
-cortex trace-summary
-cortex stats
-cortex dashboard
-cortex benchmark
-cortex benchmark-gate
-cortex evaluate
-cortex mcp
-```
-
-## Semantic retrieval
-
-The default semantic provider is local and deterministic. No external service is required. For the optional neural provider:
-
-```bash
-pip install -e ".[semantic]"
-```
-
-## Project state
-
-Runtime state is project-local:
-
-```text
-.codecortex/
-├── index/
-│   ├── manifest.json
-│   ├── graph.json
-│   └── semantic.json
-├── architecture/
-│   └── baseline.json
-├── memory/
-│   └── team.sqlite3
-├── benchmarks/
-│   └── history.json
-├── runtime/
-│   ├── events.jsonl
-│   └── traces.jsonl
-└── workspace.json
-```
-
-The `.codecortex/` directory is ignored by Git by default.
-
-## Development
-
-```bash
+. .venv/bin/activate
 pip install -e ".[dev]"
 ruff check .
 pytest -q
 ```
 
-CI runs against Python 3.11, 3.12 and 3.13.
+Run the deterministic demo:
 
-## Benchmarks
+```bash
+python scripts/demo.py
+```
 
-CodeCortex does not hard-code performance claims. Benchmark and evaluation results are generated from actual runs and can be persisted locally. Regression gates can fail when success/recall degrade or resource use exceeds configured thresholds.
+## Project docs
 
-## Status
+- `docs/ARCHITECTURE.md` — core architecture.
+- `docs/ADVANCED_INTELLIGENCE.md` — deeper intelligence layers.
+- `docs/TESTING.md` — test rings and compatibility policy.
+- `docs/RELEASE.md` — release process.
+- `ROADMAP.md` — future work.
+- `SECURITY.md` — security reporting.
+- `THIRD_PARTY_NOTICES.md` — optional backend licensing and attribution.
 
-The core intelligence and agent-workflow layers are implemented. Current work is focused on production hardening, scale, additional provider integrations and release quality.
+## License
 
-See [`ROADMAP.md`](ROADMAP.md) for the current plan.
+CodeCortex is licensed under Apache-2.0. Optional backend software remains under its respective upstream license; see `THIRD_PARTY_NOTICES.md`.

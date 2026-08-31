@@ -1,5 +1,5 @@
 [build-system]
-requires = ["hatchling>=1.25"]
+requires = ["hatchling>=1.27"]
 build-backend = "hatchling.build"
 
 [project]
@@ -9,11 +9,40 @@ description = "Context intelligence and orchestration for AI coding agents"
 readme = "README.md"
 requires-python = ">=3.11"
 authors = [{ name = "Behnam Jalali" }]
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
+keywords = [
+  "ai-agents",
+  "coding-agents",
+  "mcp",
+  "knowledge-graph",
+  "code-intelligence",
+  "context-engineering",
+  "developer-tools",
+]
+classifiers = [
+  "Development Status :: 3 - Alpha",
+  "Environment :: Console",
+  "Intended Audience :: Developers",
+  "Operating System :: OS Independent",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: Python :: 3.11",
+  "Programming Language :: Python :: 3.12",
+  "Programming Language :: Python :: 3.13",
+  "Topic :: Software Development :: Libraries :: Python Modules",
+  "Topic :: Software Development :: Quality Assurance",
+]
 dependencies = [
   "pydantic>=2.8,<3",
   "typer>=0.12,<1",
   "rich>=13.7,<15",
 ]
+
+[project.urls]
+Homepage = "https://github.com/BehnamJalaliCo/CodeCortex"
+Repository = "https://github.com/BehnamJalaliCo/CodeCortex"
+Issues = "https://github.com/BehnamJalaliCo/CodeCortex/issues"
+Changelog = "https://github.com/BehnamJalaliCo/CodeCortex/blob/main/CHANGELOG.md"
 
 [project.optional-dependencies]
 semantic = [
@@ -24,11 +53,13 @@ dev = [
   "pytest-asyncio>=0.23,<1",
   "ruff>=0.6,<1",
   "mypy>=1.11,<2",
+  "build>=1.2,<2",
+  "twine>=6,<7",
 ]
 
 [project.scripts]
-codecortex = "codecortex.cli:app"
-cortex = "codecortex.cli:app"
+codecortex = "codecortex.entrypoint:app"
+cortex = "codecortex.entrypoint:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codecortex"]
