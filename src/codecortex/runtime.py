@@ -32,11 +32,11 @@ class CortexRuntime:
 
 
 def build_runtime(project_root: Path | None = None) -> CortexRuntime:
-    config = CortexConfig(project_root=(project_root or Path.cwd()).resolve())
+    config = CortexConfig.load(project_root)
     config.ensure_directories()
     memory = JsonMemoryStore(config.memory_dir)
     stack = build_backend_stack(config, memory)
-    router = AdaptiveRouter(default_budget=config.default_context_budget)
+    router = AdaptiveRouter(default_budget=config.validate_budget(config.default_context_budget))
     telemetry = TelemetryCollector(
         enabled=config.telemetry_enabled,
         log_path=config.state_dir / "runtime" / "events.jsonl",
