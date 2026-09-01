@@ -93,7 +93,7 @@ class ContextPipeline:
     def _fingerprint(chunk: ContextChunk) -> str:
         normalized = " ".join(chunk.content.lower().split())
         provenance = str(chunk.metadata.get("path") or chunk.source)
-        return hashlib.blake2b(f"{provenance}\n{normalized}".encode("utf-8"), digest_size=12).hexdigest()
+        return hashlib.blake2b(f"{provenance}\n{normalized}".encode(), digest_size=12).hexdigest()
 
     def _graph_revision(self) -> str:
         if self.graph is None:
