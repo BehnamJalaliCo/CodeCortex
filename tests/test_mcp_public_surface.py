@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from codecortex.architecture import ArchitectureDriftDetector
-from codecortex.mcp.server import MCPApplication, MCPServer
+from codecortex.mcp.server import PROTOCOL_VERSION, MCPApplication, MCPServer
 from codecortex.memory import TeamMemoryStore
 from codecortex.runtime import build_runtime
 from codecortex.workspace import MultiRepositoryWorkspace
@@ -109,8 +109,15 @@ async def test_mcp_dispatch_protocol(tmp_path: Path) -> None:
     server = MCPServer(MCPApplication(build_runtime(root)))
 
     assert await server.dispatch({"method": "ping"}) is None
-    discovered = await server.dispatch({"jsonrpc": "2.0", "id": 1, "method": "initialize"})
-    assert discovered and discovered["result"]["protocolVersion"]
+    discovered = await server.dispatch(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {"protocolVersion": PROTOCOL_VERSION},
+        }
+    )
+    assert discovered and discovered["result"]["protocolVersion"] == PROTOCOL_VERSION
     pong = await server.dispatch({"jsonrpc": "2.0", "id": 2, "method": "ping"})
     assert pong == {"jsonrpc": "2.0", "id": 2, "result": {}}
     listed = await server.dispatch({"jsonrpc": "2.0", "id": 3, "method": "tools/list"})

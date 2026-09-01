@@ -23,6 +23,7 @@ class ParsedUnit:
     modifiers: tuple[str, ...] = ()
     references: tuple[str, ...] = ()
     annotations: dict[str, str] = field(default_factory=dict)
+    container: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -33,11 +34,11 @@ class LanguageSpec:
 
 
 class LanguageRegistry:
-    """Use precise Python AST, optional Tree-sitter grammars, then conservative fallback."""
+    """Use Python AST, optional Tree-sitter grammars, then structural fallback."""
 
     _SPECS = (
         LanguageSpec("python", (".py",), "python_ast"),
-        LanguageSpec("typescript", (".ts", ".tsx"), "native"),
+        LanguageSpec("typescript", (".ts", ".tsx", ".mts", ".cts"), "native"),
         LanguageSpec("javascript", (".js", ".jsx", ".mjs", ".cjs"), "native"),
         LanguageSpec("go", (".go",), "native"),
         LanguageSpec("rust", (".rs",), "native"),
@@ -50,11 +51,11 @@ class LanguageRegistry:
     )
 
     def __init__(self, *, native: bool = True) -> None:
-        self.native = (
-            TreeSitterParserProvider()
-            if native and TreeSitterParserProvider.available()
-            else None
-        )
+        self.native = TreeSitterParserProvider() if native and TreeSitterParserProvider.available() else None
+
+    @property
+    def suffixes(self) -> frozenset[str]:
+        return frozenset(suffix for spec in self._SPECS for suffix in spec.suffixes)
 
     def language_for(self, path: Path) -> LanguageSpec | None:
         suffix = path.suffix.lower()
@@ -93,8 +94,10 @@ class LanguageRegistry:
         except SyntaxError:
             return []
         units: list[ParsedUnit] = []
-        for node in ast.walk(tree):
-            if isinstance(node, ast.ClassDef):
+        containers: list[str] = []
+
+        class Visitor(ast.NodeVisitor):
+            def visit_ClassDef(self, node: ast.ClassDef) -> None:
                 units.append(
                     ParsedUnit(
                         name=node.name,
@@ -106,9 +109,14 @@ class LanguageRegistry:
                             getattr(item, "name", ast.unparse(item))
                             for item in getattr(node, "type_params", [])
                         ),
+                        container="::".join(containers) or None,
                     )
                 )
-            elif isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+                containers.append(node.name)
+                self.generic_visit(node)
+                containers.pop()
+
+            def _function(self, node: ast.FunctionDef | ast.AsyncFunctionDef) -> None:
                 args = [arg.arg for arg in node.args.posonlyargs + node.args.args]
                 args.extend(f"*{arg.arg}" for arg in node.args.kwonlyargs)
                 if node.args.vararg:
@@ -120,14 +128,15 @@ class LanguageRegistry:
                     for child in ast.walk(node)
                     if isinstance(child, ast.Name) and isinstance(child.ctx, ast.Load)
                 )
+                container = "::".join(containers) or None
+                if container:
+                    kind = "method"
+                else:
+                    kind = "async_function" if isinstance(node, ast.AsyncFunctionDef) else "function"
                 units.append(
                     ParsedUnit(
                         name=node.name,
-                        kind=(
-                            "async_function"
-                            if isinstance(node, ast.AsyncFunctionDef)
-                            else "function"
-                        ),
+                        kind=kind,
                         line=node.lineno,
                         end_line=getattr(node, "end_lineno", None),
                         signature=f"({', '.join(args)})",
@@ -138,8 +147,20 @@ class LanguageRegistry:
                             for arg in node.args.posonlyargs + node.args.args
                             if arg.annotation is not None
                         },
+                        container=container,
                     )
                 )
+                containers.append(node.name)
+                self.generic_visit(node)
+                containers.pop()
+
+            def visit_FunctionDef(self, node: ast.FunctionDef) -> None:
+                self._function(node)
+
+            def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+                self._function(node)
+
+        Visitor().visit(tree)
         return units
 
     def _parse_structural(self, language: str, source: str) -> list[ParsedUnit]:
@@ -166,9 +187,7 @@ class LanguageRegistry:
                         return_type=match.groupdict().get("return"),
                         bases=bases,
                         modifiers=tuple(
-                            item
-                            for item in (match.groupdict().get("mods") or "").split()
-                            if item
+                            item for item in (match.groupdict().get("mods") or "").split() if item
                         ),
                     )
                 )
@@ -200,17 +219,8 @@ class LanguageRegistry:
         if language == "ruby":
             return (("class", ruby_class), ("function", function_keyword))
         if language in {"typescript", "javascript"}:
-            return (
-                ("class", common_class),
-                ("function", function_keyword),
-                ("function", arrow),
-                ("function", c_like_function),
-            )
-        return (
-            ("class", common_class),
-            ("function", function_keyword),
-            ("function", c_like_function),
-        )
+            return (("class", common_class), ("function", function_keyword), ("function", arrow), ("function", c_like_function))
+        return (("class", common_class), ("function", function_keyword), ("function", c_like_function))
 
     def resolve_types(self, units: list[ParsedUnit]) -> dict[str, set[str]]:
         names = {unit.name for unit in units}
@@ -220,13 +230,9 @@ class LanguageRegistry:
             candidates.update(unit.annotations.values())
             if unit.return_type:
                 candidates.add(unit.return_type)
-            matches = {
+            resolved[unit.name] = {
                 name
                 for name in names
-                if any(
-                    re.search(rf"\b{re.escape(name)}\b", candidate)
-                    for candidate in candidates
-                )
+                if any(re.search(rf"\b{re.escape(name)}\b", candidate) for candidate in candidates)
             }
-            resolved[unit.name] = matches
         return resolved

@@ -20,7 +20,7 @@ async def test_context_processor_respects_budget() -> None:
 
 
 @pytest.mark.asyncio
-async def test_context_processor_deduplicates_content() -> None:
+async def test_context_processor_preserves_distinct_provenance() -> None:
     processor = BudgetContextProcessor()
     chunks = [
         ContextChunk(source="a", content="same content", tokens=20, relevance=0.5),
@@ -29,8 +29,9 @@ async def test_context_processor_deduplicates_content() -> None:
 
     result = await processor.fit(chunks, budget=100)
 
-    assert len(result) == 1
+    assert len(result) == 2
     assert result[0].source == "b"
+    assert {chunk.source for chunk in result} == {"a", "b"}
 
 
 @pytest.mark.asyncio

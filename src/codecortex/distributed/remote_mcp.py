@@ -10,6 +10,7 @@ import json
 import ssl
 import threading
 import time
+import uuid
 from collections import defaultdict, deque
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
@@ -19,7 +20,8 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-ToolDispatcher = Callable[[str, dict[str, Any]], dict[str, Any] | Awaitable[dict[str, Any]]]
+ToolDispatcher = Callable[..., dict[str, Any] | Awaitable[dict[str, Any]]]
+PolicyAuthorizer = Callable[[str, str], bool]
 
 
 @dataclass(frozen=True, slots=True)
@@ -34,20 +36,20 @@ class RemoteMCPSettings:
     def __post_init__(self) -> None:
         if not 0 <= self.port <= 65535:
             raise ValueError("port must be between 0 and 65535")
-        if self.max_requests_per_minute < 1:
-            raise ValueError("max_requests_per_minute must be positive")
+        if self.max_requests_per_minute < 1 or self.max_body_bytes < 1:
+            raise ValueError("quota and body limit must be positive")
         if bool(self.tls_cert) != bool(self.tls_key):
             raise ValueError("tls_cert and tls_key must be configured together")
 
 
 class BearerTokenAuthenticator:
-    """Constant-time bearer-token authentication without retaining plaintext tokens."""
+    """Authenticate bearer tokens in constant time without storing plaintext tokens."""
 
     def __init__(self, tokens: dict[str, str]) -> None:
         if not tokens:
             raise ValueError("at least one principal token is required")
         self._digests = {
-            hashlib.sha256(token.encode("utf-8")).digest(): principal
+            hashlib.sha256(token.encode()).digest(): principal
             for principal, token in tokens.items()
             if principal.strip() and token
         }
@@ -57,7 +59,7 @@ class BearerTokenAuthenticator:
     def authenticate(self, authorization: str | None) -> str | None:
         if not authorization or not authorization.startswith("Bearer "):
             return None
-        candidate = hashlib.sha256(authorization[7:].encode("utf-8")).digest()
+        candidate = hashlib.sha256(authorization[7:].encode()).digest()
         for digest, principal in self._digests.items():
             if hmac.compare_digest(candidate, digest):
                 return principal
@@ -66,19 +68,30 @@ class BearerTokenAuthenticator:
 
 @dataclass(frozen=True, slots=True)
 class RemoteAccessPolicy:
-    """Per-principal allow lists plus global deny rules."""
-
     allowed_tools: dict[str, frozenset[str]] = field(default_factory=dict)
     denied_tools: frozenset[str] = frozenset()
+    mutating_tools: frozenset[str] = frozenset()
+    mutation_principals: frozenset[str] = frozenset()
+    authorizer: PolicyAuthorizer | None = None
     default_allow: bool = False
 
     def allows(self, principal: str, tool: str) -> bool:
         if tool in self.denied_tools:
             return False
+        if tool in self.mutating_tools and principal not in self.mutation_principals:
+            return False
         allowed = self.allowed_tools.get(principal)
-        if allowed is None:
-            return self.default_allow
-        return "*" in allowed or tool in allowed
+        static_allowed = (
+            self.default_allow if allowed is None else "*" in allowed or tool in allowed
+        )
+        if not static_allowed:
+            return False
+        if self.authorizer is None:
+            return True
+        try:
+            return bool(self.authorizer(principal, tool))
+        except Exception:
+            return False
 
 
 class _SlidingWindowQuota:
@@ -102,8 +115,6 @@ class _SlidingWindowQuota:
 
 
 class RemoteMCPServer:
-    """Small hosted transport for exposing a CodeCortex tool dispatcher over HTTPS."""
-
     def __init__(
         self,
         dispatcher: ToolDispatcher,
@@ -126,8 +137,23 @@ class RemoteMCPServer:
         host, port = self._server.server_address[:2]
         return str(host), int(port)
 
+    def _dispatch(self, tool: str, arguments: dict[str, Any], principal: str) -> Any:
+        try:
+            parameters = inspect.signature(self.dispatcher).parameters
+        except (TypeError, ValueError):
+            parameters = {}
+        if len(parameters) >= 3:
+            result = self.dispatcher(tool, arguments, principal)
+        else:
+            result = self.dispatcher(tool, arguments)
+        if inspect.isawaitable(result):
+            return asyncio.run(result)
+        return result
+
     def handle_call(
-        self, authorization: str | None, payload: dict[str, Any]
+        self,
+        authorization: str | None,
+        payload: dict[str, Any],
     ) -> tuple[int, dict[str, Any]]:
         principal = self.authenticator.authenticate(authorization)
         if principal is None:
@@ -143,14 +169,12 @@ class RemoteMCPServer:
         if not self._quota.acquire(principal):
             return 429, {"error": "quota_exceeded"}
         try:
-            result = self.dispatcher(tool, arguments)
-            if inspect.isawaitable(result):
-                result = asyncio.run(result)
+            result = self._dispatch(tool, arguments, principal)
             if not isinstance(result, dict):
                 result = {"result": result}
             return 200, {"result": result, "principal": principal}
-        except Exception as exc:  # pragma: no cover - integration boundary
-            return 500, {"error": "tool_failure", "detail": str(exc)}
+        except Exception:  # pragma: no cover - integration boundary
+            return 500, {"error": "tool_failure", "error_id": uuid.uuid4().hex}
 
     def start(self, *, background: bool = True) -> tuple[str, int]:
         if self._server is not None:
@@ -161,10 +185,10 @@ class RemoteMCPServer:
             server_version = "CodeCortexRemoteMCP/1"
 
             def do_GET(self) -> None:  # noqa: N802
-                if self.path != "/health":
-                    self._write(404, {"error": "not_found"})
+                if self.path == "/health":
+                    self._write(200, {"status": "ok"})
                     return
-                self._write(200, {"status": "ok"})
+                self._write(404, {"error": "not_found"})
 
             def do_POST(self) -> None:  # noqa: N802
                 if self.path != "/mcp":
@@ -192,7 +216,7 @@ class RemoteMCPServer:
                 self._write(status, response)
 
             def _write(self, status: int, payload: dict[str, Any]) -> None:
-                body = json.dumps(payload, sort_keys=True).encode("utf-8")
+                body = json.dumps(payload, sort_keys=True).encode()
                 self.send_response(status)
                 self.send_header("Content-Type", "application/json")
                 self.send_header("Content-Length", str(len(body)))
@@ -258,8 +282,12 @@ class RemoteMCPClient:
         self.timeout_seconds = timeout_seconds
         self.ssl_context = ssl_context
 
-    def call(self, tool: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
-        body = json.dumps({"tool": tool, "arguments": arguments or {}}).encode("utf-8")
+    def call(
+        self,
+        tool: str,
+        arguments: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        body = json.dumps({"tool": tool, "arguments": arguments or {}}).encode()
         request = Request(
             f"{self.base_url}/mcp",
             data=body,
@@ -270,9 +298,10 @@ class RemoteMCPClient:
             },
         )
         try:
-            # base_url is constrained to HTTP(S) during initialization.
             with urlopen(  # nosec B310
-                request, timeout=self.timeout_seconds, context=self.ssl_context
+                request,
+                timeout=self.timeout_seconds,
+                context=self.ssl_context,
             ) as response:
                 payload = json.loads(response.read())
         except HTTPError as exc:
@@ -280,7 +309,9 @@ class RemoteMCPClient:
                 detail = json.loads(exc.read())
             except json.JSONDecodeError:
                 detail = {"error": "http_error"}
-            raise RuntimeError(f"remote MCP request failed ({exc.code}): {detail}") from exc
+            raise RuntimeError(
+                f"remote MCP request failed ({exc.code}): {detail}"
+            ) from exc
         if not isinstance(payload, dict):
             raise RuntimeError("remote MCP response must be an object")
         result = payload.get("result", {})

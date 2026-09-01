@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from codecortex.context.slicing import AstContextSlicer
 from codecortex.indexing.graph import ProjectGraph
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.retrieval.hybrid import HybridRetriever, RetrievalHit
@@ -24,12 +25,19 @@ class RepositorySemanticIndex:
         self.index_path = index_path or self.root / ".codecortex" / "index" / "semantic.json"
         self.index = SemanticIndex(self.provider, self.index_path)
         self.max_snippet_chars = max_snippet_chars
+        self.slicer = AstContextSlicer(self.root)
 
     def refresh(self, graph: ProjectGraph | None = None) -> int:
         graph = graph or IncrementalGraphIndex(self.root).refresh()[0]
         documents = [self._document(node, graph) for node in graph.nodes]
         filtered = [document for document in documents if document is not None]
-        self.index.replace(filtered)
+        current = {document.id: document for document in filtered}
+        removed = self.index.document_ids - set(current)
+        if removed:
+            self.index.delete(removed)
+        changed = [document for document in filtered if self.index.document(document.id) != document]
+        if changed:
+            self.index.upsert(changed)
         return len(filtered)
 
     def search(self, query: str, limit: int = 20) -> list[RetrievalHit]:
@@ -47,11 +55,18 @@ class RepositorySemanticIndex:
             "line": node.line or 0,
         }
         structural = self._structural_context(node.id, graph)
+        snippet = ""
         if node.path:
-            path = self.root / node.path
-            snippet = self._snippet(path, node.line)
-        else:
-            snippet = ""
+            source_path = self.root / node.path
+            if node.kind == "file":
+                snippet = self._snippet(source_path, None)
+            else:
+                snippet = self.slicer.slice_symbol(
+                    source_path,
+                    node.name,
+                    node.line,
+                    max_tokens=max(128, self.max_snippet_chars // 4),
+                )
         text = "\n".join(
             part
             for part in (
@@ -72,9 +87,7 @@ class RepositorySemanticIndex:
         if line is None:
             return source[: self.max_snippet_chars]
         lines = source.splitlines()
-        start = max(0, line - 8)
-        end = min(len(lines), line + 20)
-        return "\n".join(lines[start:end])[: self.max_snippet_chars]
+        return "\n".join(lines[max(0, line - 8) : min(len(lines), line + 20)])[: self.max_snippet_chars]
 
     @staticmethod
     def _structural_context(node_id: str, graph: ProjectGraph) -> str:

@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
-import json
 from pathlib import Path
 from typing import Any
 
 from pydantic import BaseModel, Field
+
+from codecortex.state import AtomicJsonFile
 
 
 class GraphNode(BaseModel):
@@ -31,9 +32,8 @@ class ProjectGraph(BaseModel):
 
     @classmethod
     def load(cls, path: Path) -> ProjectGraph:
-        try:
-            payload = json.loads(path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError, ValueError):
+        payload = AtomicJsonFile(path).read({})
+        if not isinstance(payload, dict):
             return cls()
         try:
             return cls.model_validate(payload)
@@ -41,13 +41,7 @@ class ProjectGraph(BaseModel):
             return cls()
 
     def save(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        temp = path.with_suffix(path.suffix + ".tmp")
-        temp.write_text(
-            json.dumps(self.model_dump(mode="json"), ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        temp.replace(path)
+        AtomicJsonFile(path).write(self.model_dump(mode="json"))
 
     def search(self, query: str, limit: int = 40) -> list[GraphNode]:
         terms = {
@@ -66,7 +60,7 @@ class ProjectGraph(BaseModel):
             if score:
                 scored.append((score, node))
         scored.sort(key=lambda item: (-item[0], item[1].kind, item[1].name))
-        return [node for _, node in scored[:limit]]
+        return [node for _, node in scored[: max(1, limit)]]
 
     def counts(self) -> dict[str, int]:
         result: dict[str, int] = {}

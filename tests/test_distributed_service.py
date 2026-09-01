@@ -50,10 +50,17 @@ async def test_distributed_mcp_sync_and_worker_tools(tmp_path: Path) -> None:
     assert task.status == "queued"
     claimed = await application.call("cortex_worker_claim", {"node_id": "worker-1"})
     assert claimed["task"]["task_id"] == "job-1"
+    lease_token = claimed["task"]["lease_token"]
+    assert lease_token
     empty = await application.call("cortex_worker_claim", {"node_id": "worker-1"})
     assert empty == {"task": None}
     completed = await application.call(
         "cortex_worker_complete",
-        {"node_id": "worker-1", "task_id": "job-1", "result": {"files": 10}},
+        {
+            "node_id": "worker-1",
+            "task_id": "job-1",
+            "lease_token": lease_token,
+            "result": {"files": 10},
+        },
     )
     assert completed == {"task_id": "job-1", "status": "completed"}

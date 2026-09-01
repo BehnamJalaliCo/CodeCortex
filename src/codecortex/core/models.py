@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import uuid
 from enum import StrEnum
 from typing import Any
 
@@ -47,6 +48,7 @@ class RoutePlan(BaseModel):
 
 
 class ContextChunk(BaseModel):
+    chunk_id: str = Field(default_factory=lambda: uuid.uuid4().hex, min_length=1)
     source: str
     content: str
     tokens: int = Field(ge=0)
