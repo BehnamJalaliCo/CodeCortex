@@ -6,7 +6,7 @@ from pathlib import Path
 import pytest
 
 from codecortex.architecture import ArchitectureDriftDetector
-from codecortex.mcp.server import MCPApplication, MCPServer, PROTOCOL_VERSION
+from codecortex.mcp.server import PROTOCOL_VERSION, MCPApplication, MCPServer
 from codecortex.memory import TeamMemoryStore
 from codecortex.runtime import build_runtime
 from codecortex.workspace import MultiRepositoryWorkspace
