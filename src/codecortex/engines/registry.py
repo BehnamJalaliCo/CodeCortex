@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+
 from codecortex.core.contracts import Engine
 from codecortex.core.models import Capability
 
@@ -19,8 +21,15 @@ class EngineRegistry:
     def capabilities(self) -> list[Capability]:
         return list(self._engines)
 
-    async def health(self) -> dict[Capability, bool]:
-        result: dict[Capability, bool] = {}
-        for capability, engine in self._engines.items():
-            result[capability] = await engine.health()
-        return result
+    async def health(self, timeout_seconds: float = 5.0) -> dict[Capability, bool]:
+        async def probe(engine: Engine) -> bool:
+            try:
+                return bool(await asyncio.wait_for(engine.health(), timeout=timeout_seconds))
+            except asyncio.CancelledError:
+                raise
+            except Exception:
+                return False
+
+        pairs = list(self._engines.items())
+        values = await asyncio.gather(*(probe(engine) for _, engine in pairs))
+        return {capability: status for (capability, _), status in zip(pairs, values, strict=True)}

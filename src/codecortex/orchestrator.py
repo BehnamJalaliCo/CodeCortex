@@ -1,8 +1,9 @@
-"""Core request orchestration."""
+"""Core request orchestration with bounded engine execution."""
 
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from time import perf_counter
 
 from codecortex.context import BudgetContextProcessor
@@ -11,6 +12,19 @@ from codecortex.engines import EngineRegistry
 from codecortex.router import AdaptiveRouter
 from codecortex.telemetry import TelemetryCollector
 from codecortex.tracing import TaskTraceRecorder
+
+
+@dataclass(frozen=True, slots=True)
+class EngineExecutionPolicy:
+    health_timeout_seconds: float = 5.0
+    execution_timeout_seconds: float = 120.0
+    max_retries: int = 0
+
+    def __post_init__(self) -> None:
+        if self.health_timeout_seconds <= 0 or self.execution_timeout_seconds <= 0:
+            raise ValueError("engine timeouts must be positive")
+        if not 0 <= self.max_retries <= 2:
+            raise ValueError("max_retries must be between 0 and 2")
 
 
 class Orchestrator:
@@ -23,12 +37,14 @@ class Orchestrator:
         context_processor: BudgetContextProcessor | None = None,
         telemetry: TelemetryCollector | None = None,
         tracer: TaskTraceRecorder | None = None,
+        policy: EngineExecutionPolicy | None = None,
     ) -> None:
         self.registry = registry
         self.router = router
         self.context_processor = context_processor or BudgetContextProcessor()
         self.telemetry = telemetry or TelemetryCollector()
         self.tracer = tracer
+        self.policy = policy or EngineExecutionPolicy()
 
     async def execute(self, request: AgentRequest) -> ExecutionResult:
         if self.tracer is None:
@@ -36,16 +52,34 @@ class Orchestrator:
         trace_id = str(request.metadata.get("trace_id") or self.tracer.new_trace_id())
         attributes: dict[str, object] = {"query_chars": len(request.query)}
         async with self.tracer.async_span(
-            "request.execute",
-            trace_id=trace_id,
-            attributes=attributes,
+            "request.execute", trace_id=trace_id, attributes=attributes
         ) as root_span:
             result = await self._execute(request, trace_id, root_span)
             attributes["context_tokens"] = result.context_tokens
             attributes["capabilities"] = [item.value for item in result.plan.selected]
-            return result.model_copy(
-                update={"metadata": {**result.metadata, "trace_id": trace_id}}
+            return result.model_copy(update={"metadata": {**result.metadata, "trace_id": trace_id}})
+
+    async def _healthy(self, capability: Capability, request: AgentRequest) -> bool:
+        engine = self.registry.get(capability)
+        if engine is None:
+            return False
+        try:
+            return bool(
+                await asyncio.wait_for(
+                    engine.health(), timeout=self.policy.health_timeout_seconds
+                )
             )
+        except asyncio.CancelledError:
+            raise
+        except Exception as exc:
+            self.telemetry.emit(
+                "engine.health_failed",
+                capability=capability.value,
+                error_type=type(exc).__name__,
+            )
+            if request.metadata.get("strict_engines"):
+                raise
+            return False
 
     async def _run_engine(
         self,
@@ -55,39 +89,60 @@ class Orchestrator:
         parent_span: str | None,
     ) -> EngineResult | None:
         engine = self.registry.get(capability)
-        if engine is None or not await engine.health():
+        if engine is None or not await self._healthy(capability, request):
             self.telemetry.emit("engine.skipped", capability=capability.value)
             return None
+
+        retries = request.metadata.get("engine_retries", self.policy.max_retries)
+        retries = max(0, min(2, int(retries))) if isinstance(retries, int) else self.policy.max_retries
         started = perf_counter()
-        try:
-            if self.tracer and trace_id:
-                attrs: dict[str, object] = {"capability": capability.value}
-                async with self.tracer.async_span(
-                    "engine.execute",
-                    trace_id=trace_id,
-                    parent_id=parent_span,
-                    attributes=attrs,
-                ):
-                    result = await engine.execute(request)
-                    attrs["chunks"] = len(result.chunks)
-                    attrs["context_tokens"] = sum(chunk.tokens for chunk in result.chunks)
-            else:
-                result = await engine.execute(request)
-        except Exception as exc:
-            self.telemetry.emit(
-                "engine.failed",
-                capability=capability.value,
-                error_type=type(exc).__name__,
-            )
-            if request.metadata.get("strict_engines"):
+        last_error: Exception | None = None
+        for attempt in range(retries + 1):
+            try:
+                async def execute_once() -> EngineResult:
+                    if self.tracer and trace_id:
+                        attrs: dict[str, object] = {
+                            "capability": capability.value,
+                            "attempt": attempt + 1,
+                        }
+                        async with self.tracer.async_span(
+                            "engine.execute",
+                            trace_id=trace_id,
+                            parent_id=parent_span,
+                            attributes=attrs,
+                        ):
+                            result = await engine.execute(request)
+                            attrs["chunks"] = len(result.chunks)
+                            attrs["context_tokens"] = sum(chunk.tokens for chunk in result.chunks)
+                            return result
+                    return await engine.execute(request)
+
+                result = await asyncio.wait_for(
+                    execute_once(), timeout=self.policy.execution_timeout_seconds
+                )
+                self.telemetry.emit(
+                    "engine.executed",
+                    capability=capability.value,
+                    duration_ms=(perf_counter() - started) * 1000,
+                    attempts=attempt + 1,
+                )
+                return result
+            except asyncio.CancelledError:
                 raise
-            return None
-        self.telemetry.emit(
-            "engine.executed",
-            capability=capability.value,
-            duration_ms=(perf_counter() - started) * 1000,
-        )
-        return result
+            except Exception as exc:
+                last_error = exc
+                self.telemetry.emit(
+                    "engine.failed",
+                    capability=capability.value,
+                    error_type=type(exc).__name__,
+                    attempt=attempt + 1,
+                )
+                if attempt < retries:
+                    continue
+
+        if request.metadata.get("strict_engines") and last_error is not None:
+            raise last_error
+        return None
 
     async def _execute(
         self,
@@ -114,22 +169,17 @@ class Orchestrator:
 
         capabilities = [item for item in plan.selected if item != Capability.CONTEXT]
         outcomes = await asyncio.gather(
-            *(
-                self._run_engine(capability, request, trace_id, parent_span)
-                for capability in capabilities
-            )
+            *(self._run_engine(capability, request, trace_id, parent_span) for capability in capabilities)
         )
         results = [result for result in outcomes if result is not None]
         all_chunks = [chunk for result in results for chunk in result.chunks]
 
         original_tokens = sum(chunk.tokens for chunk in all_chunks)
         fitted = await self.context_processor.fit(all_chunks, plan.context_budget)
-        fitted_sources = {(chunk.source, chunk.content) for chunk in fitted}
+        fitted_ids = {chunk.chunk_id for chunk in fitted}
         normalized_results: list[EngineResult] = []
         for result in results:
-            kept = [
-                chunk for chunk in result.chunks if (chunk.source, chunk.content) in fitted_sources
-            ]
+            kept = [chunk for chunk in result.chunks if chunk.chunk_id in fitted_ids]
             normalized_results.append(result.model_copy(update={"chunks": kept}))
 
         context_tokens = sum(chunk.tokens for chunk in fitted)
