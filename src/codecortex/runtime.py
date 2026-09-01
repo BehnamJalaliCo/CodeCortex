@@ -9,6 +9,7 @@ from codecortex.backends.factory import build_backend_stack
 from codecortex.backends.manager import BackendManager
 from codecortex.config import CortexConfig
 from codecortex.engines import EngineRegistry
+from codecortex.feedback import AgentFeedbackStore
 from codecortex.gateway import CodeCortexGateway
 from codecortex.memory import JsonMemoryStore
 from codecortex.orchestrator import Orchestrator
@@ -25,6 +26,7 @@ class CortexRuntime:
     router: AdaptiveRouter
     telemetry: TelemetryCollector
     tracer: TaskTraceRecorder
+    feedback: AgentFeedbackStore
     backend_manager: BackendManager
     active_backends: tuple[str, ...]
     orchestrator: Orchestrator
@@ -35,35 +37,11 @@ def build_runtime(project_root: Path | None = None) -> CortexRuntime:
     config = CortexConfig.load(project_root)
     config.ensure_directories()
     memory = JsonMemoryStore(config.memory_dir)
+    feedback = AgentFeedbackStore(config.state_dir / "runtime" / "feedback.db")
     stack = build_backend_stack(config, memory)
-    router = AdaptiveRouter(default_budget=config.validate_budget(config.default_context_budget))
-    telemetry = TelemetryCollector(
-        enabled=config.telemetry_enabled,
-        log_path=config.state_dir / "runtime" / "events.jsonl",
-    )
+    router = AdaptiveRouter(default_budget=config.validate_budget(config.default_context_budget), feedback=feedback)
+    telemetry = TelemetryCollector(enabled=config.telemetry_enabled, log_path=config.state_dir / "runtime" / "events.jsonl")
     tracer = TaskTraceRecorder(config.state_dir / "runtime" / "traces.jsonl")
-    orchestrator = Orchestrator(
-        registry=stack.registry,
-        router=router,
-        context_processor=stack.context_processor,
-        telemetry=telemetry,
-        tracer=tracer,
-    )
-    gateway = CodeCortexGateway(
-        router=router,
-        orchestrator=orchestrator,
-        registry=stack.registry,
-        memory=memory,
-    )
-    return CortexRuntime(
-        config=config,
-        memory=memory,
-        registry=stack.registry,
-        router=router,
-        telemetry=telemetry,
-        tracer=tracer,
-        backend_manager=stack.manager,
-        active_backends=stack.active,
-        orchestrator=orchestrator,
-        gateway=gateway,
-    )
+    orchestrator = Orchestrator(registry=stack.registry, router=router, context_processor=stack.context_processor, telemetry=telemetry, tracer=tracer, feedback=feedback)
+    gateway = CodeCortexGateway(router=router, orchestrator=orchestrator, registry=stack.registry, memory=memory, feedback=feedback)
+    return CortexRuntime(config=config, memory=memory, registry=stack.registry, router=router, telemetry=telemetry, tracer=tracer, feedback=feedback, backend_manager=stack.manager, active_backends=stack.active, orchestrator=orchestrator, gateway=gateway)

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from codecortex.context.slicing import AstContextSlicer
 from codecortex.indexing.graph import ProjectGraph
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.retrieval.hybrid import HybridRetriever, RetrievalHit
@@ -12,12 +13,19 @@ from codecortex.retrieval.providers import EmbeddingProvider, FeatureHashEmbeddi
 
 
 class RepositorySemanticIndex:
-    def __init__(self, root: Path, provider: EmbeddingProvider | None = None, index_path: Path | None = None, max_snippet_chars: int = 3_000) -> None:
+    def __init__(
+        self,
+        root: Path,
+        provider: EmbeddingProvider | None = None,
+        index_path: Path | None = None,
+        max_snippet_chars: int = 3_000,
+    ) -> None:
         self.root = root.resolve()
         self.provider = provider or FeatureHashEmbeddingProvider()
         self.index_path = index_path or self.root / ".codecortex" / "index" / "semantic.json"
         self.index = SemanticIndex(self.provider, self.index_path)
         self.max_snippet_chars = max_snippet_chars
+        self.slicer = AstContextSlicer(self.root)
 
     def refresh(self, graph: ProjectGraph | None = None) -> int:
         graph = graph or IncrementalGraphIndex(self.root).refresh()[0]
@@ -40,10 +48,35 @@ class RepositorySemanticIndex:
     def _document(self, node, graph: ProjectGraph) -> SemanticDocument | None:
         if node.kind in {"module", "reference"}:
             return None
-        metadata = {"path": node.path or "", "symbol": node.name if node.kind != "file" else "", "kind": node.kind, "line": node.line or 0}
+        metadata = {
+            "path": node.path or "",
+            "symbol": node.name if node.kind != "file" else "",
+            "kind": node.kind,
+            "line": node.line or 0,
+        }
         structural = self._structural_context(node.id, graph)
-        snippet = self._snippet(self.root / node.path, node.line) if node.path else ""
-        text = "\n".join(part for part in (f"{node.kind} {node.name}", f"path {node.path}" if node.path else "", structural, snippet) if part)
+        snippet = ""
+        if node.path:
+            source_path = self.root / node.path
+            if node.kind == "file":
+                snippet = self._snippet(source_path, None)
+            else:
+                snippet = self.slicer.slice_symbol(
+                    source_path,
+                    node.name,
+                    node.line,
+                    max_tokens=max(128, self.max_snippet_chars // 4),
+                )
+        text = "\n".join(
+            part
+            for part in (
+                f"{node.kind} {node.name}",
+                f"path {node.path}" if node.path else "",
+                structural,
+                snippet,
+            )
+            if part
+        )
         return SemanticDocument(id=node.id, text=text, metadata=metadata)
 
     def _snippet(self, path: Path, line: int | None) -> str:
