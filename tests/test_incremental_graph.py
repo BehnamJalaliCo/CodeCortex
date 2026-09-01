@@ -1,6 +1,7 @@
 import json
+from pathlib import Path
 
-from codecortex.indexing.graph import ProjectGraph
+from codecortex.indexing.graph import GraphEdge, ProjectGraph
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.indexing.indexer import ProjectIndexer
 
@@ -37,13 +38,13 @@ def _canonical_graph(graph: ProjectGraph) -> tuple[list[tuple[object, ...]], lis
     return nodes, edges
 
 
-def _assert_matches_full(root, graph: ProjectGraph) -> ProjectGraph:
+def _assert_matches_full(root: Path, graph: ProjectGraph) -> ProjectGraph:
     clean = ProjectIndexer(root).build()
     assert _canonical_graph(graph) == _canonical_graph(clean)
     return clean
 
 
-def _calls(graph: ProjectGraph, source_name: str) -> list:
+def _calls(graph: ProjectGraph, source_name: str) -> list[GraphEdge]:
     nodes = {node.id: node for node in graph.nodes}
     return [
         edge
@@ -54,7 +55,7 @@ def _calls(graph: ProjectGraph, source_name: str) -> list:
     ]
 
 
-def test_incremental_graph_reparses_dirty_and_dependent_files(tmp_path) -> None:
+def test_incremental_graph_reparses_dirty_and_dependent_files(tmp_path: Path) -> None:
     first = tmp_path / "first.py"
     second = tmp_path / "second.py"
     first.write_text("def alpha():\n    return 1\n", encoding="utf-8")
@@ -80,7 +81,7 @@ def test_incremental_graph_reparses_dirty_and_dependent_files(tmp_path) -> None:
     assert _semantic_edges(graph) == _semantic_edges(clean)
 
 
-def test_incremental_graph_resolves_unchanged_caller_after_definition_is_added(tmp_path) -> None:
+def test_incremental_graph_resolves_unchanged_caller_after_definition_is_added(tmp_path: Path) -> None:
     caller = tmp_path / "caller.py"
     caller.write_text("def beta():\n    return alpha()\n", encoding="utf-8")
     index = IncrementalGraphIndex(tmp_path)
@@ -103,7 +104,7 @@ def test_incremental_graph_resolves_unchanged_caller_after_definition_is_added(t
     _assert_matches_full(tmp_path, graph)
 
 
-def test_incremental_graph_matches_full_after_definition_removal_and_rename(tmp_path) -> None:
+def test_incremental_graph_matches_full_after_definition_rename_and_removal(tmp_path: Path) -> None:
     definition = tmp_path / "definition.py"
     caller = tmp_path / "caller.py"
     definition.write_text("def alpha():\n    return 1\n", encoding="utf-8")
@@ -111,17 +112,9 @@ def test_incremental_graph_matches_full_after_definition_removal_and_rename(tmp_
     index = IncrementalGraphIndex(tmp_path)
     index.refresh()
 
-    definition.unlink()
-    graph, removed = index.refresh()
-    assert removed.files_reparsed == 1
-    calls = _calls(graph, "beta")
-    assert len(calls) == 1
-    assert calls[0].target == "reference:alpha"
-    _assert_matches_full(tmp_path, graph)
-
     definition.write_text("def omega():\n    return 2\n", encoding="utf-8")
     graph, renamed = index.refresh()
-    assert renamed.files_reparsed == 1
+    assert renamed.files_reparsed == 2
     calls = _calls(graph, "beta")
     assert len(calls) == 1
     assert calls[0].target == "reference:alpha"
@@ -135,8 +128,16 @@ def test_incremental_graph_matches_full_after_definition_removal_and_rename(tmp_
     assert "omega" in calls[0].target
     _assert_matches_full(tmp_path, graph)
 
+    definition.unlink()
+    graph, removed = index.refresh()
+    assert removed.files_reparsed == 1
+    calls = _calls(graph, "beta")
+    assert len(calls) == 1
+    assert calls[0].target == "reference:omega"
+    _assert_matches_full(tmp_path, graph)
 
-def test_incremental_graph_reresolves_ambiguity_when_same_name_target_is_added(tmp_path) -> None:
+
+def test_incremental_graph_reresolves_ambiguity_when_same_name_target_is_added(tmp_path: Path) -> None:
     left = tmp_path / "left.py"
     caller = tmp_path / "caller.py"
     left.write_text("def alpha():\n    return 1\n", encoding="utf-8")
@@ -157,7 +158,7 @@ def test_incremental_graph_reresolves_ambiguity_when_same_name_target_is_added(t
     _assert_matches_full(tmp_path, graph)
 
 
-def test_incremental_graph_reresolves_unchanged_transitive_caller_after_dependency_change(tmp_path) -> None:
+def test_incremental_graph_reresolves_unchanged_transitive_caller_after_dependency_change(tmp_path: Path) -> None:
     definitions = tmp_path / "definitions.py"
     middle = tmp_path / "middle.py"
     caller = tmp_path / "caller.py"
@@ -182,7 +183,7 @@ def test_incremental_graph_reresolves_unchanged_transitive_caller_after_dependen
     _assert_matches_full(tmp_path, graph)
 
 
-def test_qualified_symbol_ids_do_not_collapse_same_method_name(tmp_path) -> None:
+def test_qualified_symbol_ids_do_not_collapse_same_method_name(tmp_path: Path) -> None:
     source = tmp_path / "models.py"
     source.write_text(
         "class A:\n"
@@ -203,7 +204,7 @@ def test_qualified_symbol_ids_do_not_collapse_same_method_name(tmp_path) -> None
     assert any("B::save" in node.id for node in saves)
 
 
-def test_incremental_graph_preserves_duplicate_method_identity_after_mutation(tmp_path) -> None:
+def test_incremental_graph_preserves_duplicate_method_identity_after_mutation(tmp_path: Path) -> None:
     source = tmp_path / "models.py"
     source.write_text(
         "class A:\n"
