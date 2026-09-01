@@ -3,14 +3,15 @@
 from __future__ import annotations
 
 import hashlib
-import json
 import time
 from dataclasses import dataclass
 from pathlib import Path
 
+from codecortex.config import CortexConfig
 from codecortex.context.budget import BudgetContextProcessor
 from codecortex.core.models import ContextChunk
 from codecortex.indexing.graph import ProjectGraph
+from codecortex.state import AtomicJsonFile
 
 
 @dataclass(frozen=True, slots=True)
@@ -31,90 +32,74 @@ class ContextResult:
 
 
 class ContextCache:
-    VERSION = 1
+    VERSION = 2
 
     def __init__(self, path: Path, ttl_seconds: int = 600, max_entries: int = 128) -> None:
         self.path = path
         self.ttl_seconds = ttl_seconds
         self.max_entries = max_entries
+        self.state = AtomicJsonFile(path)
 
     @staticmethod
-    def key(query: str, budget: int, fingerprints: list[str]) -> str:
-        payload = "\n".join([query.strip().lower(), str(budget), *fingerprints])
+    def key(query: str, budget: int, fingerprints: list[str], graph_revision: str = "") -> str:
+        payload = "\n".join([query.strip().lower(), str(budget), graph_revision, *sorted(fingerprints)])
         return hashlib.blake2b(payload.encode("utf-8"), digest_size=20).hexdigest()
 
     def _load(self) -> dict[str, dict[str, object]]:
-        try:
-            payload = json.loads(self.path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
+        payload = self.state.read({})
+        if not isinstance(payload, dict) or payload.get("version") != self.VERSION:
             return {}
-        if payload.get("version") != self.VERSION:
-            return {}
-        return dict(payload.get("entries", {}))
+        entries = payload.get("entries", {})
+        return dict(entries) if isinstance(entries, dict) else {}
 
     def get(self, key: str) -> list[ContextChunk] | None:
         entries = self._load()
         item = entries.get(key)
-        if not item:
+        if not isinstance(item, dict):
             return None
         created = float(item.get("created", 0))
         if time.time() - created > self.ttl_seconds:
             return None
+        chunks = item.get("chunks")
+        if not isinstance(chunks, list):
+            return None
         try:
-            return [ContextChunk.model_validate(chunk) for chunk in item["chunks"]]
-        except (KeyError, TypeError, ValueError):
+            return [ContextChunk.model_validate(chunk) for chunk in chunks]
+        except (TypeError, ValueError):
             return None
 
     def put(self, key: str, chunks: list[ContextChunk]) -> None:
-        entries = self._load()
-        entries[key] = {
-            "created": time.time(),
-            "chunks": [chunk.model_dump(mode="json") for chunk in chunks],
-        }
-        ordered = sorted(
-            entries.items(),
-            key=lambda pair: float(pair[1].get("created", 0)),
-            reverse=True,
-        )[: self.max_entries]
-        self.path.parent.mkdir(parents=True, exist_ok=True)
-        temp = self.path.with_suffix(".tmp")
-        temp.write_text(
-            json.dumps(
-                {"version": self.VERSION, "entries": dict(ordered)},
-                ensure_ascii=False,
-            ),
-            encoding="utf-8",
-        )
-        temp.replace(self.path)
+        def update(payload: object) -> dict[str, object]:
+            current = payload if isinstance(payload, dict) and payload.get("version") == self.VERSION else {"version": self.VERSION, "entries": {}}
+            entries = dict(current.get("entries", {})) if isinstance(current.get("entries", {}), dict) else {}
+            entries[key] = {"created": time.time(), "chunks": [chunk.model_dump(mode="json") for chunk in chunks]}
+            ordered = sorted(entries.items(), key=lambda pair: float(pair[1].get("created", 0)) if isinstance(pair[1], dict) else 0.0, reverse=True)[: self.max_entries]
+            return {"version": self.VERSION, "entries": dict(ordered)}
+        self.state.update(update, default={})
 
 
 class ContextPipeline:
-    def __init__(
-        self,
-        root: Path,
-        graph: ProjectGraph | None = None,
-        cache_ttl_seconds: int = 600,
-    ) -> None:
+    def __init__(self, root: Path, graph: ProjectGraph | None = None, cache_ttl_seconds: int = 600) -> None:
         self.root = root.resolve()
         self.graph = graph
         self.budget = BudgetContextProcessor()
-        self.cache = ContextCache(
-            self.root / ".codecortex" / "cache" / "context.json",
-            ttl_seconds=cache_ttl_seconds,
-        )
+        self.cache = ContextCache(self.root / ".codecortex" / "cache" / "context.json", ttl_seconds=cache_ttl_seconds)
 
     @staticmethod
     def _terms(text: str) -> set[str]:
-        return {
-            word.strip(".,:;()[]{}<>\"'`_-+").lower()
-            for word in text.split()
-            if len(word.strip()) > 2
-        }
+        return {word.strip(".,:;()[]{}<>\"'`_-+").lower() for word in text.split() if len(word.strip()) > 2}
 
     @staticmethod
     def _fingerprint(chunk: ContextChunk) -> str:
         normalized = " ".join(chunk.content.lower().split())
-        return hashlib.blake2b(normalized.encode("utf-8"), digest_size=12).hexdigest()
+        provenance = str(chunk.metadata.get("path") or chunk.source)
+        return hashlib.blake2b(f"{provenance}\n{normalized}".encode("utf-8"), digest_size=12).hexdigest()
+
+    def _graph_revision(self) -> str:
+        if self.graph is None:
+            return "none"
+        lines = [*(f"n:{node.id}" for node in sorted(self.graph.nodes, key=lambda item: item.id)), *(f"e:{edge.source}:{edge.kind}:{edge.target}" for edge in sorted(self.graph.edges, key=lambda item: (item.source, item.kind, item.target)))]
+        return hashlib.blake2b("\n".join(lines).encode("utf-8"), digest_size=12).hexdigest()
 
     def _rank(self, query: str, chunks: list[ContextChunk]) -> list[ContextChunk]:
         query_terms = self._terms(query)
@@ -135,36 +120,41 @@ class ContextPipeline:
         if not nodes:
             return []
         node_ids = {node.id for node in nodes}
-        lines: list[str] = []
+        node_map = {node.id: node for node in self.graph.nodes}
+        adjacency: dict[str, list[tuple[str, str]]] = {}
         for edge in self.graph.edges:
-            if edge.source in node_ids or edge.target in node_ids:
-                source = next((node for node in self.graph.nodes if node.id == edge.source), None)
-                target = next((node for node in self.graph.nodes if node.id == edge.target), None)
-                if source and target:
-                    lines.append(f"{source.name} --{edge.kind}--> {target.name}")
+            adjacency.setdefault(edge.source, []).append((edge.kind, edge.target))
+            adjacency.setdefault(edge.target, []).append((f"reverse:{edge.kind}", edge.source))
+        lines: list[str] = []
+        for node_id in node_ids:
+            source = node_map.get(node_id)
+            if source is None:
+                continue
+            for kind, target_id in adjacency.get(node_id, []):
+                target = node_map.get(target_id)
+                if target is None:
+                    continue
+                lines.append(f"{source.name} --{kind}--> {target.name}")
                 if len(lines) >= limit:
                     break
+            if len(lines) >= limit:
+                break
         if not lines:
             return []
         content = "\n".join(lines)
-        return [
-            ContextChunk(
-                source="knowledge-graph",
-                content=content,
-                tokens=max(1, len(content) // 4),
-                relevance=0.88,
-                metadata={"expanded_nodes": [node.name for node in nodes]},
-            )
-        ]
+        return [ContextChunk(source="knowledge-graph", content=content, tokens=self.budget.token_counter.count(content), relevance=0.88, metadata={"expanded_nodes": [node.name for node in nodes]})]
 
     @staticmethod
     def _near_deduplicate(chunks: list[ContextChunk]) -> list[ContextChunk]:
         selected: list[ContextChunk] = []
-        term_sets: list[set[str]] = []
+        term_sets: list[tuple[set[str], str]] = []
         for chunk in chunks:
             terms = ContextPipeline._terms(chunk.content)
+            provenance = str(chunk.metadata.get("path") or chunk.source)
             duplicate = False
-            for existing in term_sets:
+            for existing, existing_provenance in term_sets:
+                if provenance != existing_provenance:
+                    continue
                 union = terms | existing
                 similarity = len(terms & existing) / max(1, len(union))
                 if similarity >= 0.90:
@@ -172,52 +162,28 @@ class ContextPipeline:
                     break
             if not duplicate:
                 selected.append(chunk)
-                term_sets.append(terms)
+                term_sets.append((terms, provenance))
         return selected
 
-    async def prepare(
-        self,
-        query: str,
-        chunks: list[ContextChunk],
-        budget: int,
-    ) -> ContextResult:
+    async def prepare(self, query: str, chunks: list[ContextChunk], budget: int) -> ContextResult:
+        CortexConfig.load(self.root).validate_budget(budget)
         candidates = [*chunks, *self._graph_chunks(query)]
-        raw_tokens = sum(chunk.tokens for chunk in candidates)
-        fingerprints = [self._fingerprint(chunk) for chunk in candidates]
-        cache_key = self.cache.key(query, budget, fingerprints)
+        normalized = [chunk.model_copy(update={"tokens": self.budget.token_counter.count(chunk.content)}) for chunk in candidates]
+        raw_tokens = sum(chunk.tokens for chunk in normalized)
+        fingerprints = [self._fingerprint(chunk) for chunk in normalized]
+        cache_key = self.cache.key(query, budget, fingerprints, self._graph_revision())
         cached = self.cache.get(cache_key)
         if cached is not None:
             final_tokens = sum(chunk.tokens for chunk in cached)
-            return ContextResult(
-                tuple(cached),
-                self._metrics(raw_tokens, final_tokens, len(candidates), len(cached), True),
-            )
-        ranked = self._rank(query, candidates)
+            return ContextResult(tuple(cached), self._metrics(raw_tokens, final_tokens, len(normalized), len(cached), True))
+        ranked = self._rank(query, normalized)
         unique = self._near_deduplicate(ranked)
         fitted = await self.budget.fit(unique, budget)
         self.cache.put(cache_key, fitted)
         final_tokens = sum(chunk.tokens for chunk in fitted)
-        return ContextResult(
-            tuple(fitted),
-            self._metrics(raw_tokens, final_tokens, len(candidates), len(fitted), False),
-        )
+        return ContextResult(tuple(fitted), self._metrics(raw_tokens, final_tokens, len(normalized), len(fitted), False))
 
     @staticmethod
-    def _metrics(
-        raw_tokens: int,
-        final_tokens: int,
-        candidates: int,
-        selected: int,
-        cache_hit: bool,
-    ) -> ContextMetrics:
+    def _metrics(raw_tokens: int, final_tokens: int, candidates: int, selected: int, cache_hit: bool) -> ContextMetrics:
         saved = max(0, raw_tokens - final_tokens)
-        reduction = saved / raw_tokens if raw_tokens else 0.0
-        return ContextMetrics(
-            raw_tokens=raw_tokens,
-            final_tokens=final_tokens,
-            tokens_saved=saved,
-            reduction=reduction,
-            candidates=candidates,
-            selected=selected,
-            cache_hit=cache_hit,
-        )
+        return ContextMetrics(raw_tokens, final_tokens, saved, saved / raw_tokens if raw_tokens else 0.0, candidates, selected, cache_hit)

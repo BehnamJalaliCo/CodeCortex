@@ -12,13 +12,7 @@ from codecortex.retrieval.providers import EmbeddingProvider, FeatureHashEmbeddi
 
 
 class RepositorySemanticIndex:
-    def __init__(
-        self,
-        root: Path,
-        provider: EmbeddingProvider | None = None,
-        index_path: Path | None = None,
-        max_snippet_chars: int = 3_000,
-    ) -> None:
+    def __init__(self, root: Path, provider: EmbeddingProvider | None = None, index_path: Path | None = None, max_snippet_chars: int = 3_000) -> None:
         self.root = root.resolve()
         self.provider = provider or FeatureHashEmbeddingProvider()
         self.index_path = index_path or self.root / ".codecortex" / "index" / "semantic.json"
@@ -29,7 +23,13 @@ class RepositorySemanticIndex:
         graph = graph or IncrementalGraphIndex(self.root).refresh()[0]
         documents = [self._document(node, graph) for node in graph.nodes]
         filtered = [document for document in documents if document is not None]
-        self.index.replace(filtered)
+        current = {document.id: document for document in filtered}
+        removed = self.index.document_ids - set(current)
+        if removed:
+            self.index.delete(removed)
+        changed = [document for document in filtered if self.index.document(document.id) != document]
+        if changed:
+            self.index.upsert(changed)
         return len(filtered)
 
     def search(self, query: str, limit: int = 20) -> list[RetrievalHit]:
@@ -40,28 +40,10 @@ class RepositorySemanticIndex:
     def _document(self, node, graph: ProjectGraph) -> SemanticDocument | None:
         if node.kind in {"module", "reference"}:
             return None
-        metadata = {
-            "path": node.path or "",
-            "symbol": node.name if node.kind != "file" else "",
-            "kind": node.kind,
-            "line": node.line or 0,
-        }
+        metadata = {"path": node.path or "", "symbol": node.name if node.kind != "file" else "", "kind": node.kind, "line": node.line or 0}
         structural = self._structural_context(node.id, graph)
-        if node.path:
-            path = self.root / node.path
-            snippet = self._snippet(path, node.line)
-        else:
-            snippet = ""
-        text = "\n".join(
-            part
-            for part in (
-                f"{node.kind} {node.name}",
-                f"path {node.path}" if node.path else "",
-                structural,
-                snippet,
-            )
-            if part
-        )
+        snippet = self._snippet(self.root / node.path, node.line) if node.path else ""
+        text = "\n".join(part for part in (f"{node.kind} {node.name}", f"path {node.path}" if node.path else "", structural, snippet) if part)
         return SemanticDocument(id=node.id, text=text, metadata=metadata)
 
     def _snippet(self, path: Path, line: int | None) -> str:
@@ -72,9 +54,7 @@ class RepositorySemanticIndex:
         if line is None:
             return source[: self.max_snippet_chars]
         lines = source.splitlines()
-        start = max(0, line - 8)
-        end = min(len(lines), line + 20)
-        return "\n".join(lines[start:end])[: self.max_snippet_chars]
+        return "\n".join(lines[max(0, line - 8) : min(len(lines), line + 20)])[: self.max_snippet_chars]
 
     @staticmethod
     def _structural_context(node_id: str, graph: ProjectGraph) -> str:
