@@ -28,6 +28,7 @@ class IncrementalGraphIndex:
     """Patch a persistent graph while re-resolving unchanged dependants."""
 
     _STRUCTURAL_EDGE_KINDS = {"contains", "defines"}
+    _SYNTHETIC_NODE_KINDS = {"module", "reference"}
 
     def __init__(self, root: Path, graph_path: Path | None = None) -> None:
         self.root = root.resolve()
@@ -52,9 +53,25 @@ class IncrementalGraphIndex:
 
         node_by_id = {node.id: node for node in previous.nodes}
         removed_ids = {node.id for node in previous.nodes if node.path in dirty}
+        changed_paths = sorted(set(index_stats.added) | set(index_stats.changed))
+        new_nodes, structural_edges, sources = self._parse_changed(changed_paths)
+        changed_symbol_names = {
+            node.name
+            for node in previous.nodes
+            if node.id in removed_ids and node.kind not in {"file", "module", "reference"}
+        } | {
+            node.name
+            for node in new_nodes
+            if node.kind not in {"file", "module", "reference"}
+        }
+
         affected_paths: set[str] = set()
         for edge in previous.edges:
-            if edge.target not in removed_ids or edge.kind in self._STRUCTURAL_EDGE_KINDS:
+            if edge.kind in self._STRUCTURAL_EDGE_KINDS:
+                continue
+            target = node_by_id.get(edge.target)
+            target_candidates_changed = target is not None and target.name in changed_symbol_names
+            if edge.target not in removed_ids and not target_candidates_changed:
                 continue
             source = node_by_id.get(edge.source)
             if source is not None and source.path and source.path not in dirty:
@@ -69,12 +86,23 @@ class IncrementalGraphIndex:
             and edge.target not in removed_ids
             and not (edge.source in affected_source_ids and edge.kind not in self._STRUCTURAL_EDGE_KINDS)
         ]
-        changed_paths = sorted(set(index_stats.added) | set(index_stats.changed))
-        new_nodes, structural_edges, sources = self._parse_changed(changed_paths)
         all_nodes = [*retained_nodes, *new_nodes]
         relation_edges = self._relationship_edges(sorted(set(changed_paths) | affected_paths), all_nodes, sources)
-        node_map = {node.id: node for node in all_nodes}
-        edge_map = {(edge.source, edge.target, edge.kind): edge for edge in [*retained_edges, *structural_edges, *relation_edges] if edge.source != edge.target}
+        edge_map = {
+            (edge.source, edge.target, edge.kind): edge
+            for edge in [*retained_edges, *structural_edges, *relation_edges]
+            if edge.source != edge.target
+        }
+        referenced_targets = {edge.target for edge in edge_map.values()}
+        node_map = {
+            node.id: node
+            for node in all_nodes
+            if not (
+                node.kind in self._SYNTHETIC_NODE_KINDS
+                and node.path is None
+                and node.id not in referenced_targets
+            )
+        }
         graph = ProjectGraph(nodes=list(node_map.values()), edges=list(edge_map.values()))
         graph.save(self.graph_path)
         return graph, GraphUpdateStats(index_stats, False, before_nodes, len(graph.nodes), before_edges, len(graph.edges), len(changed_paths) + len(affected_paths))
@@ -142,7 +170,19 @@ class IncrementalGraphIndex:
                 resolution = self.resolver.resolve(relation.target, relative, names.get(relation.target, []), relation.kind)
                 if resolution.target_id:
                     target_id = resolution.target_id
-                    metadata: dict[str, object] = {"resolution_confidence": round(resolution.confidence, 4), "ambiguity": round(resolution.ambiguity, 4), "candidate_count": len(resolution.candidates)}
+                    metadata: dict[str, object] = {
+                        "resolution_confidence": round(resolution.confidence, 4),
+                        "ambiguity": round(resolution.ambiguity, 4),
+                        "candidate_count": len(resolution.candidates),
+                        "candidates": [
+                            {
+                                "id": item.node_id,
+                                "score": round(item.score, 4),
+                                "reasons": list(item.reasons),
+                            }
+                            for item in resolution.candidates
+                        ],
+                    }
                 else:
                     prefix = "module" if relation.kind == "imports" else "reference"
                     target_id = f"{prefix}:{relation.target}"
