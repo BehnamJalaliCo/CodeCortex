@@ -20,7 +20,8 @@ from urllib.error import HTTPError
 from urllib.parse import urlsplit
 from urllib.request import Request, urlopen
 
-ToolDispatcher = Callable[[str, dict[str, Any]], dict[str, Any] | Awaitable[dict[str, Any]]]
+ToolDispatcher = Callable[..., dict[str, Any] | Awaitable[dict[str, Any]]]
+PolicyAuthorizer = Callable[[str, str], bool]
 
 
 @dataclass(frozen=True, slots=True)
@@ -65,6 +66,7 @@ class RemoteAccessPolicy:
     denied_tools: frozenset[str] = frozenset()
     mutating_tools: frozenset[str] = frozenset()
     mutation_principals: frozenset[str] = frozenset()
+    authorizer: PolicyAuthorizer | None = None
     default_allow: bool = False
 
     def allows(self, principal: str, tool: str) -> bool:
@@ -73,9 +75,15 @@ class RemoteAccessPolicy:
         if tool in self.mutating_tools and principal not in self.mutation_principals:
             return False
         allowed = self.allowed_tools.get(principal)
-        if allowed is None:
-            return self.default_allow
-        return "*" in allowed or tool in allowed
+        static_allowed = self.default_allow if allowed is None else ("*" in allowed or tool in allowed)
+        if not static_allowed:
+            return False
+        if self.authorizer is None:
+            return True
+        try:
+            return bool(self.authorizer(principal, tool))
+        except Exception:
+            return False
 
 
 class _SlidingWindowQuota:
@@ -115,6 +123,16 @@ class RemoteMCPServer:
         host, port = self._server.server_address[:2]
         return str(host), int(port)
 
+    def _dispatch(self, tool: str, arguments: dict[str, Any], principal: str) -> Any:
+        try:
+            parameters = inspect.signature(self.dispatcher).parameters
+            result = self.dispatcher(tool, arguments, principal) if len(parameters) >= 3 else self.dispatcher(tool, arguments)
+        except (TypeError, ValueError):
+            result = self.dispatcher(tool, arguments)
+        if inspect.isawaitable(result):
+            return asyncio.run(result)
+        return result
+
     def handle_call(self, authorization: str | None, payload: dict[str, Any]) -> tuple[int, dict[str, Any]]:
         principal = self.authenticator.authenticate(authorization)
         if principal is None:
@@ -130,13 +148,11 @@ class RemoteMCPServer:
         if not self._quota.acquire(principal):
             return 429, {"error": "quota_exceeded"}
         try:
-            result = self.dispatcher(tool, arguments)
-            if inspect.isawaitable(result):
-                result = asyncio.run(result)
+            result = self._dispatch(tool, arguments, principal)
             if not isinstance(result, dict):
                 result = {"result": result}
             return 200, {"result": result, "principal": principal}
-        except Exception:  # pragma: no cover - integration boundary
+        except Exception:
             return 500, {"error": "tool_failure", "error_id": uuid.uuid4().hex}
 
     def start(self, *, background: bool = True) -> tuple[str, int]:
@@ -148,27 +164,17 @@ class RemoteMCPServer:
             def do_GET(self) -> None:  # noqa: N802
                 self._write(200, {"status": "ok"}) if self.path == "/health" else self._write(404, {"error": "not_found"})
             def do_POST(self) -> None:  # noqa: N802
-                if self.path != "/mcp":
-                    self._write(404, {"error": "not_found"}); return
-                try:
-                    length = int(self.headers.get("Content-Length", "0"))
-                except ValueError:
-                    self._write(400, {"error": "invalid_content_length"}); return
-                if length < 1 or length > owner.settings.max_body_bytes:
-                    self._write(413, {"error": "invalid_body_size"}); return
-                try:
-                    payload = json.loads(self.rfile.read(length))
-                except (json.JSONDecodeError, UnicodeDecodeError):
-                    self._write(400, {"error": "invalid_json"}); return
-                if not isinstance(payload, dict):
-                    self._write(400, {"error": "body_must_be_object"}); return
-                status, response = owner.handle_call(self.headers.get("Authorization"), payload)
-                self._write(status, response)
+                if self.path != "/mcp": self._write(404, {"error": "not_found"}); return
+                try: length = int(self.headers.get("Content-Length", "0"))
+                except ValueError: self._write(400, {"error": "invalid_content_length"}); return
+                if length < 1 or length > owner.settings.max_body_bytes: self._write(413, {"error": "invalid_body_size"}); return
+                try: payload = json.loads(self.rfile.read(length))
+                except (json.JSONDecodeError, UnicodeDecodeError): self._write(400, {"error": "invalid_json"}); return
+                if not isinstance(payload, dict): self._write(400, {"error": "body_must_be_object"}); return
+                status, response = owner.handle_call(self.headers.get("Authorization"), payload); self._write(status, response)
             def _write(self, status: int, payload: dict[str, Any]) -> None:
-                body = json.dumps(payload, sort_keys=True).encode("utf-8")
-                self.send_response(status); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
-            def log_message(self, format: str, *args: object) -> None:
-                del format, args
+                body = json.dumps(payload, sort_keys=True).encode("utf-8"); self.send_response(status); self.send_header("Content-Type", "application/json"); self.send_header("Content-Length", str(len(body))); self.end_headers(); self.wfile.write(body)
+            def log_message(self, format: str, *args: object) -> None: del format, args
         server = ThreadingHTTPServer((self.settings.host, self.settings.port), Handler)
         if self.settings.tls_cert and self.settings.tls_key:
             context = ssl.SSLContext(ssl.PROTOCOL_TLS_SERVER); context.minimum_version = ssl.TLSVersion.TLSv1_2; context.load_cert_chain(self.settings.tls_cert, self.settings.tls_key); server.socket = context.wrap_socket(server.socket, server_side=True)
@@ -177,34 +183,24 @@ class RemoteMCPServer:
             self._thread = threading.Thread(target=server.serve_forever, daemon=True); self._thread.start()
         else:
             server.serve_forever()
-        address = self.address
-        assert address is not None
-        return address
+        address = self.address; assert address is not None; return address
 
     def close(self) -> None:
         server = self._server
-        if server is None:
-            return
+        if server is None: return
         server.shutdown(); server.server_close()
-        if self._thread is not None:
-            self._thread.join(timeout=5.0)
+        if self._thread is not None: self._thread.join(timeout=5.0)
         self._server = None; self._thread = None
 
-    def __enter__(self) -> RemoteMCPServer:
-        self.start(); return self
-
-    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None:
-        del exc_type, exc, traceback; self.close()
+    def __enter__(self) -> RemoteMCPServer: self.start(); return self
+    def __exit__(self, exc_type: object, exc: object, traceback: object) -> None: del exc_type, exc, traceback; self.close()
 
 
 class RemoteMCPClient:
     def __init__(self, base_url: str, token: str, *, timeout_seconds: float = 30.0, ssl_context: ssl.SSLContext | None = None) -> None:
-        normalized = base_url.rstrip("/")
-        parsed = urlsplit(normalized)
-        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
-            raise ValueError("base_url must use http or https and include a hostname")
-        if parsed.username is not None or parsed.password is not None:
-            raise ValueError("base_url must not contain embedded credentials")
+        normalized = base_url.rstrip("/"); parsed = urlsplit(normalized)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname: raise ValueError("base_url must use http or https and include a hostname")
+        if parsed.username is not None or parsed.password is not None: raise ValueError("base_url must not contain embedded credentials")
         self.base_url = normalized; self.token = token; self.timeout_seconds = timeout_seconds; self.ssl_context = ssl_context
 
     def call(self, tool: str, arguments: dict[str, Any] | None = None) -> dict[str, Any]:
@@ -214,12 +210,8 @@ class RemoteMCPClient:
             with urlopen(request, timeout=self.timeout_seconds, context=self.ssl_context) as response:  # nosec B310
                 payload = json.loads(response.read())
         except HTTPError as exc:
-            try:
-                detail = json.loads(exc.read())
-            except json.JSONDecodeError:
-                detail = {"error": "http_error"}
+            try: detail = json.loads(exc.read())
+            except json.JSONDecodeError: detail = {"error": "http_error"}
             raise RuntimeError(f"remote MCP request failed ({exc.code}): {detail}") from exc
-        if not isinstance(payload, dict):
-            raise RuntimeError("remote MCP response must be an object")
-        result = payload.get("result", {})
-        return result if isinstance(result, dict) else {"result": result}
+        if not isinstance(payload, dict): raise RuntimeError("remote MCP response must be an object")
+        result = payload.get("result", {}); return result if isinstance(result, dict) else {"result": result}
