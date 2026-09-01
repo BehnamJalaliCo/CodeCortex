@@ -76,6 +76,9 @@ line-length = 100
 select = ["E", "F", "I", "UP", "B"]
 ignore = ["E501"]
 
+[tool.ruff.lint.per-file-ignores]
+"src/codecortex/mcp/server.py" = ["I001"]
+
 [tool.mypy]
 python_version = "3.11"
 strict = true

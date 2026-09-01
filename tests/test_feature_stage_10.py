@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from pathlib import Path
-
 from codecortex.context.slicing import AstContextSlicer
 from codecortex.core.models import AgentRequest, Capability
 from codecortex.distributed.cluster import ClusterCoordinator
 from codecortex.distributed.graph_store import DistributedGraphStore
-from codecortex.evaluation.retrieval_quality import RetrievalQualityBenchmark, RetrievalQualityCase
+from codecortex.evaluation.retrieval_quality import (
+    RetrievalQualityBenchmark,
+    RetrievalQualityCase,
+)
 from codecortex.evaluation.scale import RepositoryScaleBenchmark
 from codecortex.feedback import AgentFeedbackStore
-from codecortex.indexing.graph import GraphEdge, GraphNode, ProjectGraph
+from codecortex.indexing.graph import GraphNode, ProjectGraph
 from codecortex.router import AdaptiveRouter
 from codecortex.workspace.federation import MultiRepositoryWorkspace
 
@@ -38,7 +39,9 @@ def test_ast_context_slicer_returns_complete_symbol_not_neighbor(tmp_path) -> No
         "    return secret\n",
         encoding="utf-8",
     )
-    sliced = AstContextSlicer(tmp_path).slice_symbol(path, "alpha", 1, max_tokens=100)
+    sliced = AstContextSlicer(tmp_path).slice_symbol(
+        path, "alpha", 1, max_tokens=100
+    )
     assert "def alpha" in sliced
     assert "return value" in sliced
     assert "secret = 2" not in sliced
@@ -81,7 +84,9 @@ def test_cluster_coordinator_shards_work_and_publishes_graph(tmp_path) -> None:
     cluster = ClusterCoordinator(tmp_path / "cluster")
     cluster.workers.register_worker("indexer", ("index",))
     cluster.workers.register_worker("retriever", ("retrieve",))
-    tasks = cluster.schedule_index("repo", ["a", "b", "c"], "r1", shard_size=2)
+    tasks = cluster.schedule_index(
+        "repo", ["a", "b", "c"], "r1", shard_size=2
+    )
     assert len(tasks) == 2
     retrieval = cluster.schedule_retrieval("auth", "repo", "r1")
     assert retrieval.kind == "retrieve"
@@ -98,8 +103,14 @@ def test_cross_repo_dependency_edges_are_resolved(tmp_path) -> None:
     shared = tmp_path / "shared"
     app.mkdir()
     (shared / "shared").mkdir(parents=True)
-    (app / "main.py").write_text("import shared.util\n\ndef run():\n    return 1\n", encoding="utf-8")
-    (shared / "shared" / "util.py").write_text("def helper():\n    return 1\n", encoding="utf-8")
+    (app / "main.py").write_text(
+        "import shared.util\n\ndef run():\n    return 1\n",
+        encoding="utf-8",
+    )
+    (shared / "shared" / "util.py").write_text(
+        "def helper():\n    return 1\n",
+        encoding="utf-8",
+    )
     workspace = MultiRepositoryWorkspace()
     workspace.add_repository("app", app)
     workspace.add_repository("shared", shared)

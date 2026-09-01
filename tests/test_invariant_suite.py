@@ -1,9 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from datetime import UTC, datetime, timedelta
-
-import pytest
 
 from codecortex.distributed.memory_sync import SharedMemoryReplica
 from codecortex.distributed.workers import WorkerCoordinator
@@ -28,7 +27,6 @@ def test_incremental_property_matches_full_rebuild_across_change_sequences(tmp_p
     c.write_text("def gamma():\n    return beta()\n", encoding="utf-8")
     index = IncrementalGraphIndex(tmp_path)
     index.refresh()
-
     mutations = [
         "# shift\ndef alpha():\n    return 2\n",
         "def alpha():\n    return 3\n\ndef extra():\n    return alpha()\n",
@@ -57,7 +55,6 @@ def test_stale_filesystem_lock_is_recovered(tmp_path) -> None:
     marker = lock_path / "owner.json"
     marker.write_text("{}", encoding="utf-8")
     old = datetime.now(UTC).timestamp() - 600
-    import os
     os.utime(lock_path, (old, old))
     lock = FileMutex(lock_path, timeout_seconds=1, stale_seconds=1)
     with lock:
@@ -72,13 +69,15 @@ def test_multi_node_memory_conflicts_converge(tmp_path) -> None:
     right_mutation = right.put("project", "decision", "right-value")
     left.apply([right_mutation])
     right.apply([left_mutation])
-    # Exchange conflict-resolved mutations once more; replicas must converge.
     left_changes = [mutation for _, mutation in left.export()]
     right_changes = [mutation for _, mutation in right.export()]
     left.apply(right_changes)
     right.apply(left_changes)
     assert left.value("project", "decision") == right.value("project", "decision")
-    assert left.get("project", "decision").clock == right.get("project", "decision").clock  # type: ignore[union-attr]
+    left_final = left.get("project", "decision")
+    right_final = right.get("project", "decision")
+    assert left_final is not None and right_final is not None
+    assert left_final.clock == right_final.clock
 
 
 def test_worker_lease_survives_restart_and_expired_lease_is_recoverable(tmp_path) -> None:
@@ -88,10 +87,10 @@ def test_worker_lease_survives_restart_and_expired_lease_is_recoverable(tmp_path
     first.enqueue("index", {}, required_capabilities=("index",), task_id="task")
     leased = first.claim("worker")
     assert leased and leased.lease_token
-
     restarted = WorkerCoordinator(path)
     persisted = restarted.get_task("task")
-    assert persisted and persisted.status == "leased" and persisted.lease_token == leased.lease_token
+    assert persisted and persisted.status == "leased"
+    assert persisted.lease_token == leased.lease_token
     with restarted._connect() as connection:
         connection.execute(
             "UPDATE tasks SET lease_expires_at = ? WHERE task_id = 'task'",
@@ -99,7 +98,8 @@ def test_worker_lease_survives_restart_and_expired_lease_is_recoverable(tmp_path
         )
     assert restarted.requeue_expired() == 1
     reclaimed = restarted.claim("worker")
-    assert reclaimed and reclaimed.attempts == 2 and reclaimed.lease_token != leased.lease_token
+    assert reclaimed and reclaimed.attempts == 2
+    assert reclaimed.lease_token != leased.lease_token
 
 
 def test_adversarial_mcp_inputs_are_rejected_by_schema(tmp_path) -> None:
@@ -107,10 +107,22 @@ def test_adversarial_mcp_inputs_are_rejected_by_schema(tmp_path) -> None:
     cases = [
         {"name": "cortex_semantic_search", "arguments": {"query": "x", "limit": 0}},
         {"name": "cortex_context", "arguments": {"query": "x", "budget": "many"}},
-        {"name": "cortex_symbol_history", "arguments": {"path": "x.py", "start": 0, "end": 2}},
+        {
+            "name": "cortex_symbol_history",
+            "arguments": {"path": "x.py", "start": 0, "end": 2},
+        },
         {"name": "cortex_find_symbol", "arguments": {"query": "x", "extra": "no"}},
     ]
     for index, params in enumerate(cases, 1):
-        response = asyncio.run(server.dispatch({"jsonrpc": "2.0", "id": index, "method": "tools/call", "params": params}))
+        response = asyncio.run(
+            server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": index,
+                    "method": "tools/call",
+                    "params": params,
+                }
+            )
+        )
         assert response is not None
         assert response["error"]["code"] == -32602
