@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, stabilization-1-10]
   pull_request:
 
 permissions:
@@ -43,6 +43,30 @@ jobs:
           use_oidc: true
           files: ./coverage.xml
           fail_ci_if_error: false
+
+  invariants:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+          cache: pip
+      - run: python -m pip install --upgrade pip
+      - run: pip install -e ".[dev]"
+      - name: Correctness and fault invariants
+        run: >-
+          pytest -q
+          tests/test_invariant_suite.py
+          tests/test_incremental_graph.py
+          tests/test_state_concurrency.py
+          tests/test_mcp_hardening.py
+          tests/test_distributed_security_regressions.py
+          tests/test_distributed_v2.py
+          tests/test_unified_language_pipeline.py
+          tests/test_retrieval_v2.py
 
   windows-compat:
     runs-on: windows-latest
