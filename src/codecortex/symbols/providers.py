@@ -6,7 +6,7 @@ import ast
 import re
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Protocol
+from typing import ClassVar, Protocol
 
 
 @dataclass(frozen=True, slots=True)
@@ -28,7 +28,7 @@ class SymbolProvider(Protocol):
 
 class PythonProvider:
     language = "python"
-    suffixes = (".py",)
+    suffixes: ClassVar[tuple[str, ...]] = (".py",)
 
     def extract(self, path: Path, source: str) -> list[SymbolRecord]:
         try:
@@ -49,14 +49,10 @@ class PythonProvider:
                 result.append(SymbolRecord(node.name, "class", path, node.lineno, self.language))
             elif isinstance(node, ast.AsyncFunctionDef):
                 kind = "method" if container else "async_function"
-                result.append(
-                    SymbolRecord(node.name, kind, path, node.lineno, self.language, container)
-                )
+                result.append(SymbolRecord(node.name, kind, path, node.lineno, self.language, container))
             elif isinstance(node, ast.FunctionDef):
                 kind = "method" if container else "function"
-                result.append(
-                    SymbolRecord(node.name, kind, path, node.lineno, self.language, container)
-                )
+                result.append(SymbolRecord(node.name, kind, path, node.lineno, self.language, container))
             elif isinstance(node, (ast.Import, ast.ImportFrom)):
                 names: list[str] = []
                 if isinstance(node, ast.Import):
@@ -110,52 +106,12 @@ _JS_PATTERNS = [
     _p("import", r"^\s*import\s+(?:[^\n]+?\s+from\s+)?[\"']([^\"']+)[\"']"),
     _p("export", r"^\s*export\s+\{\s*([^}\n]+)\s*\}"),
 ]
-
-_GO_PATTERNS = [
-    _p("function", r"^\s*func\s+([A-Za-z_]\w*)\s*\("),
-    _p("method", r"^\s*func\s*\([^)]*\)\s*([A-Za-z_]\w*)\s*\("),
-    _p("type", r"^\s*type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b"),
-    _p("import", r"^\s*import\s+[\"']([^\"']+)[\"']"),
-]
-
-_RUST_PATTERNS = [
-    _p("function", r"^\s*(?:pub\s+)?(?:async\s+)?fn\s+([A-Za-z_]\w*)"),
-    _p("struct", r"^\s*(?:pub\s+)?struct\s+([A-Za-z_]\w*)"),
-    _p("enum", r"^\s*(?:pub\s+)?enum\s+([A-Za-z_]\w*)"),
-    _p("trait", r"^\s*(?:pub\s+)?trait\s+([A-Za-z_]\w*)"),
-    _p("type", r"^\s*(?:pub\s+)?type\s+([A-Za-z_]\w*)"),
-    _p("import", r"^\s*use\s+([^;]+);"),
-]
-
-_JVM_PATTERNS = [
-    _p("class", r"^\s*(?:public\s+|private\s+|protected\s+|abstract\s+|final\s+)*class\s+([A-Za-z_]\w*)"),
-    _p("interface", r"^\s*(?:public\s+)?interface\s+([A-Za-z_]\w*)"),
-    _p("enum", r"^\s*(?:public\s+)?enum\s+([A-Za-z_]\w*)"),
-    _p("import", r"^\s*import\s+([A-Za-z_][\w.*]+)\s*;"),
-    _p("method", r"^\s*(?:public|private|protected|static|final|async|virtual|override|synchronized|native|abstract|\s)+\s+[\w<>,.?\[\]]+\s+([A-Za-z_]\w*)\s*\("),
-]
-
-_C_PATTERNS = [
-    _p("type", r"^\s*(?:typedef\s+)?(?:struct|enum|union)\s+([A-Za-z_]\w*)"),
-    _p("class", r"^\s*class\s+([A-Za-z_]\w*)"),
-    _p("function", r"^\s*[A-Za-z_][\w\s:*&<>]*\s+([A-Za-z_]\w*)\s*\([^;\n]*\)\s*\{"),
-    _p("import", r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]"),
-]
-
-_PHP_PATTERNS = [
-    _p("class", r"^\s*(?:final\s+|abstract\s+)?class\s+([A-Za-z_]\w*)"),
-    _p("interface", r"^\s*interface\s+([A-Za-z_]\w*)"),
-    _p("trait", r"^\s*trait\s+([A-Za-z_]\w*)"),
-    _p("function", r"^\s*(?:public\s+|private\s+|protected\s+|static\s+)*function\s+([A-Za-z_]\w*)"),
-    _p("import", r"^\s*use\s+([^;]+);"),
-]
-
-_RUBY_PATTERNS = [
-    _p("class", r"^\s*class\s+([A-Z]\w*(?:::\w+)*)"),
-    _p("module", r"^\s*module\s+([A-Z]\w*(?:::\w+)*)"),
-    _p("method", r"^\s*def\s+(?:self\.)?([A-Za-z_]\w*[!?=]?)"),
-    _p("import", r"^\s*require(?:_relative)?\s+[\"']([^\"']+)[\"']"),
-]
+_GO_PATTERNS = [_p("function", r"^\s*func\s+([A-Za-z_]\w*)\s*\("), _p("method", r"^\s*func\s*\([^)]*\)\s*([A-Za-z_]\w*)\s*\("), _p("type", r"^\s*type\s+([A-Za-z_]\w*)\s+(?:struct|interface)\b"), _p("import", r"^\s*import\s+[\"']([^\"']+)[\"']")]
+_RUST_PATTERNS = [_p("function", r"^\s*(?:pub\s+)?(?:async\s+)?fn\s+([A-Za-z_]\w*)"), _p("struct", r"^\s*(?:pub\s+)?struct\s+([A-Za-z_]\w*)"), _p("enum", r"^\s*(?:pub\s+)?enum\s+([A-Za-z_]\w*)"), _p("trait", r"^\s*(?:pub\s+)?trait\s+([A-Za-z_]\w*)"), _p("type", r"^\s*(?:pub\s+)?type\s+([A-Za-z_]\w*)"), _p("import", r"^\s*use\s+([^;]+);")]
+_JVM_PATTERNS = [_p("class", r"^\s*(?:public\s+|private\s+|protected\s+|abstract\s+|final\s+)*class\s+([A-Za-z_]\w*)"), _p("interface", r"^\s*(?:public\s+)?interface\s+([A-Za-z_]\w*)"), _p("enum", r"^\s*(?:public\s+)?enum\s+([A-Za-z_]\w*)"), _p("import", r"^\s*import\s+([A-Za-z_][\w.*]+)\s*;"), _p("method", r"^\s*(?:public|private|protected|static|final|async|virtual|override|synchronized|native|abstract|\s)+\s+[\w<>,.?\[\]]+\s+([A-Za-z_]\w*)\s*\(")]
+_C_PATTERNS = [_p("type", r"^\s*(?:typedef\s+)?(?:struct|enum|union)\s+([A-Za-z_]\w*)"), _p("class", r"^\s*class\s+([A-Za-z_]\w*)"), _p("function", r"^\s*[A-Za-z_][\w\s:*&<>]*\s+([A-Za-z_]\w*)\s*\([^;\n]*\)\s*\{"), _p("import", r"^\s*#\s*include\s*[<\"]([^>\"]+)[>\"]")]
+_PHP_PATTERNS = [_p("class", r"^\s*(?:final\s+|abstract\s+)?class\s+([A-Za-z_]\w*)"), _p("interface", r"^\s*interface\s+([A-Za-z_]\w*)"), _p("trait", r"^\s*trait\s+([A-Za-z_]\w*)"), _p("function", r"^\s*(?:public\s+|private\s+|protected\s+|static\s+)*function\s+([A-Za-z_]\w*)"), _p("import", r"^\s*use\s+([^;]+);")]
+_RUBY_PATTERNS = [_p("class", r"^\s*class\s+([A-Z]\w*(?:::\w+)*)"), _p("module", r"^\s*module\s+([A-Z]\w*(?:::\w+)*)"), _p("method", r"^\s*def\s+(?:self\.)?([A-Za-z_]\w*[!?=]?)"), _p("import", r"^\s*require(?:_relative)?\s+[\"']([^\"']+)[\"']")]
 
 
 class SymbolProviderRegistry:
@@ -172,11 +128,7 @@ class SymbolProviderRegistry:
             RegexProvider("php", (".php",), _PHP_PATTERNS),
             RegexProvider("ruby", (".rb",), _RUBY_PATTERNS),
         ]
-        self._by_suffix = {
-            suffix: provider
-            for provider in providers
-            for suffix in provider.suffixes
-        }
+        self._by_suffix = {suffix: provider for provider in providers for suffix in provider.suffixes}
 
     @property
     def suffixes(self) -> frozenset[str]:
