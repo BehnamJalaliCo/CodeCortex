@@ -5,8 +5,20 @@ from __future__ import annotations
 import json
 import os
 from pathlib import Path
+from typing import Any
 
 from pydantic import BaseModel, Field, model_validator
+
+
+def _int_value(value: object, default: int) -> int:
+    if isinstance(value, bool):
+        return int(value)
+    if isinstance(value, (str, bytes, bytearray, int, float)):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+    return default
 
 
 class CortexConfig(BaseModel):
@@ -37,7 +49,7 @@ class CortexConfig(BaseModel):
     @classmethod
     def load(cls, project_root: Path | None = None) -> CortexConfig:
         root = (project_root or Path.cwd()).expanduser().resolve()
-        payload: dict[str, object] = {}
+        payload: dict[str, Any] = {}
         path = root / ".codecortex" / "config.json"
         try:
             raw = json.loads(path.read_text(encoding="utf-8"))
@@ -49,8 +61,8 @@ class CortexConfig(BaseModel):
         values: dict[str, object] = {
             "project_root": root,
             "state_dir_name": str(payload.get("state_dir_name", ".codecortex")),
-            "default_context_budget": int(payload.get("context_budget", payload.get("default_context_budget", 32_000))),
-            "hard_context_limit": int(payload.get("hard_context_limit", 128_000)),
+            "default_context_budget": _int_value(payload.get("context_budget", payload.get("default_context_budget", 32_000)), 32_000),
+            "hard_context_limit": _int_value(payload.get("hard_context_limit", 128_000), 128_000),
             "telemetry_enabled": bool(payload.get("telemetry", payload.get("telemetry_enabled", True))),
         }
         if os.getenv("CODECORTEX_CONTEXT_BUDGET"):
@@ -65,9 +77,7 @@ class CortexConfig(BaseModel):
         if budget < 1:
             raise ValueError("context budget must be positive")
         if budget > self.hard_context_limit:
-            raise ValueError(
-                f"context budget {budget} exceeds hard limit {self.hard_context_limit}"
-            )
+            raise ValueError(f"context budget {budget} exceeds hard limit {self.hard_context_limit}")
         return budget
 
     def ensure_directories(self) -> None:
