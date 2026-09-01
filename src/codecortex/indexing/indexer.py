@@ -42,6 +42,11 @@ class ProjectIndexer:
             files.append(path)
         return sorted(files)
 
+    @staticmethod
+    def _symbol_id(relative: str, name: str, kind: str, line: int, container: str | None) -> str:
+        owner = f"{container}::" if container else ""
+        return f"symbol:{relative}:{line}:{kind}:{owner}{name}"
+
     def build(self) -> ProjectGraph:
         files = self._files()
         nodes: list[GraphNode] = []
@@ -49,11 +54,12 @@ class ProjectIndexer:
         node_ids: set[str] = set()
         names: dict[str, list[GraphNode]] = {}
         file_sources: dict[Path, str] = {}
-        symbol_for_file: dict[tuple[str, str], str] = {}
+        symbols_by_file: dict[str, list[GraphNode]] = {}
 
         for path in files:
             relative = path.relative_to(self.root)
-            file_id = f"file:{relative.as_posix()}"
+            relative_name = relative.as_posix()
+            file_id = f"file:{relative_name}"
             self._node(
                 nodes,
                 node_ids,
@@ -61,7 +67,7 @@ class ProjectIndexer:
                     id=file_id,
                     kind="file",
                     name=relative.name,
-                    path=relative.as_posix(),
+                    path=relative_name,
                     metadata={"extension": relative.suffix.lower()},
                 ),
             )
@@ -75,12 +81,14 @@ class ProjectIndexer:
             for symbol in self.symbols.extract(path, source):
                 if symbol.kind in {"import", "export"}:
                     continue
-                symbol_id = f"symbol:{relative.as_posix()}:{symbol.line}:{symbol.kind}:{symbol.name}"
+                symbol_id = self._symbol_id(
+                    relative_name, symbol.name, symbol.kind, symbol.line, symbol.container
+                )
                 node = GraphNode(
                     id=symbol_id,
                     kind=symbol.kind,
                     name=symbol.name,
-                    path=relative.as_posix(),
+                    path=relative_name,
                     line=symbol.line,
                     metadata={
                         "language": symbol.language,
@@ -91,19 +99,20 @@ class ProjectIndexer:
                 edges.append(GraphEdge(source=file_id, target=symbol_id, kind="contains"))
                 edges.append(GraphEdge(source=file_id, target=symbol_id, kind="defines"))
                 names.setdefault(symbol.name, []).append(node)
-                symbol_for_file[(relative.as_posix(), symbol.name)] = symbol_id
+                symbols_by_file.setdefault(relative_name, []).append(node)
 
         for path, source in file_sources.items():
             relative = path.relative_to(self.root)
             source_path = relative.as_posix()
             file_id = f"file:{source_path}"
+            local_nodes = sorted(
+                symbols_by_file.get(source_path, []),
+                key=lambda item: (item.line or 0, item.id),
+            )
             for relation in self.relationships.extract(path, source):
-                source_id = file_id
-                if relation.source_symbol:
-                    source_id = symbol_for_file.get(
-                        (source_path, relation.source_symbol),
-                        file_id,
-                    )
+                source_id = self._relation_source_id(
+                    file_id, local_nodes, relation.source_symbol, relation.line
+                )
                 target_id, metadata = self._resolve_target(
                     relation.target,
                     relation.kind,
@@ -128,6 +137,24 @@ class ProjectIndexer:
             if edge.source != edge.target
         }
         return ProjectGraph(nodes=nodes, edges=list(unique_edges.values()))
+
+    @staticmethod
+    def _relation_source_id(
+        file_id: str,
+        local_nodes: list[GraphNode],
+        source_symbol: str | None,
+        relation_line: int,
+    ) -> str:
+        if not source_symbol:
+            return file_id
+        candidates = [
+            node
+            for node in local_nodes
+            if node.name == source_symbol and (node.line or 0) <= relation_line
+        ]
+        if not candidates:
+            return file_id
+        return max(candidates, key=lambda item: (item.line or 0, item.id)).id
 
     @staticmethod
     def _node(nodes: list[GraphNode], node_ids: set[str], node: GraphNode) -> None:
