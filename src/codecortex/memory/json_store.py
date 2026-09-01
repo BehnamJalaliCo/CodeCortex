@@ -1,12 +1,13 @@
-"""Simple local JSON memory backend."""
+"""Process-safe local JSON memory backend."""
 
 from __future__ import annotations
 
-import json
+import hashlib
 import re
 from pathlib import Path
 
 from codecortex.core.contracts import MemoryStore
+from codecortex.state import AtomicJsonFile
 
 
 class JsonMemoryStore(MemoryStore):
@@ -15,26 +16,33 @@ class JsonMemoryStore(MemoryStore):
         self.root.mkdir(parents=True, exist_ok=True)
 
     def _path(self, namespace: str) -> Path:
-        safe = re.sub(r"[^a-zA-Z0-9_.-]+", "_", namespace)
-        return self.root / f"{safe}.json"
+        safe = re.sub(r"[^a-zA-Z0-9_.-]+", "_", namespace).strip("._") or "namespace"
+        digest = hashlib.blake2b(namespace.encode("utf-8"), digest_size=6).hexdigest()
+        return self.root / f"{safe}-{digest}.json"
+
+    def _store(self, namespace: str) -> AtomicJsonFile:
+        return AtomicJsonFile(self._path(namespace))
 
     def _load(self, namespace: str) -> dict[str, str]:
-        path = self._path(namespace)
-        if not path.exists():
-            return {}
-        try:
-            data = json.loads(path.read_text(encoding="utf-8"))
-        except (json.JSONDecodeError, OSError):
+        data = self._store(namespace).read({})
+        if not isinstance(data, dict):
             return {}
         return {str(key): str(value) for key, value in data.items()}
 
     async def put(self, namespace: str, key: str, value: str) -> None:
-        data = self._load(namespace)
-        data[key] = value
-        path = self._path(namespace)
-        temp = path.with_suffix(".tmp")
-        temp.write_text(json.dumps(data, indent=2, ensure_ascii=False), encoding="utf-8")
-        temp.replace(path)
+        if not namespace.strip() or not key.strip():
+            raise ValueError("namespace and key are required")
+
+        def update(current: object) -> dict[str, str]:
+            data = (
+                {str(k): str(v) for k, v in current.items()}
+                if isinstance(current, dict)
+                else {}
+            )
+            data[key] = value
+            return data
+
+        self._store(namespace).update(update, default={})
 
     async def get(self, namespace: str, key: str) -> str | None:
         return self._load(namespace).get(key)
@@ -49,4 +57,4 @@ class JsonMemoryStore(MemoryStore):
             if score:
                 scored.append((score, value))
         scored.sort(key=lambda item: item[0], reverse=True)
-        return [value for _, value in scored[:limit]]
+        return [value for _, value in scored[: max(1, limit)]]

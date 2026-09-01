@@ -3,23 +3,14 @@
 from __future__ import annotations
 
 import hashlib
-import json
-import os
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
-_EXCLUDED = {
-    ".git",
-    ".codecortex",
-    ".venv",
-    "venv",
-    "node_modules",
-    "dist",
-    "build",
-    "__pycache__",
-}
+from codecortex.state import AtomicJsonFile
+
+_EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build", "__pycache__"}
 
 
 @dataclass(frozen=True, slots=True)
@@ -44,16 +35,9 @@ class IndexStats:
 
 
 class IncrementalIndex:
-    """Track repository files by content hash and persist the result locally."""
-
     VERSION = 1
 
-    def __init__(
-        self,
-        root: Path,
-        state_path: Path | None = None,
-        max_file_bytes: int = 4 * 1024 * 1024,
-    ) -> None:
+    def __init__(self, root: Path, state_path: Path | None = None, max_file_bytes: int = 4 * 1024 * 1024) -> None:
         self.root = root.resolve()
         self.state_path = state_path or self.root / ".codecortex" / "index" / "manifest.json"
         self.max_file_bytes = max_file_bytes
@@ -84,37 +68,29 @@ class IncrementalIndex:
         return hasher.hexdigest()
 
     def _load(self) -> dict[str, FileState]:
-        try:
-            payload = json.loads(self.state_path.read_text(encoding="utf-8"))
-        except (OSError, json.JSONDecodeError):
-            return {}
-        if payload.get("version") != self.VERSION:
+        payload = AtomicJsonFile(self.state_path).read({})
+        if not isinstance(payload, dict) or payload.get("version") != self.VERSION:
             return {}
         result: dict[str, FileState] = {}
-        for name, value in payload.get("files", {}).items():
+        raw_files = payload.get("files", {})
+        if not isinstance(raw_files, dict):
+            return result
+        for name, value in raw_files.items():
+            if not isinstance(value, dict):
+                continue
             try:
-                result[name] = FileState(
-                    digest=str(value["digest"]),
-                    size=int(value["size"]),
-                    mtime_ns=int(value["mtime_ns"]),
-                )
+                result[str(name)] = FileState(digest=str(value["digest"]), size=int(value["size"]), mtime_ns=int(value["mtime_ns"]))
             except (KeyError, TypeError, ValueError):
                 continue
         return result
 
     def _save(self, files: dict[str, FileState]) -> None:
-        self.state_path.parent.mkdir(parents=True, exist_ok=True)
         payload: dict[str, Any] = {
             "version": self.VERSION,
             "root": str(self.root),
             "files": {name: asdict(state) for name, state in sorted(files.items())},
         }
-        temp_path = self.state_path.with_suffix(".tmp")
-        temp_path.write_text(
-            json.dumps(payload, ensure_ascii=False, indent=2),
-            encoding="utf-8",
-        )
-        os.replace(temp_path, self.state_path)
+        AtomicJsonFile(self.state_path).write(payload)
 
     def refresh(self) -> IndexStats:
         started = time.perf_counter()
@@ -123,7 +99,6 @@ class IncrementalIndex:
         added: list[str] = []
         changed: list[str] = []
         unchanged = 0
-
         for path in self._iter_files():
             relative = path.relative_to(self.root).as_posix()
             try:
@@ -136,11 +111,7 @@ class IncrementalIndex:
                 unchanged += 1
                 continue
             try:
-                state = FileState(
-                    digest=self._digest(path),
-                    size=stat.st_size,
-                    mtime_ns=stat.st_mtime_ns,
-                )
+                state = FileState(digest=self._digest(path), size=stat.st_size, mtime_ns=stat.st_mtime_ns)
             except OSError:
                 continue
             current[relative] = state
@@ -150,14 +121,6 @@ class IncrementalIndex:
                 changed.append(relative)
             else:
                 unchanged += 1
-
         removed = sorted(set(previous) - set(current))
         self._save(current)
-        return IndexStats(
-            tracked=len(current),
-            added=tuple(added),
-            changed=tuple(changed),
-            removed=tuple(removed),
-            unchanged=unchanged,
-            duration_ms=(time.perf_counter() - started) * 1000,
-        )
+        return IndexStats(tracked=len(current), added=tuple(added), changed=tuple(changed), removed=tuple(removed), unchanged=unchanged, duration_ms=(time.perf_counter() - started) * 1000)
