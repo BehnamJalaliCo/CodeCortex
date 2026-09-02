@@ -27,7 +27,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,web]"
       - run: ruff check .
       - name: Tests
         run: |
@@ -95,7 +95,7 @@ jobs:
           python-version: "3.11"
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,web]"
       - run: ruff check .
       - run: pytest -q
       - run: cortex --help
