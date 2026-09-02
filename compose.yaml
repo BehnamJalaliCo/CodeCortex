@@ -1,21 +1,39 @@
 services:
-  dashboard:
+  api:
+    build:
+      context: .
+      target: api
+    working_dir: /workspace
+    volumes:
+      - .:/workspace:ro
+      - codecortex-state:/var/lib/codecortex
+      - codecortex-backends:/opt/codecortex/backends
+    environment:
+      CODECORTEX_BACKENDS: ${CODECORTEX_BACKENDS:-builtin}
+      CODECORTEX_API_TOKEN: ${CODECORTEX_API_TOKEN:-}
+    expose:
+      - "7340"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:7340/api/v1/readiness', timeout=3)"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+
+  console:
+    build:
+      context: .
+      target: console
+    depends_on:
+      api:
+        condition: service_healthy
+    ports:
+      - "7331:8080"
+
+  dashboard-legacy:
+    profiles: ["legacy"]
     build:
       context: .
       target: core
-    working_dir: /workspace
-    volumes:
-      - .:/workspace
-      - codecortex-backends:/home/cortex/.cache/codecortex/backends
-    ports:
-      - "7331:7331"
-    command: ["dashboard", "--host", "0.0.0.0", "--port", "7331", "--path", "/workspace"]
-
-  dashboard-full:
-    profiles: ["full"]
-    build:
-      context: .
-      target: full
     working_dir: /workspace
     volumes:
       - .:/workspace
@@ -24,4 +42,5 @@ services:
     command: ["dashboard", "--host", "0.0.0.0", "--port", "7331", "--path", "/workspace"]
 
 volumes:
+  codecortex-state:
   codecortex-backends:
