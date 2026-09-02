@@ -116,7 +116,7 @@ def create_app(
 
     @app.get(f"{prefix}/workspaces", response_model=list[WorkspaceResponse])
     def workspaces(_actor: str = Depends(principal)) -> list[WorkspaceResponse]:
-        return [WorkspaceResponse(**item.__dict__) for item in database.workspaces()]
+        return [WorkspaceResponse(**asdict(item)) for item in database.workspaces()]
 
     @app.post(f"{prefix}/workspaces", response_model=WorkspaceResponse, status_code=201)
     def create_workspace(
@@ -124,7 +124,7 @@ def create_app(
     ) -> WorkspaceResponse:
         item = database.create_workspace(payload.name)
         events.publish("workspace.created", {"workspace_id": item.workspace_id, "name": item.name})
-        return WorkspaceResponse(**item.__dict__)
+        return WorkspaceResponse(**asdict(item))
 
     @app.delete(f"{prefix}/workspaces/{{workspace_id}}", status_code=204)
     def delete_workspace(workspace_id: str, _actor: str = Depends(principal)) -> None:
@@ -140,7 +140,7 @@ def create_app(
     def repositories(
         workspace: str | None = None, _actor: str = Depends(principal)
     ) -> list[RepositoryResponse]:
-        return [RepositoryResponse(**item.__dict__) for item in database.repositories(workspace)]
+        return [RepositoryResponse(**asdict(item)) for item in database.repositories(workspace)]
 
     @app.post(f"{prefix}/repositories", response_model=RepositoryResponse, status_code=201)
     def add_repository(
@@ -154,11 +154,11 @@ def create_app(
             "repository.registered",
             {"repository_id": item.repository_id, "workspace": item.workspace},
         )
-        return RepositoryResponse(**item.__dict__)
+        return RepositoryResponse(**asdict(item))
 
     @app.get(f"{prefix}/repositories/{{repository_id}}", response_model=RepositoryResponse)
     def repository(repository_id: str, _actor: str = Depends(principal)) -> RepositoryResponse:
-        return RepositoryResponse(**registered_repository(repository_id).__dict__)
+        return RepositoryResponse(**asdict(registered_repository(repository_id)))
 
     @app.delete(f"{prefix}/repositories/{{repository_id}}", status_code=204)
     def delete_repository(repository_id: str, _actor: str = Depends(principal)) -> None:
