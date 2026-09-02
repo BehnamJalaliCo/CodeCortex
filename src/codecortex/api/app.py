@@ -5,6 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import Any
 
+from codecortex.api.auth import ApiSecuritySettings, ApiTokenAuthenticator
 from codecortex.persistence import PlatformDatabase
 from codecortex.platform import PLATFORM_API_VERSION
 from codecortex.projects import CortexRuntimeManager
@@ -14,15 +15,12 @@ def create_app(
     *,
     state_dir: Path | None = None,
     runtime_manager: CortexRuntimeManager | None = None,
+    security: ApiSecuritySettings | None = None,
 ) -> Any:
-    """Create the ASGI application.
-
-    FastAPI is an optional web dependency so the core package remains local-first and
-    dependency-light. Importing ``codecortex.api`` does not start a server.
-    """
+    """Create the ASGI application with optional local or bearer-token authentication."""
 
     try:
-        from fastapi import FastAPI, HTTPException
+        from fastapi import Depends, FastAPI, Header, HTTPException
     except ImportError as exc:  # pragma: no cover - optional dependency boundary
         raise RuntimeError("CodeCortex web API requires `pip install codecortex-context-engine[web]`") from exc
 
@@ -31,11 +29,19 @@ def create_app(
     root = (state_dir or Path.cwd() / ".codecortex" / "platform").expanduser().resolve()
     database = PlatformDatabase(root / "platform.db")
     runtimes = runtime_manager or CortexRuntimeManager()
+    authenticator = ApiTokenAuthenticator(security)
     app = FastAPI(title="CodeCortex API", version=PLATFORM_API_VERSION)
     app.state.database = database
     app.state.runtime_manager = runtimes
+    app.state.authenticator = authenticator
 
     prefix = f"/api/{PLATFORM_API_VERSION}"
+
+    def principal(authorization: str | None = Header(default=None)) -> str:
+        actor = authenticator.authenticate(authorization)
+        if actor is None:
+            raise HTTPException(status_code=401, detail="unauthorized", headers={"WWW-Authenticate": "Bearer"})
+        return actor
 
     @app.get(f"{prefix}/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -50,12 +56,22 @@ def create_app(
     def version() -> HealthResponse:
         return HealthResponse(status="ok", version=PLATFORM_API_VERSION)
 
+    @app.get(f"{prefix}/session")
+    def session(actor: str = Depends(principal)) -> dict[str, str]:
+        return {"principal": actor}
+
     @app.get(f"{prefix}/repositories", response_model=list[RepositoryResponse])
-    def repositories(workspace: str | None = None) -> list[RepositoryResponse]:
+    def repositories(
+        workspace: str | None = None,
+        _actor: str = Depends(principal),
+    ) -> list[RepositoryResponse]:
         return [RepositoryResponse(**item.__dict__) for item in database.repositories(workspace)]
 
     @app.post(f"{prefix}/repositories", response_model=RepositoryResponse, status_code=201)
-    def add_repository(payload: RepositoryCreate) -> RepositoryResponse:
+    def add_repository(
+        payload: RepositoryCreate,
+        _actor: str = Depends(principal),
+    ) -> RepositoryResponse:
         try:
             item = database.register_repository(payload.workspace, payload.name, payload.root)
         except ValueError as exc:
@@ -63,7 +79,10 @@ def create_app(
         return RepositoryResponse(**item.__dict__)
 
     @app.get(f"{prefix}/repositories/{{repository_id}}", response_model=RepositoryResponse)
-    def repository(repository_id: str) -> RepositoryResponse:
+    def repository(
+        repository_id: str,
+        _actor: str = Depends(principal),
+    ) -> RepositoryResponse:
         item = database.repository(repository_id)
         if item is None:
             raise HTTPException(status_code=404, detail="repository not found")
