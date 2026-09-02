@@ -2,6 +2,7 @@
 from __future__ import annotations
 from typing import Any
 from pydantic import BaseModel,Field
+from codecortex.application.architecture import ArchitectureService
 from codecortex.application.context_lab import ContextLabService
 from codecortex.application.impact import ImpactService
 from codecortex.application.search import RepositorySearchService
@@ -17,6 +18,7 @@ def mount_repository_routes(app:Any,prefix:str,database:Any,runtimes:Any,princip
         if item is None:raise HTTPException(status_code=404,detail="repository not found")
         return item
     def runtime(repository_id:str):return runtimes.get(record(repository_id).root)
+    def root(repository_id:str):return runtime(repository_id).config.project_root
     def service(repository_id:str)->CortexApplicationService:return CortexApplicationService(runtime(repository_id))
     @app.get(f"{prefix}/repositories/{{repository_id}}/files")
     def files(repository_id:str,limit:int=500,_actor:str=Depends(principal))->dict[str,Any]:return service(repository_id).repository_files(limit=limit)
@@ -26,7 +28,7 @@ def mount_repository_routes(app:Any,prefix:str,database:Any,runtimes:Any,princip
     def graph(repository_id:str,query:str="",depth:int=1,relation:str="",limit:int=400,_actor:str=Depends(principal))->dict[str,Any]:return service(repository_id).repository_graph(query=query,depth=depth,relation=relation,limit=limit)
     @app.post(f"{prefix}/repositories/{{repository_id}}/search")
     def search(repository_id:str,payload:SearchRequest,_actor:str=Depends(principal))->dict[str,Any]:
-        try:return RepositorySearchService(runtime(repository_id).config.project_root).search(payload.query,payload.limit)
+        try:return RepositorySearchService(root(repository_id)).search(payload.query,payload.limit)
         except ValueError as exc:raise HTTPException(status_code=400,detail=str(exc)) from exc
     @app.post(f"{prefix}/repositories/{{repository_id}}/context")
     async def context(repository_id:str,payload:ContextRequest,_actor:str=Depends(principal))->dict[str,Any]:
@@ -34,7 +36,7 @@ def mount_repository_routes(app:Any,prefix:str,database:Any,runtimes:Any,princip
         except ValueError as exc:raise HTTPException(status_code=400,detail=str(exc)) from exc
     @app.post(f"{prefix}/repositories/{{repository_id}}/impact")
     def impact(repository_id:str,payload:QueryRequest,_actor:str=Depends(principal))->dict[str,Any]:
-        try:return ImpactService(runtime(repository_id).config.project_root).analyze(payload.query)
+        try:return ImpactService(root(repository_id)).analyze(payload.query)
         except ValueError as exc:raise HTTPException(status_code=404,detail=str(exc)) from exc
     @app.post(f"{prefix}/repositories/{{repository_id}}/route")
     def route(repository_id:str,payload:QueryRequest,_actor:str=Depends(principal))->dict[str,Any]:
@@ -46,3 +48,9 @@ def mount_repository_routes(app:Any,prefix:str,database:Any,runtimes:Any,princip
     def trace_detail(repository_id:str,trace_id:str,_actor:str=Depends(principal))->dict[str,Any]:
         try:return TraceExplorerService(runtime(repository_id)).detail(trace_id)
         except KeyError as exc:raise HTTPException(status_code=404,detail="trace not found") from exc
+    @app.get(f"{prefix}/repositories/{{repository_id}}/architecture")
+    def architecture(repository_id:str,_actor:str=Depends(principal))->dict[str,Any]:return ArchitectureService(root(repository_id)).analyze()
+    @app.get(f"{prefix}/repositories/{{repository_id}}/architecture/drift")
+    def architecture_drift(repository_id:str,_actor:str=Depends(principal))->dict[str,Any]:return ArchitectureService(root(repository_id)).drift()
+    @app.post(f"{prefix}/repositories/{{repository_id}}/architecture/baseline")
+    def architecture_baseline(repository_id:str,_actor:str=Depends(principal))->dict[str,Any]:return ArchitectureService(root(repository_id)).baseline()
