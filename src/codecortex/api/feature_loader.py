@@ -36,6 +36,7 @@ _FEATURE_MODULES = (
     "codecortex.api.routes.notifications",
     "codecortex.api.routes.observability",
     "codecortex.api.routes.performance",
+    "codecortex.api.routes.versioning",
 )
 
 
