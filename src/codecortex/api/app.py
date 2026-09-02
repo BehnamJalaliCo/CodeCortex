@@ -35,6 +35,8 @@ def create_app(*, state_dir: Path | None = None, runtime_manager: CortexRuntimeM
     runtimes = runtime_manager or CortexRuntimeManager()
     authenticator = ApiTokenAuthenticator(security)
     app = FastAPI(title="CodeCortex API", version=PLATFORM_API_VERSION)
+    from codecortex.api.hardening import install_api_hardening
+    install_api_hardening(app)
     app.state.database = database; app.state.events = events; app.state.job_manager = jobs; app.state.runtime_manager = runtimes; app.state.authenticator = authenticator
     prefix = f"/api/{PLATFORM_API_VERSION}"
 
