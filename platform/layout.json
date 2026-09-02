@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "required_paths": [
+    "src/codecortex/application",
+    "src/codecortex/api",
+    "src/codecortex/engines",
+    "src/codecortex/indexing",
+    "src/codecortex/retrieval",
+    "src/codecortex/context",
+    "src/codecortex/memory",
+    "src/codecortex/tracing",
+    "src/codecortex/telemetry",
+    "src/codecortex/evaluation",
+    "src/codecortex/distributed",
+    "src/codecortex/integrations",
+    "src/codecortex/mcp",
+    "web/src/app",
+    "web/src/api",
+    "web/src/components",
+    "web/src/features",
+    "web/src/pages",
+    "sdk/typescript",
+    "docs/platform",
+    "deploy",
+    "platform",
+    "tests"
+  ],
+  "logical_components": {
+    "projects": "src/codecortex/projects.py",
+    "persistence": "src/codecortex/persistence.py",
+    "jobs": "src/codecortex/jobs.py",
+    "authentication": "src/codecortex/api/auth.py",
+    "web_e2e": "web/tests/e2e"
+  }
+}
