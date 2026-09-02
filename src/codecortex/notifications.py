@@ -89,11 +89,13 @@ class NotificationStore:
         return item
 
     def list(self, *, include_acknowledged: bool = False, limit: int = 200) -> list[Notification]:
-        sql = (
-            "SELECT * FROM notifications"
-            + ("" if include_acknowledged else " WHERE acknowledged_at IS NULL")
-            + " ORDER BY created_at DESC LIMIT ?"
-        )
+        if include_acknowledged:
+            sql = "SELECT * FROM notifications ORDER BY created_at DESC LIMIT ?"
+        else:
+            sql = (
+                "SELECT * FROM notifications "
+                "WHERE acknowledged_at IS NULL ORDER BY created_at DESC LIMIT ?"
+            )
         with self._connect() as connection:
             rows = connection.execute(sql, (max(1, limit),)).fetchall()
         return [self._row(row) for row in rows]
