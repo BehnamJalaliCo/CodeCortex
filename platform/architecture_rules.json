@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "rules": [
+    {"id":"web-no-storage","scope":"web/src","forbidden":["sqlite3","ProjectIndexer",".codecortex/"]},
+    {"id":"web-no-python-core","scope":"web/src","forbidden":["codecortex.indexing","codecortex.engines","codecortex.memory"]},
+    {"id":"legacy-dashboard-is-not-platform","scope":"src/codecortex/dashboard.py","forbidden":["FastAPI(","CortexRuntimeManager(","PlatformDatabase("]},
+    {"id":"engines-no-full-indexer","scope":"src/codecortex/engines/builtin","forbidden":["ProjectIndexer("]},
+    {"id":"no-fake-metric-markers","scope":"src/codecortex","forbidden":["FAKE_METRIC","SYNTHETIC_METRIC_VALUE"]}
+  ]
+}
