@@ -7,13 +7,13 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from codecortex.indexing.graph import GraphNode, ProjectGraph
-from codecortex.indexing.incremental_graph import GraphRefreshStats, IncrementalGraphIndex
+from codecortex.indexing.incremental_graph import GraphUpdateStats, IncrementalGraphIndex
 
 
 @dataclass(frozen=True, slots=True)
 class RepositorySnapshot:
     graph: ProjectGraph
-    stats: GraphRefreshStats
+    stats: GraphUpdateStats
     generation: int
 
 
