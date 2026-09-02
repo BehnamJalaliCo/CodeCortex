@@ -36,6 +36,7 @@ dev = [
   "mypy>=1.11",
   "build>=1.2",
   "twine>=7.0.0",
+  "httpx>=0.27,<1",
 ]
 security = ["pip-audit>=2.7", "bandit>=1.7", "cyclonedx-bom>=4"]
 
