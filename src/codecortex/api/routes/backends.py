@@ -21,7 +21,7 @@ def mount(app: Any, ctx: Any) -> None:
     def list_backends(repository_id: str, _actor: str = Depends(ctx.principal)) -> dict[str, Any]:
         mgr = manager(repository_id)
         rows = []
-        for key, spec in BACKENDS.items():
+        for spec in BACKENDS.values():
             rows.append(
                 {
                     **asdict(spec),
