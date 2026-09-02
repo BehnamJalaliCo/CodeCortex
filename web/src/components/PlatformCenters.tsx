@@ -8,11 +8,13 @@ import {NotificationCenter} from './NotificationCenter'
 import {ObservabilityCenter} from './ObservabilityCenter'
 import {OrganizationAdmin} from './OrganizationAdmin'
 import {PerformanceCenter} from './PerformanceCenter'
+import {PlatformManifest} from './PlatformManifest'
 import {PRIntelligence} from './PRIntelligence'
 import {QualityCenter} from './QualityCenter'
 
 export function PlatformCenters({repositoryId}:{repositoryId:string}){
   return <>
+    <PlatformManifest/>
     <PRIntelligence repositoryId={repositoryId}/>
     <QualityCenter repositoryId={repositoryId}/>
     <MemoryCenter repositoryId={repositoryId}/>
