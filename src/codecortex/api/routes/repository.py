@@ -6,6 +6,7 @@ from codecortex.application.context_lab import ContextLabService
 from codecortex.application.impact import ImpactService
 from codecortex.application.search import RepositorySearchService
 from codecortex.application.service import CortexApplicationService
+from codecortex.application.traces import TraceExplorerService
 class QueryRequest(BaseModel):query:str=Field(min_length=1,max_length=12000)
 class SearchRequest(QueryRequest):limit:int=Field(default=20,ge=1,le=100)
 class ContextRequest(QueryRequest):budget:int=Field(default=32000,ge=128)
@@ -38,4 +39,10 @@ def mount_repository_routes(app:Any,prefix:str,database:Any,runtimes:Any,princip
     @app.post(f"{prefix}/repositories/{{repository_id}}/route")
     def route(repository_id:str,payload:QueryRequest,_actor:str=Depends(principal))->dict[str,Any]:
         plan=service(repository_id).route(payload.query);rows=plan.get("scores",[])
-        return {"kind":plan.get("request_kind","unknown"),"selected":plan.get("selected",[]),"context_budget":plan.get("context_budget",0),"scores":{str(row.get("capability")):float(row.get("score",0)) for row in rows if isinstance(row,dict)},"reasons":{str(row.get("capability")):str(row.get("reason","")) for row in rows if isinstance(row,dict)}}
+        return {"kind":plan.get("request_kind","unknown"),"selected":plan.get("selected",[]),"context_budget":plan.get("context_budget",0),"scores":{str(r.get("capability")):float(r.get("score",0)) for r in rows if isinstance(r,dict)},"reasons":{str(r.get("capability")):str(r.get("reason","")) for r in rows if isinstance(r,dict)}}
+    @app.get(f"{prefix}/repositories/{{repository_id}}/traces")
+    def traces(repository_id:str,limit:int=50,_actor:str=Depends(principal))->dict[str,Any]:return TraceExplorerService(runtime(repository_id)).recent(limit)
+    @app.get(f"{prefix}/repositories/{{repository_id}}/traces/{{trace_id}}")
+    def trace_detail(repository_id:str,trace_id:str,_actor:str=Depends(principal))->dict[str,Any]:
+        try:return TraceExplorerService(runtime(repository_id)).detail(trace_id)
+        except KeyError as exc:raise HTTPException(status_code=404,detail="trace not found") from exc
