@@ -81,13 +81,11 @@ def create_app(*, state_dir: Path | None = None, runtime_manager: CortexRuntimeM
         return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
     @app.get(f"{prefix}/workspaces", response_model=list[WorkspaceResponse])
-    def workspaces(_actor: str = Depends(principal)) -> list[WorkspaceResponse]:
-        return [WorkspaceResponse(**item.__dict__) for item in database.workspaces()]
+    def workspaces(_actor: str = Depends(principal)) -> list[WorkspaceResponse]: return [WorkspaceResponse(**item.__dict__) for item in database.workspaces()]
 
     @app.post(f"{prefix}/workspaces", response_model=WorkspaceResponse, status_code=201)
     def create_workspace(payload: WorkspaceCreate, _actor: str = Depends(principal)) -> WorkspaceResponse:
-        item = database.create_workspace(payload.name); events.publish("workspace.created", {"workspace_id": item.workspace_id, "name": item.name})
-        return WorkspaceResponse(**item.__dict__)
+        item = database.create_workspace(payload.name); events.publish("workspace.created", {"workspace_id": item.workspace_id, "name": item.name}); return WorkspaceResponse(**item.__dict__)
 
     @app.delete(f"{prefix}/workspaces/{{workspace_id}}", status_code=204)
     def delete_workspace(workspace_id: str, _actor: str = Depends(principal)) -> None:
@@ -103,8 +101,7 @@ def create_app(*, state_dir: Path | None = None, runtime_manager: CortexRuntimeM
     def add_repository(payload: RepositoryCreate, _actor: str = Depends(principal)) -> RepositoryResponse:
         try: item = database.register_repository(payload.workspace, payload.name, payload.root)
         except ValueError as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
-        events.publish("repository.registered", {"repository_id": item.repository_id, "workspace": item.workspace})
-        return RepositoryResponse(**item.__dict__)
+        events.publish("repository.registered", {"repository_id": item.repository_id, "workspace": item.workspace}); return RepositoryResponse(**item.__dict__)
 
     @app.get(f"{prefix}/repositories/{{repository_id}}", response_model=RepositoryResponse)
     def repository(repository_id: str, _actor: str = Depends(principal)) -> RepositoryResponse: return RepositoryResponse(**registered_repository(repository_id).__dict__)
@@ -141,4 +138,6 @@ def create_app(*, state_dir: Path | None = None, runtime_manager: CortexRuntimeM
         try: return job_response(jobs.cancel(job_id))
         except KeyError as exc: raise HTTPException(status_code=404, detail="job not found") from exc
 
+    from codecortex.api.routes.repository import mount_repository_routes
+    mount_repository_routes(app, prefix, database, runtimes, principal)
     return app
