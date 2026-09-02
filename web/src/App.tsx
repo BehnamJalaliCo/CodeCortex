@@ -1,72 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
+import { WorkspaceManager } from './components/WorkspaceManager'
 
 type Health = { status: string; version: string }
 type Repository = { repository_id: string; workspace: string; name: string; root: string; created_at: string }
-type Overview = {
-  repository: { root: string; languages: [string, number][] }
-  index: { tracked: number; files_reparsed: number; duration_ms: number }
-  graph: { nodes: number; edges: number; symbols: number }
-  git: { commits: number; hot_files: string[] }
-  runtime: { health: Record<string, boolean>; active_backends: string[] }
-}
-
+type Overview = { repository: { root: string; languages: [string, number][] }; index: { tracked: number; files_reparsed: number; duration_ms: number }; graph: { nodes: number; edges: number; symbols: number }; git: { commits: number; hot_files: string[] }; runtime: { health: Record<string, boolean>; active_backends: string[] } }
 function fmt(value: number) { return new Intl.NumberFormat().format(value) }
 
 export function App() {
-  const [health, setHealth] = useState<Health | null>(null)
-  const [repositories, setRepositories] = useState<Repository[]>([])
-  const [selected, setSelected] = useState<string>('')
-  const [overview, setOverview] = useState<Overview | null>(null)
-  const [error, setError] = useState<string | null>(null)
-
-  useEffect(() => {
-    fetch('/api/v1/health').then(r => r.json()).then(setHealth).catch(() => setError('API unavailable'))
-    fetch('/api/v1/repositories').then(r => r.ok ? r.json() : []).then((items: Repository[]) => {
-      setRepositories(items); if (items.length) setSelected(items[0].repository_id)
-    }).catch(() => undefined)
-  }, [])
-
-  useEffect(() => {
-    if (!selected) { setOverview(null); return }
-    fetch(`/api/v1/repositories/${selected}/overview`).then(r => {
-      if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() as Promise<Overview>
-    }).then(setOverview).catch(reason => setError(reason instanceof Error ? reason.message : 'Overview failed'))
-  }, [selected])
-
-  const healthy = useMemo(() => overview ? Object.values(overview.runtime.health).filter(Boolean).length : 0, [overview])
-  const totalHealth = overview ? Object.keys(overview.runtime.health).length : 0
-  const cards = [
-    ['Indexed files', overview ? fmt(overview.index.tracked) : '—'],
-    ['Symbols', overview ? fmt(overview.graph.symbols) : '—'],
-    ['Graph nodes', overview ? fmt(overview.graph.nodes) : '—'],
-    ['Graph edges', overview ? fmt(overview.graph.edges) : '—'],
-    ['Git commits', overview ? fmt(overview.git.commits) : '—'],
-    ['Engine health', overview ? `${healthy}/${totalHealth}` : '—'],
-  ]
-
-  return (
-    <div className="shell">
-      <aside className="sidebar">
-        <div className="brand"><span className="mark">C</span><span>CodeCortex</span></div>
-        <nav><a className="active" href="#overview">Overview</a><a href="#workspaces">Workspaces</a><a href="#intelligence">Intelligence</a><a href="#runtime">Runtime</a><a href="#administration">Administration</a></nav>
-      </aside>
-      <main className="content">
-        <header className="topbar">
-          <div><div className="eyebrow">CONTROL PLANE</div><h1>Console</h1></div>
-          <div className="toolbar">
-            <select value={selected} onChange={event => setSelected(event.target.value)} aria-label="Repository">
-              <option value="">No repository</option>{repositories.map(repo => <option key={repo.repository_id} value={repo.repository_id}>{repo.workspace} / {repo.name}</option>)}
-            </select>
-            <div className={`status ${error ? 'bad' : health ? 'good' : ''}`}><span className="dot" />{error ? 'API issue' : health ? `API ${health.version}` : 'Connecting'}</div>
-          </div>
-        </header>
-        <section className="hero" id="overview"><div><div className="eyebrow">CODE INTELLIGENCE</div><h2>{repositories.find(repo => repo.repository_id === selected)?.name ?? 'One control plane for repository intelligence.'}</h2><p>{overview?.repository.root ?? 'Register a repository through the API to activate live intelligence.'}</p></div></section>
-        <section className="metrics">{cards.map(([label, value]) => <article className="metric" key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>
-        <section className="grid2">
-          <article className="panel"><div className="panelTitle"><span>Runtime health</span><small>{healthy}/{totalHealth} healthy</small></div><div className="list">{overview ? Object.entries(overview.runtime.health).map(([name, ok]) => <div className="row" key={name}><span>{name}</span><b className={ok ? 'ok' : 'fail'}>{ok ? 'Healthy' : 'Unavailable'}</b></div>) : <div className="empty">No runtime selected</div>}</div></article>
-          <article className="panel"><div className="panelTitle"><span>Hot files</span><small>Git intelligence</small></div><div className="list">{overview?.git.hot_files.length ? overview.git.hot_files.map(path => <div className="row mono" key={path}>{path}</div>) : <div className="empty">No Git activity yet</div>}</div></article>
-        </section>
-      </main>
-    </div>
-  )
+  const [health, setHealth] = useState<Health | null>(null), [repositories, setRepositories] = useState<Repository[]>([]), [selected, setSelected] = useState(''), [overview, setOverview] = useState<Overview | null>(null), [error, setError] = useState<string | null>(null)
+  const refreshRepositories = () => fetch('/api/v1/repositories').then(r => r.ok ? r.json() : []).then((items: Repository[]) => { setRepositories(items); setSelected(current => current || items[0]?.repository_id || '') })
+  useEffect(() => { fetch('/api/v1/health').then(r => r.json()).then(setHealth).catch(() => setError('API unavailable')); void refreshRepositories() }, [])
+  useEffect(() => { if (!selected) { setOverview(null); return } fetch(`/api/v1/repositories/${selected}/overview`).then(r => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json() as Promise<Overview> }).then(setOverview).catch(reason => setError(reason instanceof Error ? reason.message : 'Overview failed')) }, [selected])
+  const healthy = useMemo(() => overview ? Object.values(overview.runtime.health).filter(Boolean).length : 0, [overview]), totalHealth = overview ? Object.keys(overview.runtime.health).length : 0
+  const cards = [['Indexed files', overview ? fmt(overview.index.tracked) : '—'], ['Symbols', overview ? fmt(overview.graph.symbols) : '—'], ['Graph nodes', overview ? fmt(overview.graph.nodes) : '—'], ['Graph edges', overview ? fmt(overview.graph.edges) : '—'], ['Git commits', overview ? fmt(overview.git.commits) : '—'], ['Engine health', overview ? `${healthy}/${totalHealth}` : '—']]
+  return <div className="shell"><aside className="sidebar"><div className="brand"><span className="mark">C</span><span>CodeCortex</span></div><nav><a className="active" href="#overview">Overview</a><a href="#workspaces">Workspaces</a><a href="#intelligence">Intelligence</a><a href="#runtime">Runtime</a><a href="#administration">Administration</a></nav></aside><main className="content">
+    <header className="topbar"><div><div className="eyebrow">CONTROL PLANE</div><h1>Console</h1></div><div className="toolbar"><select value={selected} onChange={e => setSelected(e.target.value)} aria-label="Repository"><option value="">No repository</option>{repositories.map(repo => <option key={repo.repository_id} value={repo.repository_id}>{repo.workspace} / {repo.name}</option>)}</select><div className={`status ${error ? 'bad' : health ? 'good' : ''}`}><span className="dot" />{error ? 'API issue' : health ? `API ${health.version}` : 'Connecting'}</div></div></header>
+    <section className="hero" id="overview"><div><div className="eyebrow">CODE INTELLIGENCE</div><h2>{repositories.find(repo => repo.repository_id === selected)?.name ?? 'One control plane for repository intelligence.'}</h2><p>{overview?.repository.root ?? 'Register a repository to activate live intelligence.'}</p></div></section>
+    <section className="metrics">{cards.map(([label,value]) => <article className="metric" key={label}><span>{label}</span><strong>{value}</strong></article>)}</section>
+    <section className="grid2"><article className="panel"><div className="panelTitle"><span>Runtime health</span><small>{healthy}/{totalHealth} healthy</small></div><div className="list">{overview ? Object.entries(overview.runtime.health).map(([name,ok]) => <div className="row" key={name}><span>{name}</span><b className={ok ? 'ok':'fail'}>{ok?'Healthy':'Unavailable'}</b></div>) : <div className="empty">No runtime selected</div>}</div></article><article className="panel"><div className="panelTitle"><span>Hot files</span><small>Git intelligence</small></div><div className="list">{overview?.git.hot_files.length ? overview.git.hot_files.map(path => <div className="row mono" key={path}>{path}</div>) : <div className="empty">No Git activity yet</div>}</div></article></section>
+    <WorkspaceManager onChanged={() => void refreshRepositories()} />
+  </main></div>
 }

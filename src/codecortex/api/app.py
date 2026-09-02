@@ -19,21 +19,14 @@ from codecortex.projects import CortexRuntimeManager
 from codecortex.realtime import PlatformEventBus
 
 
-def create_app(
-    *,
-    state_dir: Path | None = None,
-    runtime_manager: CortexRuntimeManager | None = None,
-    security: ApiSecuritySettings | None = None,
-) -> Any:
-    """Create the ASGI application with auth, jobs and SSE events."""
-
+def create_app(*, state_dir: Path | None = None, runtime_manager: CortexRuntimeManager | None = None, security: ApiSecuritySettings | None = None) -> Any:
     try:
         from fastapi import Depends, FastAPI, Header, HTTPException
         from fastapi.responses import StreamingResponse
-    except ImportError as exc:  # pragma: no cover - optional dependency boundary
+    except ImportError as exc:  # pragma: no cover
         raise RuntimeError("CodeCortex web API requires `pip install codecortex-context-engine[web]`") from exc
 
-    from codecortex.api.schemas import HealthResponse, JobResponse, RepositoryCreate, RepositoryResponse
+    from codecortex.api.schemas import HealthResponse, JobResponse, RepositoryCreate, RepositoryResponse, WorkspaceCreate, WorkspaceResponse
 
     root = (state_dir or Path.cwd() / ".codecortex" / "platform").expanduser().resolve()
     database = PlatformDatabase(root / "platform.db")
@@ -42,34 +35,25 @@ def create_app(
     runtimes = runtime_manager or CortexRuntimeManager()
     authenticator = ApiTokenAuthenticator(security)
     app = FastAPI(title="CodeCortex API", version=PLATFORM_API_VERSION)
-    app.state.database = database
-    app.state.events = events
-    app.state.job_manager = jobs
-    app.state.runtime_manager = runtimes
-    app.state.authenticator = authenticator
-
+    app.state.database = database; app.state.events = events; app.state.job_manager = jobs; app.state.runtime_manager = runtimes; app.state.authenticator = authenticator
     prefix = f"/api/{PLATFORM_API_VERSION}"
 
     def principal(authorization: str | None = Header(default=None)) -> str:
         actor = authenticator.authenticate(authorization)
-        if actor is None:
-            raise HTTPException(status_code=401, detail="unauthorized", headers={"WWW-Authenticate": "Bearer"})
+        if actor is None: raise HTTPException(status_code=401, detail="unauthorized", headers={"WWW-Authenticate": "Bearer"})
         return actor
 
     def job_response(job: Any) -> JobResponse:
-        payload = asdict(job)
-        payload["status"] = job.status.value
+        payload = asdict(job); payload["status"] = job.status.value
         return JobResponse(**payload)
 
     def registered_repository(repository_id: str):
         item = database.repository(repository_id)
-        if item is None:
-            raise HTTPException(status_code=404, detail="repository not found")
+        if item is None: raise HTTPException(status_code=404, detail="repository not found")
         return item
 
     @app.get(f"{prefix}/health", response_model=HealthResponse)
-    def health() -> HealthResponse:
-        return HealthResponse(status="ok", version=PLATFORM_API_VERSION)
+    def health() -> HealthResponse: return HealthResponse(status="ok", version=PLATFORM_API_VERSION)
 
     @app.get(f"{prefix}/readiness", response_model=HealthResponse)
     def readiness() -> HealthResponse:
@@ -77,83 +61,84 @@ def create_app(
         return HealthResponse(status="ready", version=PLATFORM_API_VERSION)
 
     @app.get(f"{prefix}/version", response_model=HealthResponse)
-    def version() -> HealthResponse:
-        return HealthResponse(status="ok", version=PLATFORM_API_VERSION)
+    def version() -> HealthResponse: return HealthResponse(status="ok", version=PLATFORM_API_VERSION)
 
     @app.get(f"{prefix}/session")
-    def session(actor: str = Depends(principal)) -> dict[str, str]:
-        return {"principal": actor}
+    def session(actor: str = Depends(principal)) -> dict[str, str]: return {"principal": actor}
 
     @app.get(f"{prefix}/events")
     async def event_stream(_actor: str = Depends(principal)) -> StreamingResponse:
         subscriber = events.subscribe()
-
         async def stream():
             try:
                 while True:
-                    try:
-                        event = await asyncio.to_thread(subscriber.get, True, 15.0)
+                    try: event = await asyncio.to_thread(subscriber.get, True, 15.0)
                     except queue.Empty:
-                        yield ": heartbeat\n\n"
-                        continue
+                        yield ": heartbeat\n\n"; continue
                     body = json.dumps(event.to_dict(), ensure_ascii=False, separators=(",", ":"))
                     yield f"id: {event.event_id}\nevent: {event.type}\ndata: {body}\n\n"
-            finally:
-                events.unsubscribe(subscriber)
-
+            finally: events.unsubscribe(subscriber)
         return StreamingResponse(stream(), media_type="text/event-stream", headers={"Cache-Control": "no-cache"})
 
+    @app.get(f"{prefix}/workspaces", response_model=list[WorkspaceResponse])
+    def workspaces(_actor: str = Depends(principal)) -> list[WorkspaceResponse]:
+        return [WorkspaceResponse(**item.__dict__) for item in database.workspaces()]
+
+    @app.post(f"{prefix}/workspaces", response_model=WorkspaceResponse, status_code=201)
+    def create_workspace(payload: WorkspaceCreate, _actor: str = Depends(principal)) -> WorkspaceResponse:
+        item = database.create_workspace(payload.name); events.publish("workspace.created", {"workspace_id": item.workspace_id, "name": item.name})
+        return WorkspaceResponse(**item.__dict__)
+
+    @app.delete(f"{prefix}/workspaces/{{workspace_id}}", status_code=204)
+    def delete_workspace(workspace_id: str, _actor: str = Depends(principal)) -> None:
+        try: removed = database.remove_workspace(workspace_id)
+        except ValueError as exc: raise HTTPException(status_code=409, detail=str(exc)) from exc
+        if not removed: raise HTTPException(status_code=404, detail="workspace not found")
+        events.publish("workspace.removed", {"workspace_id": workspace_id})
+
     @app.get(f"{prefix}/repositories", response_model=list[RepositoryResponse])
-    def repositories(workspace: str | None = None, _actor: str = Depends(principal)) -> list[RepositoryResponse]:
-        return [RepositoryResponse(**item.__dict__) for item in database.repositories(workspace)]
+    def repositories(workspace: str | None = None, _actor: str = Depends(principal)) -> list[RepositoryResponse]: return [RepositoryResponse(**item.__dict__) for item in database.repositories(workspace)]
 
     @app.post(f"{prefix}/repositories", response_model=RepositoryResponse, status_code=201)
     def add_repository(payload: RepositoryCreate, _actor: str = Depends(principal)) -> RepositoryResponse:
-        try:
-            item = database.register_repository(payload.workspace, payload.name, payload.root)
-        except ValueError as exc:
-            raise HTTPException(status_code=400, detail=str(exc)) from exc
+        try: item = database.register_repository(payload.workspace, payload.name, payload.root)
+        except ValueError as exc: raise HTTPException(status_code=400, detail=str(exc)) from exc
         events.publish("repository.registered", {"repository_id": item.repository_id, "workspace": item.workspace})
         return RepositoryResponse(**item.__dict__)
 
     @app.get(f"{prefix}/repositories/{{repository_id}}", response_model=RepositoryResponse)
-    def repository(repository_id: str, _actor: str = Depends(principal)) -> RepositoryResponse:
-        item = registered_repository(repository_id)
-        return RepositoryResponse(**item.__dict__)
+    def repository(repository_id: str, _actor: str = Depends(principal)) -> RepositoryResponse: return RepositoryResponse(**registered_repository(repository_id).__dict__)
+
+    @app.delete(f"{prefix}/repositories/{{repository_id}}", status_code=204)
+    def delete_repository(repository_id: str, _actor: str = Depends(principal)) -> None:
+        item = registered_repository(repository_id); runtimes.remove(item.root)
+        if not database.remove_repository(repository_id): raise HTTPException(status_code=404, detail="repository not found")
+        events.publish("repository.removed", {"repository_id": repository_id, "workspace": item.workspace})
 
     @app.get(f"{prefix}/repositories/{{repository_id}}/overview")
     async def repository_overview(repository_id: str, _actor: str = Depends(principal)) -> dict[str, Any]:
-        item = registered_repository(repository_id)
-        runtime = runtimes.get(item.root)
-        return await CortexApplicationService(runtime).repository_dashboard()
+        item = registered_repository(repository_id); return await CortexApplicationService(runtimes.get(item.root)).repository_dashboard()
 
     @app.post(f"{prefix}/repositories/{{repository_id}}/index", response_model=JobResponse, status_code=202)
     def index_repository(repository_id: str, actor: str = Depends(principal)) -> JobResponse:
         item = registered_repository(repository_id)
-
         def operation() -> dict[str, Any]:
             graph, stats = IncrementalGraphIndex(Path(item.root)).refresh()
             return {"nodes": len(graph.nodes), "edges": len(graph.edges), "tracked": stats.index.tracked, "files_reparsed": stats.files_reparsed, "full_rebuild": stats.full_rebuild}
-
-        job = jobs.submit("repository.index", {"repository_id": repository_id}, operation, actor=actor, workspace=item.workspace, repository_id=repository_id)
-        return job_response(job)
+        return job_response(jobs.submit("repository.index", {"repository_id": repository_id}, operation, actor=actor, workspace=item.workspace, repository_id=repository_id))
 
     @app.get(f"{prefix}/jobs", response_model=list[JobResponse])
-    def list_jobs(repository_id: str | None = None, limit: int = 100, _actor: str = Depends(principal)) -> list[JobResponse]:
-        return [job_response(item) for item in jobs.store.list(repository_id=repository_id, limit=limit)]
+    def list_jobs(repository_id: str | None = None, limit: int = 100, _actor: str = Depends(principal)) -> list[JobResponse]: return [job_response(item) for item in jobs.store.list(repository_id=repository_id, limit=limit)]
 
     @app.get(f"{prefix}/jobs/{{job_id}}", response_model=JobResponse)
     def get_job(job_id: str, _actor: str = Depends(principal)) -> JobResponse:
         item = jobs.store.get(job_id)
-        if item is None:
-            raise HTTPException(status_code=404, detail="job not found")
+        if item is None: raise HTTPException(status_code=404, detail="job not found")
         return job_response(item)
 
     @app.delete(f"{prefix}/jobs/{{job_id}}", response_model=JobResponse)
     def cancel_job(job_id: str, _actor: str = Depends(principal)) -> JobResponse:
-        try:
-            return job_response(jobs.cancel(job_id))
-        except KeyError as exc:
-            raise HTTPException(status_code=404, detail="job not found") from exc
+        try: return job_response(jobs.cancel(job_id))
+        except KeyError as exc: raise HTTPException(status_code=404, detail="job not found") from exc
 
     return app

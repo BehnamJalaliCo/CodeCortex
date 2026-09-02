@@ -9,9 +9,19 @@ from pydantic import BaseModel, ConfigDict, Field
 
 class HealthResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
-
     status: str
     version: str
+
+
+class WorkspaceCreate(BaseModel):
+    name: str = Field(min_length=1, max_length=128)
+
+
+class WorkspaceResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+    workspace_id: str
+    name: str
+    created_at: str
 
 
 class RepositoryCreate(BaseModel):
@@ -22,7 +32,6 @@ class RepositoryCreate(BaseModel):
 
 class RepositoryResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
-
     repository_id: str
     workspace: str
     name: str
@@ -32,7 +41,6 @@ class RepositoryResponse(BaseModel):
 
 class JobResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
-
     job_id: str
     kind: str
     status: str
