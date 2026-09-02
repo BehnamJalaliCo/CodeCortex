@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -26,3 +28,21 @@ class RepositoryResponse(BaseModel):
     name: str
     root: str
     created_at: str
+
+
+class JobResponse(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    job_id: str
+    kind: str
+    status: str
+    progress: float
+    payload: dict[str, Any]
+    result: dict[str, Any] | None
+    error: str | None
+    actor: str
+    workspace: str | None
+    repository_id: str | None
+    created_at: str
+    started_at: str | None
+    completed_at: str | None
