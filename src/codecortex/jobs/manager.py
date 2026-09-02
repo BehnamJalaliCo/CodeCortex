@@ -8,12 +8,36 @@ from typing import Any
 
 from codecortex.jobs.store import JobRecord, JobStore
 
+EventSink = Callable[[str, dict[str, Any]], object]
+
 
 class JobManager:
-    def __init__(self, store: JobStore, *, max_workers: int = 4) -> None:
+    def __init__(
+        self,
+        store: JobStore,
+        *,
+        max_workers: int = 4,
+        event_sink: EventSink | None = None,
+    ) -> None:
         self.store = store
         self.executor = ThreadPoolExecutor(max_workers=max(1, max_workers), thread_name_prefix="cortex-job")
         self._futures: dict[str, Future[dict[str, Any]]] = {}
+        self.event_sink = event_sink
+
+    def _emit(self, event_type: str, job: JobRecord) -> None:
+        if self.event_sink is None:
+            return
+        self.event_sink(
+            event_type,
+            {
+                "job_id": job.job_id,
+                "kind": job.kind,
+                "status": job.status.value,
+                "progress": job.progress,
+                "workspace": job.workspace,
+                "repository_id": job.repository_id,
+            },
+        )
 
     def submit(
         self,
@@ -32,6 +56,7 @@ class JobManager:
             workspace=workspace,
             repository_id=repository_id,
         )
+        self._emit("job.queued", job)
         future = self.executor.submit(self._run, job.job_id, operation)
         self._futures[job.job_id] = future
         return job
@@ -42,20 +67,25 @@ class JobManager:
             raise KeyError(job_id)
         if current.status.value == "cancelled":
             return {}
-        self.store.start(job_id)
+        running = self.store.start(job_id)
+        self._emit("job.started", running)
         try:
             result = operation()
         except Exception as exc:
-            self.store.fail(job_id, f"{type(exc).__name__}: {exc}")
+            failed = self.store.fail(job_id, f"{type(exc).__name__}: {exc}")
+            self._emit("job.failed", failed)
             return {}
-        self.store.complete(job_id, result)
+        completed = self.store.complete(job_id, result)
+        self._emit("job.completed", completed)
         return result
 
     def cancel(self, job_id: str) -> JobRecord:
         future = self._futures.get(job_id)
         if future is not None:
             future.cancel()
-        return self.store.cancel(job_id)
+        cancelled = self.store.cancel(job_id)
+        self._emit("job.cancelled", cancelled)
+        return cancelled
 
     def close(self) -> None:
         self.executor.shutdown(wait=False, cancel_futures=True)
