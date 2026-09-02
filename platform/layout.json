@@ -26,9 +26,9 @@
     "tests"
   ],
   "logical_components": {
-    "projects": "src/codecortex/projects.py",
-    "persistence": "src/codecortex/persistence.py",
-    "jobs": "src/codecortex/jobs.py",
+    "projects": "src/codecortex/projects",
+    "persistence": "src/codecortex/persistence",
+    "jobs": "src/codecortex/jobs",
     "authentication": "src/codecortex/api/auth.py",
     "web_e2e": "web/tests/e2e"
   }
