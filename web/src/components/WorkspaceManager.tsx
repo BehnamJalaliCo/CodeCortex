@@ -14,8 +14,8 @@ export function WorkspaceManager({ onChanged }: Props) {
   const [message, setMessage] = useState('')
 
   const refresh = () => Promise.all([
-    fetch('/api/v1/workspaces').then(r => r.json() as Promise<Workspace[]>),
-    fetch('/api/v1/repositories').then(r => r.json() as Promise<Repository[]>),
+    fetch('/api/v1/workspaces').then(r => r.ok ? r.json() as Promise<Workspace[]> : []),
+    fetch('/api/v1/repositories').then(r => r.ok ? r.json() as Promise<Repository[]> : []),
   ]).then(([spaces, repos]) => { setWorkspaces(spaces); setRepositories(repos) })
 
   useEffect(() => { void refresh() }, [])
