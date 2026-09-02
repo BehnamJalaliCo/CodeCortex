@@ -83,9 +83,7 @@ class ClusterCoordinator:
         workers = self.workers.workers()
         return ClusterStatus(
             workers=len(workers),
-            active_workers=len(
-                self.workers.workers(active_within_seconds=active_within_seconds)
-            ),
+            active_workers=len(self.workers.workers(active_within_seconds=active_within_seconds)),
             queued=len(self.workers.list_tasks("queued", 10_000)),
             leased=len(self.workers.list_tasks("leased", 10_000)),
             completed=len(self.workers.list_tasks("completed", 10_000)),

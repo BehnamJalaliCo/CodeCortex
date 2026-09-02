@@ -68,7 +68,9 @@ def test_engine_timeout_is_bounded() -> None:
 def test_chunk_identity_prevents_duplicate_content_from_being_kept_twice() -> None:
     registry = EngineRegistry()
     registry.register(DuplicateChunkEngine())
-    orchestrator = Orchestrator(registry, AdaptiveRouter(), context_processor=BudgetContextProcessor())
+    orchestrator = Orchestrator(
+        registry, AdaptiveRouter(), context_processor=BudgetContextProcessor()
+    )
     result = asyncio.run(orchestrator.execute(AgentRequest(query="explain repository")))
     assert len(result.results) == 1
     assert len(result.results[0].chunks) == 1

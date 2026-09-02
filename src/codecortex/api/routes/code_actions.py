@@ -1,7 +1,9 @@
 """Approval-gated semantic code action routes."""
+
 from __future__ import annotations
 
 from typing import Any, Literal
+
 from pydantic import BaseModel, Field
 
 from codecortex.application.safe_edit import SafeEditService
@@ -20,6 +22,7 @@ class EditRequest(BaseModel):
 
 def mount(app: Any, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
+
     audit = PlatformAudit(ctx.state_root)
 
     def service(repository_id: str) -> tuple[Any, SafeEditService]:
@@ -29,27 +32,86 @@ def mount(app: Any, ctx: Any) -> None:
         return item, SafeEditService(ctx.runtimes.get(item.root))
 
     @app.post(f"{ctx.prefix}/repositories/{{repository_id}}/code-actions/preview")
-    def preview(repository_id: str, payload: EditRequest, actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def preview(
+        repository_id: str, payload: EditRequest, actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         item, edits = service(repository_id)
         try:
-            result = edits.preview(payload.operation, payload.path, payload.name_path, new_name=payload.new_name, body=payload.body)
+            result = edits.preview(
+                payload.operation,
+                payload.path,
+                payload.name_path,
+                new_name=payload.new_name,
+                body=payload.body,
+            )
         except (ValueError, RuntimeError) as exc:
-            audit.record(actor, "code.preview", payload.path, workspace=item.workspace, outcome="failed", metadata={"error": str(exc)[:300]})
+            audit.record(
+                actor,
+                "code.preview",
+                payload.path,
+                workspace=item.workspace,
+                outcome="failed",
+                metadata={"error": str(exc)[:300]},
+            )
             raise HTTPException(status_code=409, detail=str(exc)) from exc
-        audit.record(actor, "code.preview", payload.path, workspace=item.workspace, metadata={"operation": payload.operation, "name_path": payload.name_path})
+        audit.record(
+            actor,
+            "code.preview",
+            payload.path,
+            workspace=item.workspace,
+            metadata={"operation": payload.operation, "name_path": payload.name_path},
+        )
         return result
 
     @app.post(f"{ctx.prefix}/repositories/{{repository_id}}/code-actions/apply")
-    def apply(repository_id: str, payload: EditRequest, actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def apply(
+        repository_id: str, payload: EditRequest, actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         item, edits = service(repository_id)
         try:
-            result = edits.apply(payload.operation, payload.path, payload.name_path, expected_file_sha256=payload.expected_file_sha256, approved=payload.approved, new_name=payload.new_name, body=payload.body)
+            result = edits.apply(
+                payload.operation,
+                payload.path,
+                payload.name_path,
+                expected_file_sha256=payload.expected_file_sha256,
+                approved=payload.approved,
+                new_name=payload.new_name,
+                body=payload.body,
+            )
         except PermissionError as exc:
-            audit.record(actor, "code.edit", payload.path, workspace=item.workspace, outcome="denied", metadata={"operation": payload.operation})
+            audit.record(
+                actor,
+                "code.edit",
+                payload.path,
+                workspace=item.workspace,
+                outcome="denied",
+                metadata={"operation": payload.operation},
+            )
             raise HTTPException(status_code=403, detail=str(exc)) from exc
         except (ValueError, RuntimeError) as exc:
-            audit.record(actor, "code.edit", payload.path, workspace=item.workspace, outcome="failed", metadata={"operation": payload.operation, "error": str(exc)[:300]})
+            audit.record(
+                actor,
+                "code.edit",
+                payload.path,
+                workspace=item.workspace,
+                outcome="failed",
+                metadata={"operation": payload.operation, "error": str(exc)[:300]},
+            )
             raise HTTPException(status_code=409, detail=str(exc)) from exc
-        audit.record(actor, "code.edit", payload.path, workspace=item.workspace, metadata={"operation": payload.operation, "name_path": payload.name_path})
-        ctx.events.publish("code.edited", {"repository_id": repository_id, "path": payload.path, "operation": payload.operation, "actor": actor})
+        audit.record(
+            actor,
+            "code.edit",
+            payload.path,
+            workspace=item.workspace,
+            metadata={"operation": payload.operation, "name_path": payload.name_path},
+        )
+        ctx.events.publish(
+            "code.edited",
+            {
+                "repository_id": repository_id,
+                "path": payload.path,
+                "operation": payload.operation,
+                "actor": actor,
+            },
+        )
         return result

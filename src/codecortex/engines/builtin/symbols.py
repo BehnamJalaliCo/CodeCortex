@@ -50,7 +50,9 @@ class SymbolEngine(Engine):
                     path=self.project_root / node.path,
                     line=node.line or 1,
                     language=str(metadata.get("language", "unknown")),
-                    container=None if metadata.get("container") is None else str(metadata["container"]),
+                    container=None
+                    if metadata.get("container") is None
+                    else str(metadata["container"]),
                 )
             )
         return symbols
@@ -58,9 +60,7 @@ class SymbolEngine(Engine):
     async def execute(self, request: AgentRequest) -> EngineResult:
         symbols = self._symbols()
         terms = {
-            term.lower().strip(".,:;()[]{}")
-            for term in request.query.split()
-            if len(term) > 2
+            term.lower().strip(".,:;()[]{}") for term in request.query.split() if len(term) > 2
         }
         ranked: list[tuple[int, IndexedSymbol]] = []
         for symbol in symbols:

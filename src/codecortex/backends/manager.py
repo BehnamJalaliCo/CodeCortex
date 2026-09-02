@@ -68,7 +68,9 @@ class BackendManager:
         self.cache_root = (cache_root or _default_cache_root()).expanduser().resolve()
         self.timeout_seconds = timeout_seconds
         self.health_ttl_seconds = health_ttl_seconds
-        self.source_root = source_root.expanduser().resolve() if source_root else _discover_source_root()
+        self.source_root = (
+            source_root.expanduser().resolve() if source_root else _discover_source_root()
+        )
         self._probe_cache: dict[tuple[str, str], tuple[float, bool]] = {}
 
     def environment_dir(self, spec: BackendSpec) -> Path:
@@ -95,7 +97,9 @@ class BackendManager:
         try:
             candidate.relative_to(self.source_root)
         except ValueError:
-            raise RuntimeError(f"backend local path escapes source root: {spec.vendor_path}") from None
+            raise RuntimeError(
+                f"backend local path escapes source root: {spec.vendor_path}"
+            ) from None
         if not candidate.is_dir() or not (candidate / "pyproject.toml").is_file():
             return None
         revision = self._git_revision(candidate)
@@ -122,7 +126,11 @@ class BackendManager:
         if not spec.configured:
             return False
         metadata = self._load_metadata(spec)
-        if not metadata or metadata.get("revision") != spec.revision or not self.command_path(spec).exists():
+        if (
+            not metadata
+            or metadata.get("revision") != spec.revision
+            or not self.command_path(spec).exists()
+        ):
             return False
         local = self.local_source_path(spec)
         return local is None or metadata.get("source_kind") == "local"

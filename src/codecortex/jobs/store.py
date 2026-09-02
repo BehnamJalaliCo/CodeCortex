@@ -93,7 +93,16 @@ class JobStore:
         with self._connect() as connection:
             connection.execute(
                 "INSERT INTO platform_jobs(job_id, kind, status, progress, payload, actor, workspace, repository_id, created_at) VALUES (?, ?, ?, 0, ?, ?, ?, ?, ?)",
-                (job_id, kind, JobStatus.QUEUED.value, json.dumps(payload, sort_keys=True), actor, workspace, repository_id, created_at),
+                (
+                    job_id,
+                    kind,
+                    JobStatus.QUEUED.value,
+                    json.dumps(payload, sort_keys=True),
+                    actor,
+                    workspace,
+                    repository_id,
+                    created_at,
+                ),
             )
         record = self.get(job_id)
         assert record is not None
@@ -141,7 +150,9 @@ class JobStore:
 
     def get(self, job_id: str) -> JobRecord | None:
         with self._connect() as connection:
-            row = connection.execute("SELECT * FROM platform_jobs WHERE job_id = ?", (job_id,)).fetchone()
+            row = connection.execute(
+                "SELECT * FROM platform_jobs WHERE job_id = ?", (job_id,)
+            ).fetchone()
         return None if row is None else self._row(row)
 
     def list(self, *, repository_id: str | None = None, limit: int = 100) -> tuple[JobRecord, ...]:

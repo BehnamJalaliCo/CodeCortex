@@ -21,12 +21,7 @@ class BackendSpec:
 
     @property
     def configured(self) -> bool:
-        return bool(
-            self.package
-            and self.source_url
-            and len(self.revision) == 40
-            and self.command
-        )
+        return bool(self.package and self.source_url and len(self.revision) == 40 and self.command)
 
     @property
     def source_requirement(self) -> str:

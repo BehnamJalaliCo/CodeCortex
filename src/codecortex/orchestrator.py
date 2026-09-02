@@ -61,9 +61,7 @@ class Orchestrator:
             result = await self._execute(request, trace_id, root_span)
             attributes["context_tokens"] = result.context_tokens
             attributes["capabilities"] = [item.value for item in result.plan.selected]
-            return result.model_copy(
-                update={"metadata": {**result.metadata, "trace_id": trace_id}}
-            )
+            return result.model_copy(update={"metadata": {**result.metadata, "trace_id": trace_id}})
 
     async def _healthy(self, capability: Capability, request: AgentRequest) -> bool:
         engine = self.registry.get(capability)
@@ -138,9 +136,7 @@ class Orchestrator:
             return None
         retries = request.metadata.get("engine_retries", self.policy.max_retries)
         retries = (
-            max(0, min(2, int(retries)))
-            if isinstance(retries, int)
-            else self.policy.max_retries
+            max(0, min(2, int(retries))) if isinstance(retries, int) else self.policy.max_retries
         )
         started = perf_counter()
         last_error: Exception | None = None
@@ -221,9 +217,7 @@ class Orchestrator:
         normalized_results = [
             result.model_copy(
                 update={
-                    "chunks": [
-                        chunk for chunk in result.chunks if chunk.chunk_id in fitted_ids
-                    ]
+                    "chunks": [chunk for chunk in result.chunks if chunk.chunk_id in fitted_ids]
                 }
             )
             for result in results

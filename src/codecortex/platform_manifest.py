@@ -1,4 +1,5 @@
 """Canonical product capability manifest for the CodeCortex Platform."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass

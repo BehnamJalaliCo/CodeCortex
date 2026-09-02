@@ -73,15 +73,14 @@ class AstContextSlicer:
         source = self._read(path)
         if not source:
             return []
-        query_terms = {
-            term.lower()
-            for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", query)
-        }
+        query_terms = {term.lower() for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", query)}
         units = self.languages.parse(path, source)
         scored: list[tuple[int, object]] = []
         for unit in units:
             haystack = {unit.name.lower(), *(ref.lower() for ref in unit.references)}
-            score = sum(4 if term == unit.name.lower() else 1 for term in query_terms if term in haystack)
+            score = sum(
+                4 if term == unit.name.lower() else 1 for term in query_terms if term in haystack
+            )
             if score:
                 scored.append((score, unit))
         scored.sort(key=lambda item: (-item[0], item[1].line, item[1].name))  # type: ignore[attr-defined]

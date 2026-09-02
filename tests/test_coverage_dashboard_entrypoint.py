@@ -45,7 +45,9 @@ def test_dashboard_event_helpers_and_html(tmp_path: Path) -> None:
     assert "&lt;repo&gt;&amp;" in dashboard._html("<repo>&")
 
 
-def test_dashboard_trace_history_and_architecture(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_dashboard_trace_history_and_architecture(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     runtime = _runtime(tmp_path)
 
     @dataclass
@@ -74,7 +76,9 @@ def test_dashboard_trace_history_and_architecture(tmp_path: Path, monkeypatch: p
 
     monkeypatch.setattr(dashboard, "TaskTraceRecorder", _Recorder)
     traces = dashboard._recent_traces(runtime, 2)
-    assert traces == [{"trace_id": "a", "spans": 1, "duration_ms": 1.0, "context_tokens": 2, "errors": 0}]
+    assert traces == [
+        {"trace_id": "a", "spans": 1, "duration_ms": 1.0, "context_tokens": 2, "errors": 0}
+    ]
 
     @dataclass
     class _HistoryItem:
@@ -232,9 +236,7 @@ def test_dashboard_http_routes(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) 
     monkeypatch.setattr(
         dashboard,
         "PRIntelligence",
-        lambda root, graph: SimpleNamespace(
-            analyze=lambda base, head: _RiskReport(risk="low")
-        ),
+        lambda root, graph: SimpleNamespace(analyze=lambda base, head: _RiskReport(risk="low")),
     )
     handler.path = "/api/pr-risk?base=main&head=HEAD"
     handler.do_GET()
@@ -275,7 +277,9 @@ class _FakeManager:
         self.removed.append(spec.key)
 
 
-def test_entrypoint_helpers_and_backend_commands(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+def test_entrypoint_helpers_and_backend_commands(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+) -> None:
     assert set(entrypoint._targets("all")) == set(entrypoint.BACKENDS)
     assert entrypoint._targets("graph") == ("graph",)
     with pytest.raises(typer.BadParameter):
@@ -343,7 +347,9 @@ def test_entrypoint_version_adapters_agents_edits_and_bootstrap(
     manager = _FakeManager()
     assert entrypoint._adapter("graph", tmp_path, manager).__class__.__name__.startswith("Graph")
     assert entrypoint._adapter("symbols", tmp_path, manager).__class__.__name__.startswith("Symbol")
-    assert entrypoint._adapter("context", tmp_path, manager).__class__.__name__.startswith("Context")
+    assert entrypoint._adapter("context", tmp_path, manager).__class__.__name__.startswith(
+        "Context"
+    )
     with pytest.raises(KeyError):
         entrypoint._adapter("missing", tmp_path, manager)
 
@@ -401,9 +407,7 @@ def test_entrypoint_version_adapters_agents_edits_and_bootstrap(
     entrypoint.edit_insert_before("a.py", "A", body, tmp_path)
     entrypoint.edit_insert_after("a.py", "A", body, tmp_path)
 
-    setup_result = SimpleNamespace(
-        index=SimpleNamespace(tracked=2), symbols=3, graph_nodes=4
-    )
+    setup_result = SimpleNamespace(index=SimpleNamespace(tracked=2), symbols=3, graph_nodes=4)
     monkeypatch.setattr(
         entrypoint,
         "ProjectSetup",

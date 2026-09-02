@@ -1,4 +1,5 @@
 """Organization, membership and workspace-policy administration routes."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -37,11 +38,15 @@ def mount(app: Any, ctx: Any) -> None:
     @app.get(f"{ctx.prefix}/organizations")
     def organizations(_actor: str = Depends(ctx.principal)) -> dict[str, Any]:
         with store.db.connect() as connection:
-            rows = connection.execute("SELECT slug, display_name, created_at FROM organizations ORDER BY slug").fetchall()
+            rows = connection.execute(
+                "SELECT slug, display_name, created_at FROM organizations ORDER BY slug"
+            ).fetchall()
         return {"organizations": [dict(row) for row in rows]}
 
     @app.post(f"{ctx.prefix}/organizations", status_code=201)
-    def create_organization(payload: OrganizationCreate, actor: str = Depends(ctx.principal)) -> dict[str, str]:
+    def create_organization(
+        payload: OrganizationCreate, actor: str = Depends(ctx.principal)
+    ) -> dict[str, str]:
         try:
             store.create_organization(payload.slug, payload.display_name, owner=actor)
         except ValueError as exc:
@@ -55,11 +60,16 @@ def mount(app: Any, ctx: Any) -> None:
         except PermissionError as exc:
             raise permission(exc) from exc
         with store.db.connect() as connection:
-            rows = connection.execute("SELECT principal, role FROM organization_members WHERE organization = ? ORDER BY principal", (organization,)).fetchall()
+            rows = connection.execute(
+                "SELECT principal, role FROM organization_members WHERE organization = ? ORDER BY principal",
+                (organization,),
+            ).fetchall()
         return {"members": [dict(row) for row in rows]}
 
     @app.put(f"{ctx.prefix}/organizations/{{organization}}/members")
-    def set_member(organization: str, payload: MemberWrite, actor: str = Depends(ctx.principal)) -> dict[str, str]:
+    def set_member(
+        organization: str, payload: MemberWrite, actor: str = Depends(ctx.principal)
+    ) -> dict[str, str]:
         try:
             store.set_member(organization, actor, payload.principal, payload.role)
         except PermissionError as exc:
@@ -67,7 +77,9 @@ def mount(app: Any, ctx: Any) -> None:
         return {"principal": payload.principal, "role": payload.role}
 
     @app.get(f"{ctx.prefix}/organizations/{{organization}}/workspaces/{{workspace}}/policy")
-    def get_policy(organization: str, workspace: str, actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def get_policy(
+        organization: str, workspace: str, actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         try:
             store.require_role(organization, actor, "viewer")
         except PermissionError as exc:
@@ -78,9 +90,19 @@ def mount(app: Any, ctx: Any) -> None:
         return asdict(policy)
 
     @app.put(f"{ctx.prefix}/organizations/{{organization}}/workspaces/{{workspace}}/policy")
-    def set_policy(organization: str, workspace: str, payload: PolicyWrite, actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def set_policy(
+        organization: str, workspace: str, payload: PolicyWrite, actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         try:
-            policy = store.set_policy(organization, actor, workspace, allowed_tools=tuple(payload.allowed_tools), max_context_tokens=payload.max_context_tokens, remote_access=payload.remote_access, metadata=payload.metadata)
+            policy = store.set_policy(
+                organization,
+                actor,
+                workspace,
+                allowed_tools=tuple(payload.allowed_tools),
+                max_context_tokens=payload.max_context_tokens,
+                remote_access=payload.remote_access,
+                metadata=payload.metadata,
+            )
         except PermissionError as exc:
             raise permission(exc) from exc
         return asdict(policy)

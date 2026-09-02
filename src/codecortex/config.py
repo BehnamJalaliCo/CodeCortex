@@ -49,16 +49,22 @@ class CortexConfig(BaseModel):
         values: dict[str, object] = {
             "project_root": root,
             "state_dir_name": str(payload.get("state_dir_name", ".codecortex")),
-            "default_context_budget": int(payload.get("context_budget", payload.get("default_context_budget", 32_000))),
+            "default_context_budget": int(
+                payload.get("context_budget", payload.get("default_context_budget", 32_000))
+            ),
             "hard_context_limit": int(payload.get("hard_context_limit", 128_000)),
-            "telemetry_enabled": bool(payload.get("telemetry", payload.get("telemetry_enabled", True))),
+            "telemetry_enabled": bool(
+                payload.get("telemetry", payload.get("telemetry_enabled", True))
+            ),
         }
         if os.getenv("CODECORTEX_CONTEXT_BUDGET"):
             values["default_context_budget"] = int(os.environ["CODECORTEX_CONTEXT_BUDGET"])
         if os.getenv("CODECORTEX_HARD_CONTEXT_LIMIT"):
             values["hard_context_limit"] = int(os.environ["CODECORTEX_HARD_CONTEXT_LIMIT"])
         if os.getenv("CODECORTEX_TELEMETRY"):
-            values["telemetry_enabled"] = os.environ["CODECORTEX_TELEMETRY"].strip().lower() not in {"0", "false", "no", "off"}
+            values["telemetry_enabled"] = os.environ[
+                "CODECORTEX_TELEMETRY"
+            ].strip().lower() not in {"0", "false", "no", "off"}
         return cls.model_validate(values)
 
     def validate_budget(self, budget: int) -> int:

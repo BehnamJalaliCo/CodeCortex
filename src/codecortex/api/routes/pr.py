@@ -1,4 +1,5 @@
 """Pull-request intelligence routes."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -20,7 +21,9 @@ def mount(app: Any, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     @app.post(f"{ctx.prefix}/repositories/{{repository_id}}/pr-analysis")
-    def analyze_pr(repository_id: str, payload: PRAnalysisRequest, _actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def analyze_pr(
+        repository_id: str, payload: PRAnalysisRequest, _actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         item = ctx.database.repository(repository_id)
         if item is None:
             raise HTTPException(status_code=404, detail="repository not found")

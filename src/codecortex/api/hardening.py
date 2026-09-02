@@ -1,4 +1,5 @@
 """Security middleware for the hosted web API."""
+
 from __future__ import annotations
 
 import os
@@ -15,9 +16,11 @@ class ApiHardeningSettings:
     requests_per_minute: int = 600
 
     @classmethod
-    def from_env(cls) -> "ApiHardeningSettings":
+    def from_env(cls) -> ApiHardeningSettings:
         return cls(
-            max_body_bytes=max(1024, int(os.getenv("CODECORTEX_API_MAX_BODY_BYTES", str(2 * 1024 * 1024)))),
+            max_body_bytes=max(
+                1024, int(os.getenv("CODECORTEX_API_MAX_BODY_BYTES", str(2 * 1024 * 1024)))
+            ),
             requests_per_minute=max(1, int(os.getenv("CODECORTEX_API_REQUESTS_PER_MINUTE", "600"))),
         )
 
@@ -61,7 +64,9 @@ def install_api_hardening(app: Any, settings: ApiHardeningSettings | None = None
 
         client = request.client.host if request.client else "unknown"
         if not limiter.allow(client):
-            return JSONResponse({"detail": "rate limit exceeded"}, status_code=429, headers={"Retry-After": "60"})
+            return JSONResponse(
+                {"detail": "rate limit exceeded"}, status_code=429, headers={"Retry-After": "60"}
+            )
 
         if request.method in {"POST", "PUT", "PATCH", "DELETE"}:
             origin = request.headers.get("origin")

@@ -1,6 +1,9 @@
 """API compatibility discovery route."""
+
 from __future__ import annotations
+
 from typing import Any
+
 from codecortex.api.versioning import version_manifest
 
 

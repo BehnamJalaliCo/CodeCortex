@@ -58,9 +58,7 @@ _TEXT_SUFFIXES = {
     ".json",
 }
 _EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build", "target"}
-_PATH_RE = re.compile(
-    r"(?:^|[\s\[(`'\"])([A-Za-z0-9_.@+-]+(?:/[A-Za-z0-9_.@+-]+)+\.[A-Za-z0-9]+)"
-)
+_PATH_RE = re.compile(r"(?:^|[\s\[(`'\"])([A-Za-z0-9_.@+-]+(?:/[A-Za-z0-9_.@+-]+)+\.[A-Za-z0-9]+)")
 
 ScenarioName = Literal["vanilla", "graph", "symbols", "context", "full"]
 
@@ -460,10 +458,7 @@ class ProductionBenchmarkRunner:
         root: Path,
         case: BenchmarkCaseSpec,
     ) -> RetrievalObservation:
-        terms = {
-            term.lower()
-            for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", case.query)
-        }
+        terms = {term.lower() for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", case.query)}
         scored: list[tuple[int, str, str]] = []
         files_read = 0
         for path in root.rglob("*"):
@@ -479,10 +474,7 @@ class ProductionBenchmarkRunner:
             files_read += 1
             lowered = text.lower()
             path_text = relative.as_posix().lower()
-            score = sum(
-                lowered.count(term) + (5 if term in path_text else 0)
-                for term in terms
-            )
+            score = sum(lowered.count(term) + (5 if term in path_text else 0) for term in terms)
             if score:
                 scored.append((score, relative.as_posix(), text[:8000]))
         scored.sort(key=lambda row: (-row[0], row[1]))
@@ -563,7 +555,7 @@ class InstrumentedAgentRunner:
         if os.name == "nt":
             parts = [
                 part[1:-1]
-                if len(part) >= 2 and part[0] == part[-1] and part[0] in {"\"", "'"}
+                if len(part) >= 2 and part[0] == part[-1] and part[0] in {'"', "'"}
                 else part
                 for part in parts
             ]
@@ -597,9 +589,7 @@ class InstrumentedAgentRunner:
             check=False,
         )
         if process.returncode != 0:
-            raise RuntimeError(
-                process.stderr.strip() or f"agent exited with {process.returncode}"
-            )
+            raise RuntimeError(process.stderr.strip() or f"agent exited with {process.returncode}")
         payload = json.loads(process.stdout)
         if not isinstance(payload, dict) or not isinstance(payload.get("answer"), str):
             raise ValueError("agent must return a JSON object containing string field 'answer'")
@@ -611,9 +601,7 @@ class InstrumentedAgentRunner:
             output_tokens=_optional_int(payload.get("output_tokens")),
             cost_usd=_optional_float(payload.get("cost_usd")),
             cost_source=(
-                str(payload["cost_source"])
-                if payload.get("cost_source") is not None
-                else None
+                str(payload["cost_source"]) if payload.get("cost_source") is not None else None
             ),
         )
 
@@ -644,11 +632,7 @@ def _optional_int(value: Any) -> int | None:
 
 
 def _optional_float(value: Any) -> float | None:
-    return (
-        float(value)
-        if isinstance(value, (int, float)) and not isinstance(value, bool)
-        else None
-    )
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
 def _safe_name(value: str) -> str:

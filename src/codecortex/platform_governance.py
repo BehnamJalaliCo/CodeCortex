@@ -1,4 +1,5 @@
 """Execution-priority and roadmap governance contracts."""
+
 from __future__ import annotations
 
 import json
@@ -25,16 +26,27 @@ class PriorityManifest:
         for stage in stages:
             for item in stage.items:
                 if item in owners:
-                    raise ValueError(f"roadmap item {item!r} appears in both {owners[item]} and {stage.id}")
+                    raise ValueError(
+                        f"roadmap item {item!r} appears in both {owners[item]} and {stage.id}"
+                    )
                 owners[item] = stage.id
         self._owners = owners
 
     @classmethod
-    def load(cls, path: Path) -> "PriorityManifest":
+    def load(cls, path: Path) -> PriorityManifest:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if payload.get("version") != 1:
             raise ValueError("unsupported priority manifest version")
-        return cls(tuple(PriorityStage(str(row["id"]), str(row["name"]), tuple(str(item) for item in row.get("items", []))) for row in payload.get("priorities", [])))
+        return cls(
+            tuple(
+                PriorityStage(
+                    str(row["id"]),
+                    str(row["name"]),
+                    tuple(str(item) for item in row.get("items", [])),
+                )
+                for row in payload.get("priorities", [])
+            )
+        )
 
     def priority_for(self, item: str) -> str | None:
         return self._owners.get(item)

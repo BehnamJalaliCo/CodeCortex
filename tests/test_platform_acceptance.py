@@ -18,8 +18,12 @@ def test_roadmap_1_through_47_is_accounted_for() -> None:
 def test_platform_contracts_form_one_product() -> None:
     assert current_api_version() == "v1"
     assert validate_layout(Path.cwd()).valid
-    assert [item.id for item in MilestoneManifest.load(Path("platform/milestones.json")).milestones] == list("ABCDEFG")
-    assert [item.id for item in PriorityManifest.load(Path("platform/priorities.json")).stages] == [f"P{i}" for i in range(6)]
+    assert [
+        item.id for item in MilestoneManifest.load(Path("platform/milestones.json")).milestones
+    ] == list("ABCDEFG")
+    assert [item.id for item in PriorityManifest.load(Path("platform/priorities.json")).stages] == [
+        f"P{i}" for i in range(6)
+    ]
     assert len(DefinitionOfDone.load(Path("platform/definition_of_done.json")).required) >= 12
     manifest = product_manifest()
     assert manifest["product"] == "CodeCortex Platform"

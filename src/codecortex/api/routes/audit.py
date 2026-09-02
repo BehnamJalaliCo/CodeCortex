@@ -1,4 +1,5 @@
 """Audit center routes."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -22,7 +23,9 @@ def mount(app: Any, ctx: Any) -> None:
         limit: int = 200,
         _principal: str = Depends(ctx.principal),
     ) -> dict[str, Any]:
-        rows = log.query(organization, workspace=workspace, actor=actor, limit=max(1, min(limit, 2000)))
+        rows = log.query(
+            organization, workspace=workspace, actor=actor, limit=max(1, min(limit, 2000))
+        )
         if action:
             rows = [row for row in rows if row.action == action]
         if outcome:

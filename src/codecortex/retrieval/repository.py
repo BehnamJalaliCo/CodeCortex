@@ -35,7 +35,9 @@ class RepositorySemanticIndex:
         removed = self.index.document_ids - set(current)
         if removed:
             self.index.delete(removed)
-        changed = [document for document in filtered if self.index.document(document.id) != document]
+        changed = [
+            document for document in filtered if self.index.document(document.id) != document
+        ]
         if changed:
             self.index.upsert(changed)
         return len(filtered)
@@ -87,7 +89,9 @@ class RepositorySemanticIndex:
         if line is None:
             return source[: self.max_snippet_chars]
         lines = source.splitlines()
-        return "\n".join(lines[max(0, line - 8) : min(len(lines), line + 20)])[: self.max_snippet_chars]
+        return "\n".join(lines[max(0, line - 8) : min(len(lines), line + 20)])[
+            : self.max_snippet_chars
+        ]
 
     @staticmethod
     def _structural_context(node_id: str, graph: ProjectGraph) -> str:

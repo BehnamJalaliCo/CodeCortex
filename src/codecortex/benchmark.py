@@ -11,9 +11,27 @@ from typing import Protocol
 from codecortex.indexing.indexer import ProjectIndexer
 
 _TEXT_SUFFIXES = {
-    ".py", ".js", ".jsx", ".ts", ".tsx", ".go", ".rs", ".java",
-    ".c", ".h", ".cc", ".cpp", ".hpp", ".cs", ".php", ".rb",
-    ".md", ".toml", ".yaml", ".yml", ".json",
+    ".py",
+    ".js",
+    ".jsx",
+    ".ts",
+    ".tsx",
+    ".go",
+    ".rs",
+    ".java",
+    ".c",
+    ".h",
+    ".cc",
+    ".cpp",
+    ".hpp",
+    ".cs",
+    ".php",
+    ".rb",
+    ".md",
+    ".toml",
+    ".yaml",
+    ".yml",
+    ".json",
 }
 _EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build"}
 
@@ -93,8 +111,7 @@ def _recall(expected: tuple[str, ...], actual: set[str]) -> float:
     hits = sum(
         1
         for item in expected
-        if item.lower() in normalized
-        or any(item.lower() in candidate for candidate in normalized)
+        if item.lower() in normalized or any(item.lower() in candidate for candidate in normalized)
     )
     return hits / len(expected)
 
@@ -170,11 +187,10 @@ class CodeCortexGraphStrategy:
         started = perf_counter()
         matches = self.graph.search(case.query, self.result_limit)
         paths = {node.path for node in matches if node.path}
-        symbols = {node.name for node in matches if node.kind not in {"file", "module", "reference"}}
-        lines = [
-            f"{node.kind} {node.name} {node.path or ''}:{node.line or ''}"
-            for node in matches
-        ]
+        symbols = {
+            node.name for node in matches if node.kind not in {"file", "module", "reference"}
+        }
+        lines = [f"{node.kind} {node.name} {node.path or ''}:{node.line or ''}" for node in matches]
         context = "\n".join(lines)
         path_recall = _recall(case.expected_paths, {path for path in paths if path})
         symbol_recall = _recall(case.expected_symbols, symbols)
@@ -203,9 +219,5 @@ class BenchmarkSuite:
         return cls(cases, strategies)
 
     def run(self) -> BenchmarkReport:
-        results = tuple(
-            strategy.run(case)
-            for case in self.cases
-            for strategy in self.strategies
-        )
+        results = tuple(strategy.run(case) for case in self.cases for strategy in self.strategies)
         return BenchmarkReport(results)

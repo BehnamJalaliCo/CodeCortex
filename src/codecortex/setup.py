@@ -84,9 +84,7 @@ class ProjectSetup:
         integration = self._write_integration(detected)
         counts = graph.counts()
         symbol_count = sum(
-            count
-            for kind, count in counts.items()
-            if kind not in {"file", "module", "reference"}
+            count for kind, count in counts.items() if kind not in {"file", "module", "reference"}
         )
         return SetupResult(
             index=index,

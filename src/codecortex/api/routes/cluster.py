@@ -1,4 +1,5 @@
 """Distributed cluster control routes."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -17,12 +18,16 @@ def mount(app: Any, ctx: Any) -> None:
         return asdict(cluster.status())
 
     @app.get(f"{ctx.prefix}/workers")
-    def workers(active_within_seconds: float | None = None, _actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def workers(
+        active_within_seconds: float | None = None, _actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         items = cluster.workers.workers(active_within_seconds=active_within_seconds)
         return {"workers": [asdict(item) for item in items]}
 
     @app.get(f"{ctx.prefix}/cluster/tasks")
-    def tasks(status: str | None = None, limit: int = 200, _actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def tasks(
+        status: str | None = None, limit: int = 200, _actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         if status is not None and status not in {"queued", "leased", "completed", "failed"}:
             raise HTTPException(status_code=400, detail="invalid task status")
         items = cluster.workers.list_tasks(status, max(1, min(limit, 2000)))

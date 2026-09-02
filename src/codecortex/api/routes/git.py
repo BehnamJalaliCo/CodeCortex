@@ -1,4 +1,5 @@
 """Git intelligence routes."""
+
 from __future__ import annotations
 
 from dataclasses import asdict
@@ -18,7 +19,9 @@ def mount(app: Any, ctx: Any) -> None:
         return Path(item.root)
 
     @app.get(f"{ctx.prefix}/repositories/{{repository_id}}/git")
-    def git_report(repository_id: str, limit: int = 300, _actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def git_report(
+        repository_id: str, limit: int = 300, _actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         report = GitIntelligence(root(repository_id)).analyze(max(1, min(limit, 2000)))
         return {
             "commits": report.commits,
@@ -29,11 +32,20 @@ def mount(app: Any, ctx: Any) -> None:
         }
 
     @app.get(f"{ctx.prefix}/repositories/{{repository_id}}/git/files/history")
-    def file_history(repository_id: str, path: str, limit: int = 30, _actor: str = Depends(ctx.principal)) -> dict[str, Any]:
-        return {"path": path, "commits": GitIntelligence(root(repository_id)).file_history(path, max(1, min(limit, 100)))}
+    def file_history(
+        repository_id: str, path: str, limit: int = 30, _actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
+        return {
+            "path": path,
+            "commits": GitIntelligence(root(repository_id)).file_history(
+                path, max(1, min(limit, 100))
+            ),
+        }
 
     @app.get(f"{ctx.prefix}/repositories/{{repository_id}}/git/symbol-history")
-    def symbol_history(repository_id: str, path: str, start: int, end: int, _actor: str = Depends(ctx.principal)) -> dict[str, Any]:
+    def symbol_history(
+        repository_id: str, path: str, start: int, end: int, _actor: str = Depends(ctx.principal)
+    ) -> dict[str, Any]:
         try:
             report = GitIntelligence(root(repository_id)).symbol_history(path, start, end)
         except ValueError as exc:

@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Fail CI when a platform architecture boundary is crossed."""
+
 from __future__ import annotations
 
 import json
@@ -9,7 +10,11 @@ from pathlib import Path
 def files_for(scope: Path) -> list[Path]:
     if scope.is_file():
         return [scope]
-    return [path for path in scope.rglob("*") if path.is_file() and path.suffix in {".py", ".ts", ".tsx", ".js", ".jsx"}]
+    return [
+        path
+        for path in scope.rglob("*")
+        if path.is_file() and path.suffix in {".py", ".ts", ".tsx", ".js", ".jsx"}
+    ]
 
 
 def main() -> None:

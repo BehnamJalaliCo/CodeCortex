@@ -1,4 +1,5 @@
 """Public HTTP API stability contract."""
+
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
@@ -12,9 +13,7 @@ class ApiVersion:
     replacement: str | None = None
 
 
-SUPPORTED_API_VERSIONS: tuple[ApiVersion, ...] = (
-    ApiVersion("v1", "stable", False),
-)
+SUPPORTED_API_VERSIONS: tuple[ApiVersion, ...] = (ApiVersion("v1", "stable", False),)
 
 
 def current_api_version() -> str:

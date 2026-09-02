@@ -3,12 +3,14 @@
 Feature modules are independent so each roadmap capability can ship as a small,
 reviewable unit without making the core API assembly monolithic.
 """
+
 from __future__ import annotations
 
+from collections.abc import Callable
 from dataclasses import dataclass
 from importlib import import_module
 from pathlib import Path
-from typing import Any, Callable
+from typing import Any
 
 
 @dataclass(slots=True)

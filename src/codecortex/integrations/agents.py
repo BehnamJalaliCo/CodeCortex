@@ -145,7 +145,9 @@ class AgentConfigurator:
             try:
                 loaded = json.loads(path.read_text(encoding="utf-8"))
             except json.JSONDecodeError as exc:
-                raise AgentConfigurationError(f"refusing to modify invalid JSON: {path}: {exc}") from exc
+                raise AgentConfigurationError(
+                    f"refusing to modify invalid JSON: {path}: {exc}"
+                ) from exc
             if not isinstance(loaded, dict):
                 raise AgentConfigurationError(f"expected a JSON object: {path}")
             payload = loaded
@@ -158,13 +160,21 @@ class AgentConfigurator:
                 child = {}
                 container[key] = child
             if not isinstance(child, dict):
-                raise AgentConfigurationError(f"cannot merge CodeCortex into non-object {'.'.join(container_keys)} in {path}")
+                raise AgentConfigurationError(
+                    f"cannot merge CodeCortex into non-object {'.'.join(container_keys)} in {path}"
+                )
             container = child
         previous = container.get("codecortex")
         container["codecortex"] = server
         changed = previous != server or not path.exists()
         if not changed or dry_run:
-            return AgentMutation(target, path, detected, changed, detail="dry-run" if dry_run and changed else "already configured")
+            return AgentMutation(
+                target,
+                path,
+                detected,
+                changed,
+                detail="dry-run" if dry_run and changed else "already configured",
+            )
         backup = self._backup(path)
         self._atomic_write(path, json.dumps(payload, ensure_ascii=False, indent=2) + "\n")
         return AgentMutation(target, path, detected, True, backup=backup, detail="configured")
@@ -180,7 +190,7 @@ class AgentConfigurator:
                 "[mcp_servers.codecortex]",
                 f"command = {json.dumps(self.executable)}",
                 f"args = {json.dumps(args)}",
-                "env = { CODECORTEX_BACKENDS = \"auto\" }",
+                'env = { CODECORTEX_BACKENDS = "auto" }',
                 "enabled = true",
                 "startup_timeout_sec = 30",
                 "tool_timeout_sec = 120",
@@ -202,10 +212,18 @@ class AgentConfigurator:
             updated = existing.rstrip() + separator + block + "\n"
         changed = updated != existing
         if not changed or dry_run:
-            return AgentMutation(AgentTarget.CODEX, path, detected, changed, detail="dry-run" if dry_run and changed else "already configured")
+            return AgentMutation(
+                AgentTarget.CODEX,
+                path,
+                detected,
+                changed,
+                detail="dry-run" if dry_run and changed else "already configured",
+            )
         backup = self._backup(path)
         self._atomic_write(path, updated)
-        return AgentMutation(AgentTarget.CODEX, path, detected, True, backup=backup, detail="configured")
+        return AgentMutation(
+            AgentTarget.CODEX, path, detected, True, backup=backup, detail="configured"
+        )
 
     @staticmethod
     def _backup(path: Path) -> Path | None:

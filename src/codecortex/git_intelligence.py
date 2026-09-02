@@ -137,7 +137,9 @@ class GitIntelligence:
             flush()
         return GitReport(
             commits=commits,
-            hot_files=tuple(FileActivity(path, count) for path, count in file_changes.most_common(30)),
+            hot_files=tuple(
+                FileActivity(path, count) for path, count in file_changes.most_common(30)
+            ),
             co_changes=tuple(
                 CoChange(left, right, count)
                 for (left, right), count in pair_changes.most_common(30)
@@ -182,8 +184,7 @@ class GitIntelligence:
             (line.author, line.email) for line in blame if line.author
         )
         owners = tuple(
-            AuthorActivity(name, email, count)
-            for (name, email), count in ownership.most_common()
+            AuthorActivity(name, email, count) for (name, email), count in ownership.most_common()
         )
         return SymbolHistory(
             path=path,
@@ -243,8 +244,10 @@ class GitIntelligence:
                 current = {}
                 continue
             parts = line.split(" ", 1)
-            if len(parts) == 2 and len(parts[0]) >= 7 and all(
-                char in "0123456789abcdef^" for char in parts[0].lower()
+            if (
+                len(parts) == 2
+                and len(parts[0]) >= 7
+                and all(char in "0123456789abcdef^" for char in parts[0].lower())
             ):
                 current["sha"] = parts[0].lstrip("^")
             elif len(parts) == 2:

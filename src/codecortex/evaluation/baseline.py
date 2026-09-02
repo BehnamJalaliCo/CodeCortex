@@ -3,10 +3,10 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Mapping
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Mapping
 
 
 @dataclass(frozen=True, slots=True)
@@ -35,7 +35,9 @@ class PlatformBaselineStore:
     ) -> PlatformBaseline:
         normalized: dict[str, float | int | None] = {}
         for key, value in metrics.items():
-            if value is not None and (isinstance(value, bool) or not isinstance(value, (int, float))):
+            if value is not None and (
+                isinstance(value, bool) or not isinstance(value, (int, float))
+            ):
                 raise TypeError(f"baseline metric {key!r} must be numeric or null")
             normalized[str(key)] = value
         baseline = PlatformBaseline(

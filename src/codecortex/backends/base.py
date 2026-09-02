@@ -26,11 +26,7 @@ class ManagedAdapterMixin:
 
     @staticmethod
     def require_tools(catalog: list[dict[str, object]], required: set[str]) -> None:
-        available = {
-            str(item.get("name"))
-            for item in catalog
-            if isinstance(item.get("name"), str)
-        }
+        available = {str(item.get("name")) for item in catalog if isinstance(item.get("name"), str)}
         missing = sorted(required - available)
         if missing:
             raise BackendCompatibilityError(

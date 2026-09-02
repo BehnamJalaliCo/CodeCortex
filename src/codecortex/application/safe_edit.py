@@ -1,4 +1,5 @@
 """Approval-gated semantic editing workflow for the web control plane."""
+
 from __future__ import annotations
 
 import hashlib
@@ -32,7 +33,15 @@ class SafeEditService:
     def _hash(path: Path) -> str:
         return hashlib.sha256(path.read_bytes()).hexdigest()
 
-    def preview(self, operation: EditOperation, path: str, name_path: str, *, new_name: str = "", body: str = "") -> dict[str, Any]:
+    def preview(
+        self,
+        operation: EditOperation,
+        path: str,
+        name_path: str,
+        *,
+        new_name: str = "",
+        body: str = "",
+    ) -> dict[str, Any]:
         target = self._file(path)
         backend = EditService(self.runtime).backend()
         preflight = backend.preflight_symbol(name_path, path)
@@ -43,7 +52,9 @@ class SafeEditService:
                 "risk_score": impact.risk_score,
                 "direct": len(impact.direct),
                 "indirect": len(impact.indirect),
-                "affected_tests": [item.node.path or item.node.name for item in impact.affected_tests],
+                "affected_tests": [
+                    item.node.path or item.node.name for item in impact.affected_tests
+                ],
             }
         except ValueError:
             impact_payload = {"risk_score": 0.0, "direct": 0, "indirect": 0, "affected_tests": []}
@@ -59,7 +70,17 @@ class SafeEditService:
             "requires_approval": True,
         }
 
-    def apply(self, operation: EditOperation, path: str, name_path: str, *, expected_file_sha256: str, approved: bool, new_name: str = "", body: str = "") -> dict[str, Any]:
+    def apply(
+        self,
+        operation: EditOperation,
+        path: str,
+        name_path: str,
+        *,
+        expected_file_sha256: str,
+        approved: bool,
+        new_name: str = "",
+        body: str = "",
+    ) -> dict[str, Any]:
         if not approved:
             raise PermissionError("explicit approval is required")
         target = self._file(path)
@@ -76,4 +97,10 @@ class SafeEditService:
             result = editor.insert_after(path, name_path, body)
         else:
             raise ValueError(f"unknown edit operation: {operation}")
-        return {"operation": operation, "path": path, "name_path": name_path, "result": result, "file_sha256": self._hash(target)}
+        return {
+            "operation": operation,
+            "path": path,
+            "name_path": name_path,
+            "result": result,
+            "file_sha256": self._hash(target),
+        }

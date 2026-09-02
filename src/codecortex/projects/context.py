@@ -44,9 +44,7 @@ class RepositoryContext:
     def symbols(self) -> tuple[GraphNode, ...]:
         graph = self.graph()
         return tuple(
-            node
-            for node in graph.nodes
-            if node.kind not in {"file", "module", "reference"}
+            node for node in graph.nodes if node.kind not in {"file", "module", "reference"}
         )
 
     @property

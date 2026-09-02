@@ -18,6 +18,7 @@ def test_atomic_json_update_keeps_concurrent_writes(tmp_path) -> None:
             data = dict(current) if isinstance(current, dict) else {}
             data[str(index)] = index
             return data
+
         state.update(transform, default={})
 
     with ThreadPoolExecutor(max_workers=8) as executor:

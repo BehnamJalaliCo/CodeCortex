@@ -31,9 +31,7 @@ class PersistentVectorStore(Protocol):
 
     def delete(self, namespace: str, key: str) -> bool: ...
 
-    def search(
-        self, namespace: str, vector: list[float], limit: int = 10
-    ) -> list[VectorMatch]: ...
+    def search(self, namespace: str, vector: list[float], limit: int = 10) -> list[VectorMatch]: ...
 
     def count(self, namespace: str) -> int: ...
 
@@ -117,9 +115,7 @@ class SQLiteVectorStore:
             ).fetchone()
         return int(row["total"] if row else 0)
 
-    def search(
-        self, namespace: str, vector: list[float], limit: int = 10
-    ) -> list[VectorMatch]:
+    def search(self, namespace: str, vector: list[float], limit: int = 10) -> list[VectorMatch]:
         query = _validate_vector(vector)
         with self._connect() as connection:
             rows = connection.execute(

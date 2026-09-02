@@ -13,7 +13,7 @@ if TYPE_CHECKING:
 
 
 class ContextLabService:
-    def __init__(self, runtime: "CortexRuntime") -> None:
+    def __init__(self, runtime: CortexRuntime) -> None:
         self.runtime = runtime
         self.root = runtime.config.project_root
 

@@ -20,7 +20,9 @@ class JobManager:
         event_sink: EventSink | None = None,
     ) -> None:
         self.store = store
-        self.executor = ThreadPoolExecutor(max_workers=max(1, max_workers), thread_name_prefix="cortex-job")
+        self.executor = ThreadPoolExecutor(
+            max_workers=max(1, max_workers), thread_name_prefix="cortex-job"
+        )
         self._futures: dict[str, Future[dict[str, Any]]] = {}
         self.event_sink = event_sink
 

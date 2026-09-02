@@ -22,15 +22,15 @@ class MeasurementValue(BaseModel):
     unit: str | None = None
 
     @classmethod
-    def measured(cls, value: float | int, unit: str | None = None) -> "MeasurementValue":
+    def measured(cls, value: float | int, unit: str | None = None) -> MeasurementValue:
         return cls(value=value, kind=MeasurementKind.MEASURED, unit=unit)
 
     @classmethod
-    def estimated(cls, value: float | int, unit: str | None = None) -> "MeasurementValue":
+    def estimated(cls, value: float | int, unit: str | None = None) -> MeasurementValue:
         return cls(value=value, kind=MeasurementKind.ESTIMATED, unit=unit)
 
     @classmethod
-    def unavailable(cls, unit: str | None = None) -> "MeasurementValue":
+    def unavailable(cls, unit: str | None = None) -> MeasurementValue:
         return cls(value=None, kind=MeasurementKind.UNAVAILABLE, unit=unit)
 
 

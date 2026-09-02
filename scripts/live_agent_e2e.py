@@ -51,7 +51,10 @@ def main() -> int:
             payload = json.loads(line)
         except json.JSONDecodeError:
             continue
-        if payload.get("name") == "mcp.tool.called" and payload.get("attributes", {}).get("tool") == "cortex_stats":
+        if (
+            payload.get("name") == "mcp.tool.called"
+            and payload.get("attributes", {}).get("tool") == "cortex_stats"
+        ):
             called = True
             break
     if not called:

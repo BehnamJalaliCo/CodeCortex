@@ -203,9 +203,7 @@ def team_search(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
     store = TeamMemoryStore(_root(path) / ".codecortex" / "memory" / "team.sqlite3")
-    console.print_json(
-        data=[asdict(item) for item in store.search_entries(namespace, query, 20)]
-    )
+    console.print_json(data=[asdict(item) for item in store.search_entries(namespace, query, 20)])
 
 
 @app.command("workspace-add")
@@ -297,9 +295,7 @@ def benchmark(
 def benchmark_gate(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
 ) -> None:
-    snapshots = BenchmarkHistory(
-        _root(path) / ".codecortex" / "benchmarks" / "history.json"
-    ).load()
+    snapshots = BenchmarkHistory(_root(path) / ".codecortex" / "benchmarks" / "history.json").load()
     if len(snapshots) < 2:
         console.print("At least two benchmark snapshots are required.")
         return
@@ -357,7 +353,9 @@ def run(
     runtime = build_runtime(_root(path))
     result = asyncio.run(runtime.gateway.query(query, str(runtime.config.project_root)))
     console.print(f"[bold]Route:[/bold] {', '.join(item.value for item in result.plan.selected)}")
-    console.print(f"[bold]Context:[/bold] {result.context_tokens}/{result.plan.context_budget} tokens")
+    console.print(
+        f"[bold]Context:[/bold] {result.context_tokens}/{result.plan.context_budget} tokens"
+    )
     if trace_id := result.metadata.get("trace_id"):
         console.print(f"[bold]Trace:[/bold] {trace_id}")
     for engine_result in result.results:

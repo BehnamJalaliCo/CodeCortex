@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-
 PLATFORM_NAME = "CodeCortex"
 CONSOLE_NAME = "CodeCortex Console"
 PLATFORM_API_VERSION = "v1"

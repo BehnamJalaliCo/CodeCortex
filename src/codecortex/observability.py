@@ -1,4 +1,5 @@
 """Dependency-free API observability primitives."""
+
 from __future__ import annotations
 
 import json
@@ -69,7 +70,16 @@ class StructuredRequestLog:
         path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = threading.Lock()
 
-    def write(self, *, request_id: str, trace_id: str | None, method: str, path: str, status: int, duration_ms: float) -> None:
+    def write(
+        self,
+        *,
+        request_id: str,
+        trace_id: str | None,
+        method: str,
+        path: str,
+        status: int,
+        duration_ms: float,
+    ) -> None:
         payload = {
             "timestamp": datetime.now(UTC).isoformat(),
             "level": "error" if status >= 500 else "info",

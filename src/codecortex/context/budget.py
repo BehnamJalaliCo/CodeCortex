@@ -56,4 +56,6 @@ class BudgetContextProcessor(ContextProcessor):
         actual_tokens = self.token_counter.count(content)
         metadata = dict(chunk.metadata)
         metadata.update({"truncated": True, "original_tokens": chunk.tokens})
-        return chunk.model_copy(update={"content": content, "tokens": actual_tokens, "metadata": metadata})
+        return chunk.model_copy(
+            update={"content": content, "tokens": actual_tokens, "metadata": metadata}
+        )

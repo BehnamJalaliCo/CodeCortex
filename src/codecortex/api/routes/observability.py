@@ -1,4 +1,5 @@
 """API observability routes and request middleware."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -29,7 +30,14 @@ def mount(app: Any, ctx: Any) -> None:
         finally:
             duration = clock_ms() - started
             metrics.finish(request.url.path, status, duration)
-            log.write(request_id=rid, trace_id=trace_id, method=request.method, path=request.url.path, status=status, duration_ms=duration)
+            log.write(
+                request_id=rid,
+                trace_id=trace_id,
+                method=request.method,
+                path=request.url.path,
+                status=status,
+                duration_ms=duration,
+            )
 
     @app.get(f"{ctx.prefix}/observability")
     def observability(_actor: str = Depends(ctx.principal)) -> dict[str, Any]:
@@ -39,7 +47,9 @@ def mount(app: Any, ctx: Any) -> None:
             "jobs": {
                 "total": len(jobs),
                 "failed": sum(getattr(job.status, "value", job.status) == "failed" for job in jobs),
-                "running": sum(getattr(job.status, "value", job.status) == "running" for job in jobs),
+                "running": sum(
+                    getattr(job.status, "value", job.status) == "running" for job in jobs
+                ),
             },
             "repositories": len(ctx.database.repositories()),
         }

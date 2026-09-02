@@ -10,40 +10,175 @@ TARGET_WORDS = 52_000
 OUTPUT = Path("README.md")
 
 ARCHETYPES = [
-    ("Python monolith", "deep internal coupling, mature business rules, and a large historical surface", "hidden cross-module impact"),
-    ("polyglot monorepo", "multiple languages, build systems, ownership boundaries, and shared packages", "cross-language dependency drift"),
-    ("microservices platform", "many independently deployed services with contracts and operational coupling", "distributed change impact"),
-    ("TypeScript product frontend", "component trees, state management, API clients, tests, and rapid UI iteration", "behavior hidden across component boundaries"),
-    ("mobile-connected backend", "versioned APIs, compatibility windows, authentication, and client release lag", "breaking older clients"),
-    ("data platform", "pipelines, schemas, transformations, lineage, schedulers, and storage contracts", "silent downstream data breakage"),
-    ("machine-learning repository", "training code, evaluation, serving paths, datasets, and experiment infrastructure", "training-serving skew"),
-    ("financial service", "transactional correctness, auditability, authorization, and strict change controls", "incorrect money movement or incomplete audit evidence"),
-    ("health-data platform", "sensitive data boundaries, interoperability, traceability, and policy constraints", "unintended sensitive-data exposure"),
-    ("commerce platform", "catalog, checkout, payments, inventory, fulfillment, and promotion rules", "cross-domain business regressions"),
-    ("developer tool", "CLI surfaces, configuration, plugins, editor integration, and compatibility promises", "workflow regressions for existing users"),
-    ("compiler or language tool", "parsing, semantic analysis, transforms, diagnostics, and generated artifacts", "semantic regressions that look syntactically valid"),
-    ("infrastructure-as-code repository", "declarative resources, environments, modules, policy, and deployment plans", "high-blast-radius infrastructure changes"),
-    ("distributed systems codebase", "coordination, retries, leases, consistency, partitions, and observability", "failure-mode interactions across nodes"),
-    ("event-driven platform", "producers, consumers, schemas, retries, ordering, and dead-letter flows", "contract drift between asynchronous components"),
-    ("API gateway or edge service", "routing, authentication, quotas, policies, transformations, and latency budgets", "security or availability regressions at a shared boundary"),
-    ("plugin ecosystem", "stable extension contracts, third-party code, discovery, lifecycle, and compatibility", "breaking independent extensions"),
-    ("legacy modernization program", "old architecture, partial tests, implicit behavior, migrations, and staged replacement", "losing undocumented behavior during change"),
-    ("security-sensitive system", "trust boundaries, credentials, authorization, validation, and adversarial inputs", "subtle privilege or injection weaknesses"),
-    ("open-source library", "public APIs, broad environments, contributor workflows, documentation, and semantic compatibility", "breaking unknown downstream consumers"),
+    (
+        "Python monolith",
+        "deep internal coupling, mature business rules, and a large historical surface",
+        "hidden cross-module impact",
+    ),
+    (
+        "polyglot monorepo",
+        "multiple languages, build systems, ownership boundaries, and shared packages",
+        "cross-language dependency drift",
+    ),
+    (
+        "microservices platform",
+        "many independently deployed services with contracts and operational coupling",
+        "distributed change impact",
+    ),
+    (
+        "TypeScript product frontend",
+        "component trees, state management, API clients, tests, and rapid UI iteration",
+        "behavior hidden across component boundaries",
+    ),
+    (
+        "mobile-connected backend",
+        "versioned APIs, compatibility windows, authentication, and client release lag",
+        "breaking older clients",
+    ),
+    (
+        "data platform",
+        "pipelines, schemas, transformations, lineage, schedulers, and storage contracts",
+        "silent downstream data breakage",
+    ),
+    (
+        "machine-learning repository",
+        "training code, evaluation, serving paths, datasets, and experiment infrastructure",
+        "training-serving skew",
+    ),
+    (
+        "financial service",
+        "transactional correctness, auditability, authorization, and strict change controls",
+        "incorrect money movement or incomplete audit evidence",
+    ),
+    (
+        "health-data platform",
+        "sensitive data boundaries, interoperability, traceability, and policy constraints",
+        "unintended sensitive-data exposure",
+    ),
+    (
+        "commerce platform",
+        "catalog, checkout, payments, inventory, fulfillment, and promotion rules",
+        "cross-domain business regressions",
+    ),
+    (
+        "developer tool",
+        "CLI surfaces, configuration, plugins, editor integration, and compatibility promises",
+        "workflow regressions for existing users",
+    ),
+    (
+        "compiler or language tool",
+        "parsing, semantic analysis, transforms, diagnostics, and generated artifacts",
+        "semantic regressions that look syntactically valid",
+    ),
+    (
+        "infrastructure-as-code repository",
+        "declarative resources, environments, modules, policy, and deployment plans",
+        "high-blast-radius infrastructure changes",
+    ),
+    (
+        "distributed systems codebase",
+        "coordination, retries, leases, consistency, partitions, and observability",
+        "failure-mode interactions across nodes",
+    ),
+    (
+        "event-driven platform",
+        "producers, consumers, schemas, retries, ordering, and dead-letter flows",
+        "contract drift between asynchronous components",
+    ),
+    (
+        "API gateway or edge service",
+        "routing, authentication, quotas, policies, transformations, and latency budgets",
+        "security or availability regressions at a shared boundary",
+    ),
+    (
+        "plugin ecosystem",
+        "stable extension contracts, third-party code, discovery, lifecycle, and compatibility",
+        "breaking independent extensions",
+    ),
+    (
+        "legacy modernization program",
+        "old architecture, partial tests, implicit behavior, migrations, and staged replacement",
+        "losing undocumented behavior during change",
+    ),
+    (
+        "security-sensitive system",
+        "trust boundaries, credentials, authorization, validation, and adversarial inputs",
+        "subtle privilege or injection weaknesses",
+    ),
+    (
+        "open-source library",
+        "public APIs, broad environments, contributor workflows, documentation, and semantic compatibility",
+        "breaking unknown downstream consumers",
+    ),
 ]
 
 MISSIONS = [
-    ("onboarding", "build an accurate mental model before editing", "show the architecture, central symbols, ownership, and the safest starting points", "a new engineer can explain the main execution path and locate evidence without reading the whole repository"),
-    ("bug investigation", "localize a defect and its real dependency neighborhood", "trace the failing behavior, references, callers, recent history, and likely impact", "the proposed fix addresses the causal path and targeted tests cover the affected behavior"),
-    ("feature implementation", "find the smallest architecture-consistent change set", "map the existing feature pattern, related symbols, tests, and extension points", "the feature follows existing boundaries and adds evidence at the right test level"),
-    ("large refactor", "change structure without losing behavior", "identify all references, dependency edges, ownership, tests, and migration order", "semantic edits and tests show that contracts remain intact throughout staged changes"),
-    ("dependency migration", "upgrade or replace a dependency with bounded risk", "find imports, wrappers, version assumptions, configuration, and affected tests", "old dependency usage is removed or intentionally isolated and compatibility checks pass"),
-    ("security review", "reason about trust boundaries and dangerous data flows", "map authentication, authorization, input validation, secrets, and externally reachable paths", "findings are tied to concrete code paths and mitigations have regression tests"),
-    ("pull-request review", "evaluate a change by impact rather than diff size", "summarize changed symbols, downstream impact, missing tests, architecture drift, and risk", "review comments are evidence-backed and focus on behavior, contracts, and blast radius"),
-    ("performance investigation", "connect latency or throughput symptoms to the responsible code path", "map hot paths, dependencies, repeated work, caching, and benchmark history", "the optimization is measured reproducibly and does not trade correctness for speed"),
-    ("architecture evolution", "move toward a target architecture while preserving operational continuity", "compare current structure, inferred architecture, drift, coupling, and migration seams", "each step has a reversible boundary and architecture evidence improves rather than merely moving files"),
-    ("incident response", "reduce time to a reliable code-level hypothesis", "connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options", "the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors"),
-    ("release readiness", "decide whether a revision is safe and reproducible to ship", "collect CI, security, benchmark, packaging, dependency, and change-impact evidence", "the exact release commit passes declared gates and artifacts can be independently verified"),
+    (
+        "onboarding",
+        "build an accurate mental model before editing",
+        "show the architecture, central symbols, ownership, and the safest starting points",
+        "a new engineer can explain the main execution path and locate evidence without reading the whole repository",
+    ),
+    (
+        "bug investigation",
+        "localize a defect and its real dependency neighborhood",
+        "trace the failing behavior, references, callers, recent history, and likely impact",
+        "the proposed fix addresses the causal path and targeted tests cover the affected behavior",
+    ),
+    (
+        "feature implementation",
+        "find the smallest architecture-consistent change set",
+        "map the existing feature pattern, related symbols, tests, and extension points",
+        "the feature follows existing boundaries and adds evidence at the right test level",
+    ),
+    (
+        "large refactor",
+        "change structure without losing behavior",
+        "identify all references, dependency edges, ownership, tests, and migration order",
+        "semantic edits and tests show that contracts remain intact throughout staged changes",
+    ),
+    (
+        "dependency migration",
+        "upgrade or replace a dependency with bounded risk",
+        "find imports, wrappers, version assumptions, configuration, and affected tests",
+        "old dependency usage is removed or intentionally isolated and compatibility checks pass",
+    ),
+    (
+        "security review",
+        "reason about trust boundaries and dangerous data flows",
+        "map authentication, authorization, input validation, secrets, and externally reachable paths",
+        "findings are tied to concrete code paths and mitigations have regression tests",
+    ),
+    (
+        "pull-request review",
+        "evaluate a change by impact rather than diff size",
+        "summarize changed symbols, downstream impact, missing tests, architecture drift, and risk",
+        "review comments are evidence-backed and focus on behavior, contracts, and blast radius",
+    ),
+    (
+        "performance investigation",
+        "connect latency or throughput symptoms to the responsible code path",
+        "map hot paths, dependencies, repeated work, caching, and benchmark history",
+        "the optimization is measured reproducibly and does not trade correctness for speed",
+    ),
+    (
+        "architecture evolution",
+        "move toward a target architecture while preserving operational continuity",
+        "compare current structure, inferred architecture, drift, coupling, and migration seams",
+        "each step has a reversible boundary and architecture evidence improves rather than merely moving files",
+    ),
+    (
+        "incident response",
+        "reduce time to a reliable code-level hypothesis",
+        "connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options",
+        "the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors",
+    ),
+    (
+        "release readiness",
+        "decide whether a revision is safe and reproducible to ship",
+        "collect CI, security, benchmark, packaging, dependency, and change-impact evidence",
+        "the exact release commit passes declared gates and artifacts can be independently verified",
+    ),
 ]
 
 LAYERS = [
@@ -59,7 +194,7 @@ LAYERS = [
     "task traces",
 ]
 
-INTRO = r'''<div align="center">
+INTRO = r"""<div align="center">
 
 # 🧠 CodeCortex Context Engine
 
@@ -325,9 +460,9 @@ cortex doctor
 ## Global engineering field guide
 
 The remainder of this README is intentionally extensive. It is a field guide for applying a context engine to real engineering work rather than a list of feature slogans. Each playbook starts from a repository archetype and a mission, then describes how to build evidence, use CodeCortex surfaces, validate the result, and reason about distributed or organizational operation. The examples are patterns, not guarantees; adapt commands, policies, and tests to the repository in front of you.
-'''
+"""
 
-OUTRO = r'''
+OUTRO = r"""
 ## Maintainer and project ownership
 
 CodeCortex is maintained by **Behnam Jalali**. CodeCortex-owned material in this repository is licensed under Apache-2.0. Third-party material remains subject to its applicable copyright and license terms; see `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `docs/LICENSING.md` for the repository's licensing records.
@@ -359,18 +494,20 @@ Apache License 2.0. See `LICENSE` and the accompanying notices for details.
 Built and maintained by **Behnam Jalali**.
 
 </div>
-'''
+"""
 
 
 def words(text: str) -> int:
     return len(re.findall(r"\b[\w][\w'’-]*\b", text, flags=re.UNICODE))
 
 
-def playbook(number: int, archetype: tuple[str, str, str], mission: tuple[str, str, str, str]) -> str:
+def playbook(
+    number: int, archetype: tuple[str, str, str], mission: tuple[str, str, str, str]
+) -> str:
     archetype_name, signals, risk = archetype
     mission_name, objective, query, verification = mission
     layer_rotation = [LAYERS[(number + offset) % len(LAYERS)] for offset in range(5)]
-    return f'''
+    return f"""
 ### {number}. {mission_name.title()} — {archetype_name}
 
 **Mission.** The objective is to {objective}. In a {archetype_name}, the context engine must account for {signals}. The dominant failure mode to keep visible is {risk}. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“{query}.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
@@ -386,19 +523,19 @@ def playbook(number: int, archetype: tuple[str, str, str], mission: tuple[str, s
 **Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a {archetype_name}, where {risk} can make an apparently local optimization or refactor operationally expensive.
 
 **Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-'''
+"""
 
 
 def reference_note(index: int) -> str:
     layer = LAYERS[index % len(LAYERS)]
     next_layer = LAYERS[(index + 3) % len(LAYERS)]
-    return f'''
+    return f"""
 ### Reference note {index}: treating the {layer} as evidence
 
 A context engine is most useful when every summarized artifact keeps a route back to stronger evidence. Treat the {layer} as a way to reduce search space, not as permission to stop inspecting code. When the task is ambiguous, compare it with the {next_layer}; disagreement between two intelligence surfaces is useful because it identifies where an agent should spend attention. A symbol may look isolated textually but be central in the dependency graph. A module may look risky structurally but have stable history and strong tests. A memory entry may explain intent while the current implementation proves that behavior changed later. These differences should be surfaced, not flattened.
 
 For production work, record the commands, commit identity, test results, and benchmark artifacts that support a decision. Keep missing evidence visible. Prefer parameterized queries, bounded paths, explicit authentication, and policy checks at trust boundaries. In distributed operation, assume nodes can fail independently and design retries so they do not silently duplicate non-idempotent work. In retrieval, use persistent state appropriate to repository scale and verify that indexes are refreshed after meaningful changes. In team workflows, preserve an audit trail for policy-sensitive actions and separate durable decisions from temporary debugging notes.
-'''
+"""
 
 
 def main() -> int:

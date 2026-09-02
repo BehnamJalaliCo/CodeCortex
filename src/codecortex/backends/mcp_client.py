@@ -110,7 +110,9 @@ class MCPStdioClient:
             while time.monotonic() < deadline:
                 self._raise_if_exited()
                 try:
-                    message = self._messages.get(timeout=min(0.25, max(0.01, deadline - time.monotonic())))
+                    message = self._messages.get(
+                        timeout=min(0.25, max(0.01, deadline - time.monotonic()))
+                    )
                 except queue.Empty:
                     continue
                 if message.get("id") != request_id:

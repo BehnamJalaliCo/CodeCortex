@@ -5,9 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 
-def validate_tool_call(
-    tools: list[dict[str, Any]], name: str, arguments: dict[str, Any]
-) -> None:
+def validate_tool_call(tools: list[dict[str, Any]], name: str, arguments: dict[str, Any]) -> None:
     tool = next((item for item in tools if item.get("name") == name), None)
     if tool is None:
         raise KeyError(f"Unknown tool: {name}")

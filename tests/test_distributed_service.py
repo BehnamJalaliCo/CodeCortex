@@ -27,9 +27,7 @@ async def test_distributed_mcp_sync_and_worker_tools(tmp_path: Path) -> None:
     assert pulled["node_id"] == "coordinator"
     assert pulled["changes"][0]["mutation"]["value"] == "distributed"
 
-    pushed = await application.call(
-        "cortex_sync_push", {"mutations": [mutation.to_dict()]}
-    )
+    pushed = await application.call("cortex_sync_push", {"mutations": [mutation.to_dict()]})
     assert pushed["ignored"] == 1
     with pytest.raises(ValueError):
         await application.call("cortex_sync_push", {"mutations": "bad"})

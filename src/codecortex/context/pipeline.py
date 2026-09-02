@@ -42,7 +42,9 @@ class ContextCache:
 
     @staticmethod
     def key(query: str, budget: int, fingerprints: list[str], graph_revision: str = "") -> str:
-        payload = "\n".join([query.strip().lower(), str(budget), graph_revision, *sorted(fingerprints)])
+        payload = "\n".join(
+            [query.strip().lower(), str(budget), graph_revision, *sorted(fingerprints)]
+        )
         return hashlib.blake2b(payload.encode("utf-8"), digest_size=20).hexdigest()
 
     def _load(self) -> dict[str, dict[str, object]]:
@@ -70,24 +72,50 @@ class ContextCache:
 
     def put(self, key: str, chunks: list[ContextChunk]) -> None:
         def update(payload: object) -> dict[str, object]:
-            current = payload if isinstance(payload, dict) and payload.get("version") == self.VERSION else {"version": self.VERSION, "entries": {}}
-            entries = dict(current.get("entries", {})) if isinstance(current.get("entries", {}), dict) else {}
-            entries[key] = {"created": time.time(), "chunks": [chunk.model_dump(mode="json") for chunk in chunks]}
-            ordered = sorted(entries.items(), key=lambda pair: float(pair[1].get("created", 0)) if isinstance(pair[1], dict) else 0.0, reverse=True)[: self.max_entries]
+            current = (
+                payload
+                if isinstance(payload, dict) and payload.get("version") == self.VERSION
+                else {"version": self.VERSION, "entries": {}}
+            )
+            entries = (
+                dict(current.get("entries", {}))
+                if isinstance(current.get("entries", {}), dict)
+                else {}
+            )
+            entries[key] = {
+                "created": time.time(),
+                "chunks": [chunk.model_dump(mode="json") for chunk in chunks],
+            }
+            ordered = sorted(
+                entries.items(),
+                key=lambda pair: (
+                    float(pair[1].get("created", 0)) if isinstance(pair[1], dict) else 0.0
+                ),
+                reverse=True,
+            )[: self.max_entries]
             return {"version": self.VERSION, "entries": dict(ordered)}
+
         self.state.update(update, default={})
 
 
 class ContextPipeline:
-    def __init__(self, root: Path, graph: ProjectGraph | None = None, cache_ttl_seconds: int = 600) -> None:
+    def __init__(
+        self, root: Path, graph: ProjectGraph | None = None, cache_ttl_seconds: int = 600
+    ) -> None:
         self.root = root.resolve()
         self.graph = graph
         self.budget = BudgetContextProcessor()
-        self.cache = ContextCache(self.root / ".codecortex" / "cache" / "context.json", ttl_seconds=cache_ttl_seconds)
+        self.cache = ContextCache(
+            self.root / ".codecortex" / "cache" / "context.json", ttl_seconds=cache_ttl_seconds
+        )
 
     @staticmethod
     def _terms(text: str) -> set[str]:
-        return {word.strip(".,:;()[]{}<>\"'`_-+").lower() for word in text.split() if len(word.strip()) > 2}
+        return {
+            word.strip(".,:;()[]{}<>\"'`_-+").lower()
+            for word in text.split()
+            if len(word.strip()) > 2
+        }
 
     @staticmethod
     def _fingerprint(chunk: ContextChunk) -> str:
@@ -98,7 +126,15 @@ class ContextPipeline:
     def _graph_revision(self) -> str:
         if self.graph is None:
             return "none"
-        lines = [*(f"n:{node.id}" for node in sorted(self.graph.nodes, key=lambda item: item.id)), *(f"e:{edge.source}:{edge.kind}:{edge.target}" for edge in sorted(self.graph.edges, key=lambda item: (item.source, item.kind, item.target)))]
+        lines = [
+            *(f"n:{node.id}" for node in sorted(self.graph.nodes, key=lambda item: item.id)),
+            *(
+                f"e:{edge.source}:{edge.kind}:{edge.target}"
+                for edge in sorted(
+                    self.graph.edges, key=lambda item: (item.source, item.kind, item.target)
+                )
+            ),
+        ]
         return hashlib.blake2b("\n".join(lines).encode("utf-8"), digest_size=12).hexdigest()
 
     def _rank(self, query: str, chunks: list[ContextChunk]) -> list[ContextChunk]:
@@ -142,7 +178,15 @@ class ContextPipeline:
         if not lines:
             return []
         content = "\n".join(lines)
-        return [ContextChunk(source="knowledge-graph", content=content, tokens=self.budget.token_counter.count(content), relevance=0.88, metadata={"expanded_nodes": [node.name for node in nodes]})]
+        return [
+            ContextChunk(
+                source="knowledge-graph",
+                content=content,
+                tokens=self.budget.token_counter.count(content),
+                relevance=0.88,
+                metadata={"expanded_nodes": [node.name for node in nodes]},
+            )
+        ]
 
     @staticmethod
     def _near_deduplicate(chunks: list[ContextChunk]) -> list[ContextChunk]:
@@ -168,22 +212,41 @@ class ContextPipeline:
     async def prepare(self, query: str, chunks: list[ContextChunk], budget: int) -> ContextResult:
         CortexConfig.load(self.root).validate_budget(budget)
         candidates = [*chunks, *self._graph_chunks(query)]
-        normalized = [chunk.model_copy(update={"tokens": self.budget.token_counter.count(chunk.content)}) for chunk in candidates]
+        normalized = [
+            chunk.model_copy(update={"tokens": self.budget.token_counter.count(chunk.content)})
+            for chunk in candidates
+        ]
         raw_tokens = sum(chunk.tokens for chunk in normalized)
         fingerprints = [self._fingerprint(chunk) for chunk in normalized]
         cache_key = self.cache.key(query, budget, fingerprints, self._graph_revision())
         cached = self.cache.get(cache_key)
         if cached is not None:
             final_tokens = sum(chunk.tokens for chunk in cached)
-            return ContextResult(tuple(cached), self._metrics(raw_tokens, final_tokens, len(normalized), len(cached), True))
+            return ContextResult(
+                tuple(cached),
+                self._metrics(raw_tokens, final_tokens, len(normalized), len(cached), True),
+            )
         ranked = self._rank(query, normalized)
         unique = self._near_deduplicate(ranked)
         fitted = await self.budget.fit(unique, budget)
         self.cache.put(cache_key, fitted)
         final_tokens = sum(chunk.tokens for chunk in fitted)
-        return ContextResult(tuple(fitted), self._metrics(raw_tokens, final_tokens, len(normalized), len(fitted), False))
+        return ContextResult(
+            tuple(fitted),
+            self._metrics(raw_tokens, final_tokens, len(normalized), len(fitted), False),
+        )
 
     @staticmethod
-    def _metrics(raw_tokens: int, final_tokens: int, candidates: int, selected: int, cache_hit: bool) -> ContextMetrics:
+    def _metrics(
+        raw_tokens: int, final_tokens: int, candidates: int, selected: int, cache_hit: bool
+    ) -> ContextMetrics:
         saved = max(0, raw_tokens - final_tokens)
-        return ContextMetrics(raw_tokens, final_tokens, saved, saved / raw_tokens if raw_tokens else 0.0, candidates, selected, cache_hit)
+        return ContextMetrics(
+            raw_tokens,
+            final_tokens,
+            saved,
+            saved / raw_tokens if raw_tokens else 0.0,
+            candidates,
+            selected,
+            cache_hit,
+        )

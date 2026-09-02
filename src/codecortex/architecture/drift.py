@@ -123,7 +123,11 @@ class ArchitectureDriftDetector:
         for signature, count in current.dependency_counts.items():
             before = baseline.dependency_counts.get(signature, 0)
             if before == 0 and count > 0:
-                severity = "high" if any(kind in signature for kind in (":calls", ":inherits")) else "medium"
+                severity = (
+                    "high"
+                    if any(kind in signature for kind in (":calls", ":inherits"))
+                    else "medium"
+                )
                 findings.append(
                     DriftFinding(
                         "new-dependency-direction",
@@ -154,9 +158,7 @@ class ArchitectureDriftDetector:
                     "medium",
                     min(0.65, 0.40 + unresolved_delta),
                     "Unresolved dependency ratio increased.",
-                    (
-                        f"{baseline.unresolved_ratio:.2%}->{current.unresolved_ratio:.2%}",
-                    ),
+                    (f"{baseline.unresolved_ratio:.2%}->{current.unresolved_ratio:.2%}",),
                 )
             )
 

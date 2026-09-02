@@ -1,12 +1,14 @@
 """Small dependency-free Python client for the stable CodeCortex API."""
+
 from __future__ import annotations
 
 import json
 import urllib.error
 import urllib.parse
 import urllib.request
+from collections.abc import Callable
 from dataclasses import dataclass
-from typing import Any, Callable
+from typing import Any
 
 Transport = Callable[[str, str, dict[str, str], bytes | None], tuple[int, bytes]]
 
@@ -57,16 +59,36 @@ class CodeCortexClient:
         return self._request("GET", "repositories")
 
     def repository_overview(self, repository_id: str) -> dict[str, Any]:
-        return self._request("GET", f"repositories/{urllib.parse.quote(repository_id, safe='')}/overview")
+        return self._request(
+            "GET", f"repositories/{urllib.parse.quote(repository_id, safe='')}/overview"
+        )
 
     def search(self, repository_id: str, query: str, limit: int = 20) -> dict[str, Any]:
-        return self._request("POST", f"repositories/{urllib.parse.quote(repository_id, safe='')}/search", {"query": query, "limit": limit})
+        return self._request(
+            "POST",
+            f"repositories/{urllib.parse.quote(repository_id, safe='')}/search",
+            {"query": query, "limit": limit},
+        )
 
     def context(self, repository_id: str, query: str, budget: int = 32000) -> dict[str, Any]:
-        return self._request("POST", f"repositories/{urllib.parse.quote(repository_id, safe='')}/context", {"query": query, "budget": budget})
+        return self._request(
+            "POST",
+            f"repositories/{urllib.parse.quote(repository_id, safe='')}/context",
+            {"query": query, "budget": budget},
+        )
 
     def impact(self, repository_id: str, query: str) -> dict[str, Any]:
-        return self._request("POST", f"repositories/{urllib.parse.quote(repository_id, safe='')}/impact", {"query": query})
+        return self._request(
+            "POST",
+            f"repositories/{urllib.parse.quote(repository_id, safe='')}/impact",
+            {"query": query},
+        )
 
-    def pr_analysis(self, repository_id: str, base_ref: str, head_ref: str = "HEAD") -> dict[str, Any]:
-        return self._request("POST", f"repositories/{urllib.parse.quote(repository_id, safe='')}/pr-analysis", {"base_ref": base_ref, "head_ref": head_ref})
+    def pr_analysis(
+        self, repository_id: str, base_ref: str, head_ref: str = "HEAD"
+    ) -> dict[str, Any]:
+        return self._request(
+            "POST",
+            f"repositories/{urllib.parse.quote(repository_id, safe='')}/pr-analysis",
+            {"base_ref": base_ref, "head_ref": head_ref},
+        )

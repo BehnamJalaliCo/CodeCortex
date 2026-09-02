@@ -210,9 +210,7 @@ class RemoteMCPServer:
                 if not isinstance(payload, dict):
                     self._write(400, {"error": "body_must_be_object"})
                     return
-                status, response = owner.handle_call(
-                    self.headers.get("Authorization"), payload
-                )
+                status, response = owner.handle_call(self.headers.get("Authorization"), payload)
                 self._write(status, response)
 
             def _write(self, status: int, payload: dict[str, Any]) -> None:
@@ -309,9 +307,7 @@ class RemoteMCPClient:
                 detail = json.loads(exc.read())
             except json.JSONDecodeError:
                 detail = {"error": "http_error"}
-            raise RuntimeError(
-                f"remote MCP request failed ({exc.code}): {detail}"
-            ) from exc
+            raise RuntimeError(f"remote MCP request failed ({exc.code}): {detail}") from exc
         if not isinstance(payload, dict):
             raise RuntimeError("remote MCP response must be an object")
         result = payload.get("result", {})

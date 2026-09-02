@@ -1,10 +1,11 @@
 """Machine-readable release milestone contract."""
+
 from __future__ import annotations
 
 import json
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Iterable
 
 
 @dataclass(frozen=True, slots=True)
@@ -22,12 +23,16 @@ class MilestoneManifest:
             raise ValueError("milestone ids must be unique and ordered")
 
     @classmethod
-    def load(cls, path: Path) -> "MilestoneManifest":
+    def load(cls, path: Path) -> MilestoneManifest:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if payload.get("version") != 1:
             raise ValueError("unsupported milestone manifest version")
         milestones = tuple(
-            ReleaseMilestone(str(item["id"]), str(item["name"]), tuple(str(value) for value in item.get("requires", [])))
+            ReleaseMilestone(
+                str(item["id"]),
+                str(item["name"]),
+                tuple(str(value) for value in item.get("requires", [])),
+            )
             for item in payload.get("milestones", [])
         )
         return cls(milestones)

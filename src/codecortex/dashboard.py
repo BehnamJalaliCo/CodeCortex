@@ -57,9 +57,7 @@ def _event_stats(events: list[dict[str, Any]]) -> dict[str, Any]:
             engine_calls[capability] += 1
             engine_ms[capability] += float(attrs.get("duration_ms", 0.0) or 0.0)
     engine_latency = {
-        key: round(engine_ms[key] / count, 2)
-        for key, count in engine_calls.items()
-        if count
+        key: round(engine_ms[key] / count, 2) for key, count in engine_calls.items() if count
     }
     return {
         "counts": dict(counts),
@@ -148,9 +146,7 @@ async def _overview(runtime: CortexRuntime) -> dict[str, Any]:
 
 
 def _html(project: str) -> str:
-    escaped = (
-        project.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
+    escaped = project.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return f"""<!doctype html>
 <html lang="en">
 <head>

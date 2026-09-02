@@ -108,9 +108,7 @@ class PRIntelligence:
                 impact = analyzer.analyze(node.name)
                 affected_nodes = len(impact.direct) + len(impact.indirect)
                 affected_tests = len(impact.affected_tests)
-                tests.update(
-                    item.node.path or item.node.name for item in impact.affected_tests
-                )
+                tests.update(item.node.path or item.node.name for item in impact.affected_tests)
                 risk = impact.risk_score
             except ValueError:
                 affected_nodes = 0
@@ -137,7 +135,9 @@ class PRIntelligence:
             level = "medium"
         else:
             level = "low"
-        symbols.sort(key=lambda item: (-item.impact_risk, item.node.path or "", item.node.line or 0))
+        symbols.sort(
+            key=lambda item: (-item.impact_risk, item.node.path or "", item.node.line or 0)
+        )
         return PRReport(
             base_ref=base_ref,
             head_ref=head_ref,

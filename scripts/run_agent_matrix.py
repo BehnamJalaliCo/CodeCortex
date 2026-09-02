@@ -27,7 +27,9 @@ def main() -> int:
     parser.add_argument("--command", required=True)
     parser.add_argument("--spec", type=Path, default=Path("benchmarks/production/spec.json"))
     parser.add_argument("--workspace", type=Path, default=Path(".codecortex/benchmarks/agent"))
-    parser.add_argument("--output", type=Path, default=Path("benchmarks/production/agent-results.json"))
+    parser.add_argument(
+        "--output", type=Path, default=Path("benchmarks/production/agent-results.json")
+    )
     args = parser.parse_args()
     agent = InstrumentedAgentRunner(args.command)
     specs = load_repository_specs(args.spec)
@@ -61,7 +63,9 @@ def main() -> int:
                         }
                     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
-    args.output.write_text(json.dumps({"schema_version": 1, "results": rows}, indent=2) + "\n", encoding="utf-8")
+    args.output.write_text(
+        json.dumps({"schema_version": 1, "results": rows}, indent=2) + "\n", encoding="utf-8"
+    )
     print(f"saved {args.output}")
     return 0
 

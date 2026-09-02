@@ -51,7 +51,17 @@ class ProjectIndexer:
             relative = path.relative_to(self.root)
             relative_name = relative.as_posix()
             file_id = f"file:{relative_name}"
-            self._node(nodes, node_ids, GraphNode(id=file_id, kind="file", name=relative.name, path=relative_name, metadata={"extension": relative.suffix.lower()}))
+            self._node(
+                nodes,
+                node_ids,
+                GraphNode(
+                    id=file_id,
+                    kind="file",
+                    name=relative.name,
+                    path=relative_name,
+                    metadata={"extension": relative.suffix.lower()},
+                ),
+            )
             spec = self.languages.language_for(path)
             if spec is None:
                 continue
@@ -61,7 +71,9 @@ class ProjectIndexer:
                 continue
             file_sources[path] = source
             for unit in self.languages.parse(path, source):
-                symbol_id = self._symbol_id(relative_name, unit.name, unit.kind, unit.line, unit.container)
+                symbol_id = self._symbol_id(
+                    relative_name, unit.name, unit.kind, unit.line, unit.container
+                )
                 node = GraphNode(
                     id=symbol_id,
                     kind=unit.kind,
@@ -77,29 +89,58 @@ class ProjectIndexer:
                     },
                 )
                 self._node(nodes, node_ids, node)
-                edges.extend([GraphEdge(source=file_id, target=symbol_id, kind="contains"), GraphEdge(source=file_id, target=symbol_id, kind="defines")])
+                edges.extend(
+                    [
+                        GraphEdge(source=file_id, target=symbol_id, kind="contains"),
+                        GraphEdge(source=file_id, target=symbol_id, kind="defines"),
+                    ]
+                )
                 names.setdefault(unit.name, []).append(node)
                 symbols_by_file.setdefault(relative_name, []).append(node)
 
         for path, source in file_sources.items():
             source_path = path.relative_to(self.root).as_posix()
             file_id = f"file:{source_path}"
-            local_nodes = sorted(symbols_by_file.get(source_path, []), key=lambda item: (item.line or 0, item.id))
+            local_nodes = sorted(
+                symbols_by_file.get(source_path, []), key=lambda item: (item.line or 0, item.id)
+            )
             for relation in self.relationships.extract(path, source):
-                source_id = self._relation_source_id(file_id, local_nodes, relation.source_symbol, relation.line)
-                target_id, metadata = self._resolve_target(relation.target, relation.kind, source_path, names, nodes, node_ids)
+                source_id = self._relation_source_id(
+                    file_id, local_nodes, relation.source_symbol, relation.line
+                )
+                target_id, metadata = self._resolve_target(
+                    relation.target, relation.kind, source_path, names, nodes, node_ids
+                )
                 metadata["line"] = relation.line
-                edges.append(GraphEdge(source=source_id, target=target_id, kind=relation.kind, metadata=metadata))
+                edges.append(
+                    GraphEdge(
+                        source=source_id, target=target_id, kind=relation.kind, metadata=metadata
+                    )
+                )
 
-        unique_edges = {(edge.source, edge.target, edge.kind): edge for edge in edges if edge.source != edge.target}
+        unique_edges = {
+            (edge.source, edge.target, edge.kind): edge
+            for edge in edges
+            if edge.source != edge.target
+        }
         return ProjectGraph(nodes=nodes, edges=list(unique_edges.values()))
 
     @staticmethod
-    def _relation_source_id(file_id: str, local_nodes: list[GraphNode], source_symbol: str | None, relation_line: int) -> str:
+    def _relation_source_id(
+        file_id: str, local_nodes: list[GraphNode], source_symbol: str | None, relation_line: int
+    ) -> str:
         if not source_symbol:
             return file_id
-        candidates = [node for node in local_nodes if node.name == source_symbol and (node.line or 0) <= relation_line]
-        return max(candidates, key=lambda item: (item.line or 0, item.id)).id if candidates else file_id
+        candidates = [
+            node
+            for node in local_nodes
+            if node.name == source_symbol and (node.line or 0) <= relation_line
+        ]
+        return (
+            max(candidates, key=lambda item: (item.line or 0, item.id)).id
+            if candidates
+            else file_id
+        )
 
     @staticmethod
     def _node(nodes: list[GraphNode], node_ids: set[str], node: GraphNode) -> None:
@@ -107,14 +148,29 @@ class ProjectIndexer:
             node_ids.add(node.id)
             nodes.append(node)
 
-    def _resolve_target(self, target: str, kind: str, source_path: str, names: dict[str, list[GraphNode]], nodes: list[GraphNode], node_ids: set[str]) -> tuple[str, dict[str, object]]:
+    def _resolve_target(
+        self,
+        target: str,
+        kind: str,
+        source_path: str,
+        names: dict[str, list[GraphNode]],
+        nodes: list[GraphNode],
+        node_ids: set[str],
+    ) -> tuple[str, dict[str, object]]:
         result = self.resolver.resolve(target, source_path, names.get(target, []), kind)
         if result.target_id is not None:
             return result.target_id, {
                 "resolution_confidence": round(result.confidence, 4),
                 "ambiguity": round(result.ambiguity, 4),
                 "candidate_count": len(result.candidates),
-                "candidates": [{"id": item.node_id, "score": round(item.score, 4), "reasons": list(item.reasons)} for item in result.candidates],
+                "candidates": [
+                    {
+                        "id": item.node_id,
+                        "score": round(item.score, 4),
+                        "reasons": list(item.reasons),
+                    }
+                    for item in result.candidates
+                ],
             }
         prefix = "module" if kind == "imports" else "reference"
         target_id = f"{prefix}:{target}"

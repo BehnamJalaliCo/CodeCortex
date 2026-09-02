@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 """Export the current CodeCortex HTTP schema without starting a server."""
+
 from __future__ import annotations
 
 import json

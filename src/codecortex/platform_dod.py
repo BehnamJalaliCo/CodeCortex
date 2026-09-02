@@ -1,4 +1,5 @@
 """Definition-of-Done validation for platform features."""
+
 from __future__ import annotations
 
 import json
@@ -19,7 +20,7 @@ class DefinitionOfDone:
         self.required = required
 
     @classmethod
-    def load(cls, path: Path) -> "DefinitionOfDone":
+    def load(cls, path: Path) -> DefinitionOfDone:
         payload = json.loads(path.read_text(encoding="utf-8"))
         if payload.get("version") != 1:
             raise ValueError("unsupported Definition of Done version")

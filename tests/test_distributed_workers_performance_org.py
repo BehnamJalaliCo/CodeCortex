@@ -12,9 +12,7 @@ from codecortex.distributed.workers import WorkerCoordinator
 
 def test_worker_coordinator_capabilities_leases_and_results(tmp_path: Path) -> None:
     coordinator = WorkerCoordinator(tmp_path / "workers.db")
-    indexer = coordinator.register_worker(
-        "index-1", ("index",), {"region": "us-east"}
-    )
+    indexer = coordinator.register_worker("index-1", ("index",), {"region": "us-east"})
     retriever = coordinator.register_worker(
         "retrieve-1", ("retrieve", "vector"), {"region": "eu-central"}
     )
