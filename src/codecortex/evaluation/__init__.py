@@ -1,5 +1,6 @@
 """Benchmark and external evaluation infrastructure."""
 
+from codecortex.evaluation.baseline import PlatformBaseline, PlatformBaselineStore
 from codecortex.evaluation.external import (
     DeterministicGrader,
     EvaluationCase,
@@ -44,6 +45,8 @@ __all__ = [
     "InstrumentedAgentRunner",
     "MetricPolicy",
     "ObservedMetrics",
+    "PlatformBaseline",
+    "PlatformBaselineStore",
     "ProductionBenchmarkReport",
     "ProductionBenchmarkRunner",
     "RegressionGate",
