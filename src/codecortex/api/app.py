@@ -140,4 +140,6 @@ def create_app(*, state_dir: Path | None = None, runtime_manager: CortexRuntimeM
 
     from codecortex.api.routes.repository import mount_repository_routes
     mount_repository_routes(app, prefix, database, runtimes, principal)
+    from codecortex.api.feature_loader import ApiRouteContext, mount_optional_features
+    mount_optional_features(app, ApiRouteContext(prefix, database, runtimes, principal, events, jobs, root))
     return app
