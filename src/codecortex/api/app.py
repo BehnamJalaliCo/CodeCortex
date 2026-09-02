@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from codecortex.api.auth import ApiSecuritySettings, ApiTokenAuthenticator
+from codecortex.application.service import CortexApplicationService
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.jobs import JobManager, JobStore
 from codecortex.persistence import PlatformDatabase
@@ -59,6 +60,12 @@ def create_app(
         payload = asdict(job)
         payload["status"] = job.status.value
         return JobResponse(**payload)
+
+    def registered_repository(repository_id: str):
+        item = database.repository(repository_id)
+        if item is None:
+            raise HTTPException(status_code=404, detail="repository not found")
+        return item
 
     @app.get(f"{prefix}/health", response_model=HealthResponse)
     def health() -> HealthResponse:
@@ -111,35 +118,24 @@ def create_app(
 
     @app.get(f"{prefix}/repositories/{{repository_id}}", response_model=RepositoryResponse)
     def repository(repository_id: str, _actor: str = Depends(principal)) -> RepositoryResponse:
-        item = database.repository(repository_id)
-        if item is None:
-            raise HTTPException(status_code=404, detail="repository not found")
+        item = registered_repository(repository_id)
         return RepositoryResponse(**item.__dict__)
+
+    @app.get(f"{prefix}/repositories/{{repository_id}}/overview")
+    async def repository_overview(repository_id: str, _actor: str = Depends(principal)) -> dict[str, Any]:
+        item = registered_repository(repository_id)
+        runtime = runtimes.get(item.root)
+        return await CortexApplicationService(runtime).repository_dashboard()
 
     @app.post(f"{prefix}/repositories/{{repository_id}}/index", response_model=JobResponse, status_code=202)
     def index_repository(repository_id: str, actor: str = Depends(principal)) -> JobResponse:
-        item = database.repository(repository_id)
-        if item is None:
-            raise HTTPException(status_code=404, detail="repository not found")
+        item = registered_repository(repository_id)
 
         def operation() -> dict[str, Any]:
             graph, stats = IncrementalGraphIndex(Path(item.root)).refresh()
-            return {
-                "nodes": len(graph.nodes),
-                "edges": len(graph.edges),
-                "tracked": stats.index.tracked,
-                "files_reparsed": stats.files_reparsed,
-                "full_rebuild": stats.full_rebuild,
-            }
+            return {"nodes": len(graph.nodes), "edges": len(graph.edges), "tracked": stats.index.tracked, "files_reparsed": stats.files_reparsed, "full_rebuild": stats.full_rebuild}
 
-        job = jobs.submit(
-            "repository.index",
-            {"repository_id": repository_id},
-            operation,
-            actor=actor,
-            workspace=item.workspace,
-            repository_id=repository_id,
-        )
+        job = jobs.submit("repository.index", {"repository_id": repository_id}, operation, actor=actor, workspace=item.workspace, repository_id=repository_id)
         return job_response(job)
 
     @app.get(f"{prefix}/jobs", response_model=list[JobResponse])
