@@ -1,7 +1,5 @@
 """Versioned REST API for CodeCortex."""
 
-from __future__ import annotations
-
 import asyncio
 import json
 import queue
