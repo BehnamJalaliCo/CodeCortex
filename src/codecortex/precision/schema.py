@@ -1,12 +1,8 @@
-"""Field numbers and role flags transcribed from the published index schema.
+"""Wire-field numbers and role flags used by CodeCortex precision indexes.
 
-Keeping the schema constants in one place makes the importer auditable against
-the upstream ``.proto`` definition recorded in ``docs/provenance/precision-intelligence.md``.
-Only the fields CodeCortex actually consumes are listed.
-
-``tests/test_precision_conformance.py`` parses the pinned upstream schema and
-asserts every constant below matches it, so these numbers are verified against
-the protocol rather than trusted as a manual transcription.
+The importer keeps the compact wire contract in one module so parsing behavior
+is explicit, reviewable, and covered by repository-owned conformance tests.
+Only fields CodeCortex consumes are listed here.
 """
 
 from __future__ import annotations
