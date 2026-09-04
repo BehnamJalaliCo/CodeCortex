@@ -1,0 +1,64 @@
+name: MCP Registry Manifest
+
+on:
+  pull_request:
+    paths:
+      - server.json
+      - pyproject.toml
+      - README.md
+      - scripts/generate_readme.py
+      - .github/workflows/release.yml
+      - .github/workflows/mcp-registry.yml
+  push:
+    branches: [main]
+    paths:
+      - server.json
+      - pyproject.toml
+      - README.md
+      - scripts/generate_readme.py
+      - .github/workflows/release.yml
+      - .github/workflows/mcp-registry.yml
+
+permissions:
+  contents: read
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+      - name: Verify registry/package identity
+        shell: bash
+        run: |
+          set -euo pipefail
+          python - <<'PY'
+          import json, tomllib
+          from pathlib import Path
+
+          server = json.loads(Path("server.json").read_text(encoding="utf-8"))
+          project = tomllib.loads(Path("pyproject.toml").read_text(encoding="utf-8"))["project"]
+          package = server["packages"][0]
+          expected = "io.github.BehnamJalaliCo/codecortex-context-engine"
+          assert server["name"] == expected
+          assert package["registryType"] == "pypi"
+          assert package["identifier"] == project["name"]
+          assert package["version"] == project["version"] == server["version"]
+          assert f"mcp-name: {expected}" in Path("README.md").read_text(encoding="utf-8")
+          assert "codecortex-context-engine" in project["scripts"]
+          print("CodeCortex MCP registry identity is internally consistent")
+          PY
+      - name: Install verified MCP Registry publisher
+        shell: bash
+        env:
+          MCP_PUBLISHER_VERSION: v1.8.1
+          MCP_PUBLISHER_SHA256: a06c9096dcb9727c13555b6be26c7effa707b01f06a4c561ba7a3635443cf2cc
+        run: |
+          set -euo pipefail
+          archive="mcp-publisher_linux_amd64.tar.gz"
+          curl -fsSL "https://github.com/modelcontextprotocol/registry/releases/download/${MCP_PUBLISHER_VERSION}/${archive}" -o "${archive}"
+          echo "${MCP_PUBLISHER_SHA256}  ${archive}" | sha256sum -c -
+          tar xzf "${archive}" mcp-publisher
+      - name: Validate server.json against official registry schema
+        run: ./mcp-publisher validate server.json
