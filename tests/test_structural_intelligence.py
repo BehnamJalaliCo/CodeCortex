@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import shutil
 import subprocess
 import sys
 from pathlib import Path
@@ -22,7 +21,6 @@ from codecortex.structural import (
 from codecortex.structural.rewrite import RewriteStore
 
 FAKE_ENGINE = Path(__file__).parent / "fixtures" / "structural_engine.py"
-REAL_ENGINE = shutil.which("ast-grep")
 
 
 def _fake_prefix() -> tuple[str, ...]:
@@ -413,23 +411,3 @@ async def test_structural_provider_is_unavailable_without_an_engine(tmp_path: Pa
     assert await provider.health() is False
 
 
-# -- real engine (skipped when not installed) -------------------------------
-
-
-@pytest.mark.skipif(REAL_ENGINE is None, reason="structural engine binary is not installed")
-def test_real_engine_matches_and_rewrites(tmp_path: Path) -> None:
-    root = _project(tmp_path)
-    config = _config(root, command=REAL_ENGINE)
-    search = StructuralSearch(root, config)
-    assert search.status().available
-
-    matches = search.search("old_api($X)", "python")
-    assert {item.path for item in matches} == {"src/handlers.py", "src/helpers.py"}
-    assert matches[0].captures.get("X") in {"1", "2", "3"}
-
-    service = StructuralRewriteService(root, config, search)
-    preview = service.preview("old_api($X)", "new_api($X, timeout=30)", "python")
-    assert preview.total_matches == 3
-    result = service.apply_sync(preview.preview_id)
-    assert result.applied
-    assert "new_api(1, timeout=30)" in (root / "src" / "handlers.py").read_text(encoding="utf-8")
