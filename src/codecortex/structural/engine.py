@@ -21,13 +21,9 @@ from pathlib import Path
 from codecortex.config import StructuralConfig
 from codecortex.structural.models import StructuralEngineUnavailable, StructuralError
 
-#: Executable names auto-detected on PATH when none is configured.
-#:
-#: Only the unambiguous name is probed. The engine also ships a short alias that
-#: collides with an unrelated system utility on Linux, so that alias is never
-#: auto-detected: a project that installed it under a different name must set
-#: ``structural.command`` explicitly.
-CANDIDATE_EXECUTABLES: tuple[str, ...] = ("ast-grep",)
+#: No vendor-specific executable is auto-detected. Projects that enable the
+#: optional subprocess adapter must configure `structural.command` explicitly.
+CANDIDATE_EXECUTABLES: tuple[str, ...] = ()
 
 #: Exit codes that mean "ran correctly". A structural search that matched
 #: nothing exits non-zero, which is not a failure.
@@ -41,10 +37,9 @@ MAX_ERROR_CHARS = 4_000
 #: is the only signal that a pattern was malformed rather than unmatched.
 PATTERN_ERROR_MARKER = "Pattern contains an ERROR node"
 
-#: Engine release the JSON-stream parsing is tested against, and the version
-#: the ``structural`` extra pins. CodeCortex parses this engine's structured
-#: records, so its output shape is part of the integration contract; a
-#: different build may be fine, but it is unverified and says so.
+#: Reference record-shape version used by the generic subprocess adapter.
+#: A configured engine may use a different version; status reports that as
+#: unverified rather than silently assuming compatibility.
 TESTED_ENGINE_VERSION = "0.45.3"
 
 _VERSION_TOKEN = re.compile(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.\-]+)?)")
