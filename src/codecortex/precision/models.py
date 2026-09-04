@@ -5,6 +5,7 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from codecortex.precision.compatibility import EncodingSource
 from codecortex.precision.identity import SymbolIdentity, parse_symbol
 from codecortex.precision.schema import PositionEncoding, SymbolRole
 
@@ -175,21 +176,34 @@ class PrecisionDocument:
     occurrences: tuple[PrecisionOccurrence, ...] = ()
     symbols: tuple[PrecisionSymbol, ...] = ()
     text_digest: str = ""
-    #: Unit the indexer used for occurrence columns in this document. Columns
-    #: are not Python string indices unless this is ``UTF32_CODE_UNIT``.
-    position_encoding: PositionEncoding = PositionEncoding.UNSPECIFIED
+    #: What the index declared, verbatim. Often ``UNSPECIFIED`` in practice.
+    declared_encoding: PositionEncoding = PositionEncoding.UNSPECIFIED
+    #: Where the effective encoding came from: the index itself, a measured
+    #: record of the producing tool, or an assumption.
+    encoding_source: EncodingSource = EncodingSource.ASSUMED
+    #: Why, when the encoding was not declared.
+    encoding_detail: str = ""
+    #: Whether a column read in the effective encoding may be called exact.
+    encoding_authoritative: bool = False
+    #: Unit occurrence columns are read in. Columns are not Python string
+    #: indices unless this is ``UTF32_CODE_UNIT``.
+    position_encoding: PositionEncoding = PositionEncoding.UTF32_CODE_UNIT
     #: Document text, retained only when the indexer embedded it. Indexers are
     #: not expected to, so position conversion reads the worktree by default.
     text: str = ""
 
     @property
     def needs_column_conversion(self) -> bool:
-        """Whether occurrence columns may differ from Python character columns."""
-        return self.position_encoding in {
-            PositionEncoding.UTF8_CODE_UNIT,
-            PositionEncoding.UTF16_CODE_UNIT,
-            PositionEncoding.UNSPECIFIED,
-        }
+        """Whether occurrence columns may differ from Python character columns.
+
+        Code-point columns need no conversion, but an unverified assumption
+        that they *are* code points still has to consult the source line, to
+        find out whether the line is ASCII and the assumption therefore moot.
+        """
+        return (
+            self.position_encoding is not PositionEncoding.UTF32_CODE_UNIT
+            or not self.encoding_authoritative
+        )
 
 
 @dataclass(slots=True)

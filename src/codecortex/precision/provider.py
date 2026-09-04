@@ -20,7 +20,11 @@ from codecortex.evidence.models import (
 from codecortex.precision.identity import SymbolIdentity
 from codecortex.precision.index import PrecisionIndexStore, PrecisionStatus
 from codecortex.precision.models import PrecisionIndex, PrecisionOccurrence
-from codecortex.precision.positions import character_to_protocol, protocol_to_character
+from codecortex.precision.positions import (
+    character_to_protocol,
+    encoding_is_undecidable,
+    protocol_to_character,
+)
 
 PROVIDER_KEY = "precision_index"
 PROVENANCE = "precision-index"
@@ -134,6 +138,9 @@ class PrecisionEvidenceProvider(EvidenceProvider):
         document = index.document(occurrence.path)
         if document is not None:
             metadata["position_encoding"] = document.position_encoding.name.lower()
+            metadata["position_encoding_source"] = document.encoding_source.value
+            if document.encoding_detail:
+                metadata["position_encoding_detail"] = document.encoding_detail
         if uncertain:
             metadata["position_ambiguous"] = True
             metadata["position_detail"] = AMBIGUOUS_POSITION_DETAIL
@@ -195,8 +202,11 @@ class PrecisionEvidenceProvider(EvidenceProvider):
                 converted = character_to_protocol(
                     line_text, column, document.position_encoding
                 )
+                ambiguous = converted.ambiguous or (
+                    not document.encoding_authoritative
+                    and encoding_is_undecidable(line_text, column)
+                )
                 column = converted.column
-                ambiguous = converted.ambiguous
         occurrence = index.occurrence_at(relative, line, column)
         if occurrence is None:
             return None
@@ -234,7 +244,11 @@ class PrecisionEvidenceProvider(EvidenceProvider):
             "end_line": source.end_line + 1,
             "end_column": end.column + 1,
         }
-        return location, start.ambiguous or end.ambiguous
+        undecidable = not document.encoding_authoritative and (
+            encoding_is_undecidable(start_text, start.column)
+            or encoding_is_undecidable(end_text, end.column)
+        )
+        return location, start.ambiguous or end.ambiguous or undecidable
 
     # -- public queries -----------------------------------------------------
 

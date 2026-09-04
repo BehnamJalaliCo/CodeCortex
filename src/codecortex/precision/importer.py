@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import hashlib
 import re
+from collections.abc import Callable
 from urllib.parse import unquote, urlparse
 
+from codecortex.precision.compatibility import ResolvedEncoding, resolve_encoding
 from codecortex.precision.models import (
     PrecisionDocument,
     PrecisionIndex,
@@ -29,6 +31,9 @@ from codecortex.precision.schema import (
     ToolInfoField,
 )
 from codecortex.precision.wire import Message, WireFormatError, decode_message
+
+#: Maps a document's declared encoding onto the one its columns are read in.
+_EncodingResolver = Callable[[PositionEncoding], ResolvedEncoding]
 
 
 def _range(occurrence: Message) -> SourceRange | None:
@@ -87,9 +92,10 @@ def _symbol(message: Message) -> PrecisionSymbol:
     )
 
 
-def _document(message: Message) -> PrecisionDocument:
+def _document(message: Message, resolver: _EncodingResolver) -> PrecisionDocument:
     relative_path = normalize_index_path(message.text(DocumentField.RELATIVE_PATH))
-    encoding = _position_encoding(message.scalar(DocumentField.POSITION_ENCODING))
+    declared = _position_encoding(message.scalar(DocumentField.POSITION_ENCODING))
+    encoding = resolver(declared)
     occurrences: list[PrecisionOccurrence] = []
     for item in message.messages(DocumentField.OCCURRENCES):
         symbol = item.text(OccurrenceField.SYMBOL)
@@ -115,7 +121,11 @@ def _document(message: Message) -> PrecisionDocument:
             if item.text(SymbolInformationField.SYMBOL)
         ),
         text_digest=hashlib.blake2b(text, digest_size=16).hexdigest() if text else "",
-        position_encoding=encoding,
+        declared_encoding=declared,
+        encoding_source=encoding.source,
+        encoding_detail=encoding.detail,
+        encoding_authoritative=encoding.authoritative,
+        position_encoding=encoding.encoding,
         text=message.text(DocumentField.TEXT),
     )
 
@@ -228,7 +238,15 @@ def import_index(payload: bytes) -> PrecisionIndex:
                 f"unsupported precision index schema version: {protocol_version}"
             )
         tool = metadata.message(MetadataField.TOOL_INFO) if metadata else None
-        documents = tuple(_document(item) for item in root.messages(IndexField.DOCUMENTS))
+        tool_name = tool.text(ToolInfoField.NAME) if tool else ""
+        tool_version = tool.text(ToolInfoField.VERSION) if tool else ""
+
+        def resolver(declared: PositionEncoding) -> ResolvedEncoding:
+            return resolve_encoding(declared, tool_name, tool_version)
+
+        documents = tuple(
+            _document(item, resolver) for item in root.messages(IndexField.DOCUMENTS)
+        )
         external = tuple(
             _symbol(item)
             for item in root.messages(IndexField.EXTERNAL_SYMBOLS)
@@ -243,8 +261,8 @@ def import_index(payload: bytes) -> PrecisionIndex:
         project_root=decode_project_root(
             metadata.text(MetadataField.PROJECT_ROOT) if metadata else ""
         ),
-        tool_name=tool.text(ToolInfoField.NAME) if tool else "",
-        tool_version=tool.text(ToolInfoField.VERSION) if tool else "",
+        tool_name=tool_name,
+        tool_version=tool_version,
         protocol_version=protocol_version,
         documents=documents,
         external_symbols=external,

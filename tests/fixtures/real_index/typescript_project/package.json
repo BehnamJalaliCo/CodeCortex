@@ -1,0 +1,6 @@
+{
+  "name": "codecortex-typescript-fixture",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Conformance fixture indexed by the pinned TypeScript indexer. Not built or published."
+}

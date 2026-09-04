@@ -16,6 +16,7 @@ import pytest
 
 from codecortex.config import CortexConfig, PrecisionIndexConfig
 from codecortex.evidence.models import EvidenceKind, TrustTier
+from codecortex.precision.compatibility import EncodingSource, resolve_encoding
 from codecortex.precision.importer import decode_project_root, import_index
 from codecortex.precision.index import PrecisionIndexStore
 from codecortex.precision.models import (
@@ -24,7 +25,11 @@ from codecortex.precision.models import (
     is_local_symbol,
     scoped_symbol_key,
 )
-from codecortex.precision.positions import character_to_protocol, protocol_to_character
+from codecortex.precision.positions import (
+    character_to_protocol,
+    encoding_is_undecidable,
+    protocol_to_character,
+)
 from codecortex.precision.provider import PrecisionEvidenceProvider, PrecisionQuery
 from codecortex.precision.schema import PositionEncoding
 from tests.fixtures.precision_index import (
@@ -166,17 +171,44 @@ def test_a_column_inside_a_multi_unit_character_is_reported_as_ambiguous() -> No
     assert "multi-code-unit" in result.reason
 
 
-def test_an_unspecified_encoding_is_unambiguous_on_ascii() -> None:
-    assert not protocol_to_character(
-        "value = 1", 6, PositionEncoding.UNSPECIFIED
-    ).ambiguous
-
-
-def test_an_unspecified_encoding_is_ambiguous_after_non_ascii() -> None:
+def test_an_undeclared_encoding_only_matters_after_non_ascii() -> None:
     """Every encoding agrees on an ASCII prefix and disagrees after one."""
-    result = protocol_to_character("🚀 Woo", 3, PositionEncoding.UNSPECIFIED)
-    assert result.ambiguous
-    assert "did not declare a position encoding" in result.reason
+    assert not encoding_is_undecidable("value = 1", 6)
+    assert not encoding_is_undecidable("🚀 Woo", 0)
+    assert encoding_is_undecidable("🚀 Woo", 3)
+    assert encoding_is_undecidable("سلام x", 5)
+
+
+@pytest.mark.parametrize(
+    ("tool", "version", "expected", "authoritative"),
+    [
+        # Measured from the committed real indexes, not assumed.
+        ("scip-python", "0.6.6", PositionEncoding.UTF16_CODE_UNIT, True),
+        ("scip-typescript", "0.4.0", PositionEncoding.UTF16_CODE_UNIT, True),
+        # A version the measurement does not cover must not inherit its verdict.
+        ("scip-python", "9.9.9", PositionEncoding.UTF32_CODE_UNIT, False),
+        ("some-unknown-indexer", "1.0", PositionEncoding.UTF32_CODE_UNIT, False),
+        ("", "", PositionEncoding.UTF32_CODE_UNIT, False),
+    ],
+)
+def test_an_undeclared_encoding_falls_back_to_measured_tool_behaviour(
+    tool: str, version: str, expected: PositionEncoding, authoritative: bool
+) -> None:
+    resolved = resolve_encoding(PositionEncoding.UNSPECIFIED, tool, version)
+    assert resolved.encoding is expected
+    assert resolved.authoritative is authoritative
+    assert resolved.source is (
+        EncodingSource.MEASURED if authoritative else EncodingSource.ASSUMED
+    )
+
+
+def test_a_declared_encoding_always_wins_over_the_compatibility_table() -> None:
+    resolved = resolve_encoding(
+        PositionEncoding.UTF8_CODE_UNIT, "scip-python", "0.6.6"
+    )
+    assert resolved.encoding is PositionEncoding.UTF8_CODE_UNIT
+    assert resolved.source is EncodingSource.DECLARED
+    assert resolved.authoritative
 
 
 UNICODE_SYMBOL = symbol("app", "mod/`handler`.")

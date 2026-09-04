@@ -29,7 +29,10 @@ from dataclasses import dataclass
 
 from codecortex.precision.schema import PositionEncoding
 
-#: Encodings whose code units are code points, so no conversion is needed.
+#: Encodings whose code units are code points, so no conversion is needed. An
+#: index that declared nothing is resolved to a concrete encoding before it
+#: reaches here (see :mod:`codecortex.precision.compatibility`), so UNSPECIFIED
+#: is included only as a defensive identity case.
 _IDENTITY_ENCODINGS = frozenset(
     {PositionEncoding.UTF32_CODE_UNIT, PositionEncoding.UNSPECIFIED}
 )
@@ -63,30 +66,13 @@ def _code_unit_offsets(line_text: str, encoding: PositionEncoding) -> list[int]:
     return offsets
 
 
-def _unspecified_ambiguity(line_text: str, character_column: int) -> str:
-    """Report why an unspecified encoding cannot be trusted on this line.
-
-    The schema says a conforming indexer must not leave the encoding
-    unspecified. When one does, every encoding agrees on a pure-ASCII prefix
-    and disagrees otherwise, so ambiguity is reported only where it is real.
-    """
-    prefix = line_text[: max(0, character_column)]
-    if prefix.isascii():
-        return ""
-    return (
-        "the index did not declare a position encoding and the line contains "
-        "non-ASCII text, so the column could refer to bytes, UTF-16 code units, "
-        "or code points"
-    )
-
-
 def protocol_to_character(
     line_text: str, column: int, encoding: PositionEncoding
 ) -> ColumnConversion:
     """Convert an indexer column into a zero-based Python character column."""
     if column <= 0:
         return ColumnConversion(0)
-    if encoding in _IDENTITY_ENCODINGS and line_text.isascii():
+    if encoding in _IDENTITY_ENCODINGS:
         return ColumnConversion(column)
 
     offsets = _code_unit_offsets(line_text, encoding)
@@ -94,15 +80,12 @@ def protocol_to_character(
     if column >= total:
         # A column at or past the end of the line: keep the overshoot so that
         # an end-exclusive boundary one past the last character stays one past.
-        character = len(line_text) + (column - total)
-        return _annotate(line_text, character, encoding)
+        return ColumnConversion(len(line_text) + (column - total))
 
     # Walk to the character whose code units cover the requested offset.
-    character = 0
     for index in range(len(offsets) - 1):
         if offsets[index] == column:
-            character = index
-            break
+            return ColumnConversion(index)
         if offsets[index] < column < offsets[index + 1]:
             # The offset lands inside a multi-unit character. No character
             # column represents that position, so clamp to the character that
@@ -115,9 +98,7 @@ def protocol_to_character(
                     f"clamped to the start of that character"
                 ),
             )
-    else:  # pragma: no cover - the column < total guard makes this unreachable
-        character = len(line_text)
-    return _annotate(line_text, character, encoding)
+    return ColumnConversion(len(line_text))  # pragma: no cover - guarded above
 
 
 def character_to_protocol(
@@ -126,26 +107,20 @@ def character_to_protocol(
     """Convert a zero-based Python character column into an indexer column."""
     if column <= 0:
         return ColumnConversion(0)
-    if encoding in _IDENTITY_ENCODINGS and line_text.isascii():
+    if encoding in _IDENTITY_ENCODINGS:
         return ColumnConversion(column)
 
     offsets = _code_unit_offsets(line_text, encoding)
     if column < len(offsets):
-        converted = offsets[column]
-    else:
-        converted = offsets[-1] + (column - len(line_text))
-    ambiguity = (
-        _unspecified_ambiguity(line_text, column)
-        if encoding is PositionEncoding.UNSPECIFIED
-        else ""
-    )
-    return ColumnConversion(converted, ambiguous=bool(ambiguity), reason=ambiguity)
+        return ColumnConversion(offsets[column])
+    return ColumnConversion(offsets[-1] + (column - len(line_text)))
 
 
-def _annotate(
-    line_text: str, character: int, encoding: PositionEncoding
-) -> ColumnConversion:
-    if encoding is not PositionEncoding.UNSPECIFIED:
-        return ColumnConversion(character)
-    ambiguity = _unspecified_ambiguity(line_text, character)
-    return ColumnConversion(character, ambiguous=bool(ambiguity), reason=ambiguity)
+def encoding_is_undecidable(line_text: str, character_column: int) -> bool:
+    """Whether the encoding matters for a position on this line.
+
+    Every encoding agrees on an ASCII prefix, so an unverified assumption about
+    which unit an index used is harmless there and unsound after the first
+    non-ASCII character.
+    """
+    return not line_text[: max(0, character_column)].isascii()

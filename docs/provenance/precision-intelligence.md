@@ -42,6 +42,39 @@ Consuming a documented wire format is an interoperability implementation. The
 attribution above is recorded because the schema and its documentation are the
 source of the field numbering and semantics CodeCortex relies on.
 
+## Real-index conformance fixtures
+
+`tests/fixtures/real_index/` holds two small source projects together with the
+`index.scip` that a real, pinned language indexer produced for each, and the
+official CLI's decode of the same bytes:
+
+| Project | Indexer | Version | Generator commit |
+| --- | --- | --- | --- |
+| `python_project/` | scip-python | 0.6.6 | `8b60bbce1f2a4c7a517776cb395bbafb2e731e4f` |
+| `typescript_project/` | scip-typescript | 0.4.0 | `891eb4293709a6a587bf4468dfa1b45a85182fd9` |
+
+No indexer source is vendored. The indexers are built from those revisions only
+to generate the fixtures, are not runtime dependencies, and are not installed by
+normal CI. Both indexes pass `scip lint` from the official CLI built at the
+recorded protocol revision, and `scip print --json` output is committed as an
+independent decode oracle. Digests and commands are recorded per project in
+`PROVENANCE.json`; `scripts/regenerate_real_index_fixtures.sh` reproduces them.
+
+## Measured indexer behaviour
+
+`src/codecortex/precision/compatibility.py` records column encodings that were
+*measured* from those indexes rather than assumed. Both pinned indexers omit
+`Document.position_encoding` and emit UTF-16 code-unit columns — including the
+Python indexer, for which the schema's guidance suggests UTF-32. A declared
+encoding always overrides this table, and a tool or version the measurement
+does not cover falls back to code points and is reported as an assumption
+rather than as exact evidence.
+
+`scip-python` 0.6.6 additionally does not emit a definition occurrence for a
+class, resolving `class Foo:` to `builtins/Foo#` with a read role. This
+reproduces in that indexer's own upstream snapshot inputs. CodeCortex reports
+what the index contains and does not compensate for it.
+
 ## Compatibility scope
 
 - Schema protocol versions accepted: `0` (`UnspecifiedProtocolVersion`).
