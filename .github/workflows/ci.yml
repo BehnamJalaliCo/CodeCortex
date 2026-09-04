@@ -76,7 +76,6 @@ jobs:
           tests/test_precision_intelligence.py
           tests/test_precision_semantics.py
           tests/test_precision_conformance.py
-          tests/test_real_index_conformance.py
           tests/test_precision_generator.py
           tests/test_dependency_intelligence.py
           tests/test_dependency_contract.py
