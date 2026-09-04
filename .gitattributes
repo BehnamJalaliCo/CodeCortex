@@ -14,8 +14,6 @@
 #     the code it describes.
 #
 # `-text` disables all end-of-line conversion in both directions.
-tests/fixtures/upstream/** -text
-tests/fixtures/real_index/** -text
 
-# A serialized index is protobuf, not text, in any location.
+# Precision index payloads are binary in any location.
 *.cortexidx binary
