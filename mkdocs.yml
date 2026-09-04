@@ -1,5 +1,5 @@
 site_name: CodeCortex Context Engine
-site_description: Context intelligence infrastructure for AI coding agents
+site_description: Open-source context intelligence infrastructure for AI coding agents
 repo_name: BehnamJalaliCo/CodeCortex
 repo_url: https://github.com/BehnamJalaliCo/CodeCortex
 site_url: https://behnamjalalico.github.io/CodeCortex/
@@ -17,11 +17,21 @@ markdown_extensions:
       permalink: true
 nav:
   - Home: index.md
+  - Getting Started: GETTING_STARTED.md
   - Architecture: ARCHITECTURE.md
-  - Advanced Intelligence: ADVANCED_INTELLIGENCE.md
+  - Integrations: INTEGRATIONS.md
   - Evidence Fusion: EVIDENCE_FUSION.md
-  - Quality: QUALITY.md
+  - Advanced Intelligence: ADVANCED_INTELLIGENCE.md
+  - Distributed: DISTRIBUTED.md
+  - Platform:
+      - Overview: platform/README.md
+      - API: platform/api.md
+      - Administration: platform/admin.md
+      - API Compatibility: platform/api-compatibility.md
+      - Development: platform/development.md
+  - Quality & Benchmarks: QUALITY.md
   - Testing: TESTING.md
   - Packaging: PACKAGING.md
+  - Licensing: LICENSING.md
   - Release: RELEASE.md
   - OpenSSF: OPENSSF.md
