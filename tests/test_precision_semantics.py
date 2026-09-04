@@ -594,3 +594,29 @@ def _provider(root: Path, **overrides: object) -> PrecisionEvidenceProvider:
             update={"precision_index": PrecisionIndexConfig(**overrides)}  # type: ignore[arg-type]
         )
     return PrecisionEvidenceProvider(root, config)
+
+
+def test_a_column_past_the_end_of_a_line_stays_past_the_end() -> None:
+    """An end-exclusive boundary one past the last character must stay there.
+
+    A range whose end sits at the line end is common, and clamping it into the
+    line would silently shorten every such occurrence by one.
+    """
+    line = "🚀 ab"  # 4 characters, 7 UTF-8 bytes, 5 UTF-16 code units
+    assert (len(line), len(line.encode("utf-8"))) == (4, 7)
+    for encoding, total in (
+        (PositionEncoding.UTF8_CODE_UNIT, 7),
+        (PositionEncoding.UTF16_CODE_UNIT, 5),
+    ):
+        assert protocol_to_character(line, total, encoding).column == len(line)
+        assert protocol_to_character(line, total + 3, encoding).column == len(line) + 3
+        assert character_to_protocol(line, len(line), encoding).column == total
+        assert character_to_protocol(line, len(line) + 3, encoding).column == total + 3
+
+
+def test_a_negative_or_zero_column_converts_to_the_line_start() -> None:
+    for encoding in (PositionEncoding.UTF8_CODE_UNIT, PositionEncoding.UTF16_CODE_UNIT):
+        assert protocol_to_character("🚀 ab", 0, encoding).column == 0
+        assert protocol_to_character("🚀 ab", -5, encoding).column == 0
+        assert character_to_protocol("🚀 ab", 0, encoding).column == 0
+        assert character_to_protocol("🚀 ab", -5, encoding).column == 0

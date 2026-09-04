@@ -48,20 +48,20 @@ class ColumnConversion:
 
 
 def _code_unit_offsets(line_text: str, encoding: PositionEncoding) -> list[int]:
-    """Return the cumulative code-unit offset before each character, plus the total."""
+    """Return the cumulative code-unit offset before each character, plus the total.
+
+    Only called for an encoding whose code units are not code points; the
+    identity encodings return before reaching here, so there is no third arm.
+    """
     offsets = [0]
     total = 0
     if encoding is PositionEncoding.UTF8_CODE_UNIT:
         for char in line_text:
             total += len(char.encode("utf-8"))
             offsets.append(total)
-    elif encoding is PositionEncoding.UTF16_CODE_UNIT:
+    else:
         for char in line_text:
             total += 2 if ord(char) > 0xFFFF else 1
-            offsets.append(total)
-    else:
-        for _ in line_text:
-            total += 1
             offsets.append(total)
     return offsets
 

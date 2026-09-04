@@ -741,3 +741,75 @@ def _service(
     )
     service._provider = RemoteDocumentationProvider(config.dependency_docs, API_KEY)
     return service
+
+
+# -- the documented JSON response shape -------------------------------------
+
+
+@pytest.mark.asyncio
+async def test_a_json_context_response_is_unwrapped() -> None:
+    """The documented success shape is ``{"data": "..."}``, not bare text.
+
+    Both are accepted, but the JSON one is what the contract defines, so it
+    must not be handed back with its envelope still attached.
+    """
+    body = json.dumps({"data": "middleware runs before caching"})
+    with Server({CONTEXT_PATH: [Reply(200, body)]}) as server:
+        evidence = await _provider(server.base_url).query_docs("/vercel/next.js", "mw", None)
+    assert evidence[0].content == "middleware runs before caching"
+    assert "data" not in evidence[0].content
+
+
+@pytest.mark.asyncio
+async def test_a_json_response_carrying_an_error_is_not_documentation() -> None:
+    """A 200 whose body is an error object must not become the answer."""
+    body = json.dumps({"error": "library_not_found", "message": "no such library"})
+    with Server({CONTEXT_PATH: [Reply(200, body)]}) as server:
+        with pytest.raises(DocumentationUnavailable, match="library_not_found"):
+            await _provider(server.base_url).query_docs("/a/b", "q", None)
+
+
+@pytest.mark.asyncio
+async def test_a_json_response_with_empty_data_is_reported_as_no_documentation() -> None:
+    for body in (json.dumps({"data": ""}), json.dumps({"data": "   "}), json.dumps({})):
+        with Server({CONTEXT_PATH: [Reply(200, body)]}) as server:
+            with pytest.raises(DocumentationUnavailable, match="no documentation available"):
+                await _provider(server.base_url).query_docs("/a/b", "q", None)
+
+
+@pytest.mark.asyncio
+async def test_a_json_response_with_a_non_string_data_field_is_refused() -> None:
+    """A provider-controlled field of the wrong type must not be coerced."""
+    body = json.dumps({"data": {"nested": "object"}})
+    with Server({CONTEXT_PATH: [Reply(200, body)]}) as server:
+        with pytest.raises(DocumentationUnavailable, match="no documentation available"):
+            await _provider(server.base_url).query_docs("/a/b", "q", None)
+
+
+@pytest.mark.asyncio
+async def test_a_search_returning_only_unusable_libraries_is_reported() -> None:
+    payload = json.dumps({"results": [{"id": "/bad", "state": "error"}, {"no_id": True}]})
+    with Server({SEARCH_PATH: [Reply(200, payload)]}) as server:
+        with pytest.raises(DocumentationUnavailable, match="no usable documented library"):
+            await _provider(server.base_url).resolve_library("bad", "q", None)
+
+
+@pytest.mark.asyncio
+async def test_an_error_body_that_is_not_json_still_yields_a_typed_failure() -> None:
+    """A gateway may return HTML for a 5xx; that must not break error handling."""
+    with Server({SEARCH_PATH: [Reply(400, "<html>Bad Request</html>", "text/html")]}) as server:
+        with pytest.raises(DocumentationUnavailable, match="rejected the request"):
+            await _provider(server.base_url).resolve_library("a", "q", None)
+
+
+@pytest.mark.asyncio
+async def test_a_redirect_chain_longer_than_the_bound_is_refused() -> None:
+    """Each hop targets a new library, so the loop guard is not what stops it."""
+    replies = [
+        Reply(301, json.dumps({"redirectUrl": f"/hop/{index}"}))
+        for index in range(MAX_REDIRECTS + 2)
+    ]
+    with Server({CONTEXT_PATH: replies}) as server:
+        with pytest.raises(DocumentationUnavailable, match="more than"):
+            await _provider(server.base_url).query_docs("/start/here", "q", None)
+    assert len(server.received) == MAX_REDIRECTS + 1
