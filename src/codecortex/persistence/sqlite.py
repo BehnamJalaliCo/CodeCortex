@@ -153,12 +153,18 @@ class PlatformDatabase:
         if not workspace.strip() or not name.strip():
             raise ValueError("workspace and repository name are required")
         self.create_workspace(workspace)
-        safe_root = os.path.realpath(os.fspath(self.repository_root))
-        candidate = os.path.realpath(os.path.join(safe_root, os.fspath(root)))
-        safe_prefix = safe_root if safe_root.endswith(os.sep) else safe_root + os.sep
-        if candidate != safe_root and not candidate.startswith(safe_prefix):
-            raise ValueError(f"repository root must be within {safe_root}")
-        resolved = Path(candidate)
+        # Resolve symlinks first, then let pathlib decide containment. The
+        # previous separator-terminated prefix comparison rejected the same
+        # paths, but expressed the boundary as string arithmetic the caller has
+        # to re-derive to trust; `relative_to` states it directly and is a
+        # containment check static analysis can follow.
+        safe_root = Path(os.path.realpath(os.fspath(self.repository_root)))
+        candidate = Path(os.path.realpath(os.path.join(str(safe_root), os.fspath(root))))
+        try:
+            candidate.relative_to(safe_root)
+        except ValueError as exc:
+            raise ValueError(f"repository root must be within {safe_root}") from exc
+        resolved = candidate
         if not resolved.is_dir():
             raise ValueError(f"repository root does not exist: {resolved}")
         identifier = repository_id or uuid.uuid4().hex

@@ -50,6 +50,40 @@ def test_api_authenticator_covers_local_and_token_modes() -> None:
     assert tokens.authenticate("Bearer secret") == "alice"
 
 
+def test_repository_root_must_stay_inside_the_configured_base(tmp_path: Path) -> None:
+    """The registration boundary is a security control, so assert it directly.
+
+    Registration resolves symlinks before deciding containment, so neither a
+    traversal segment nor a symlink pointing outside the base can register a
+    repository the platform was not given.
+    """
+    base = tmp_path / "base"
+    (base / "inside").mkdir(parents=True)
+    outside = tmp_path / "outside"
+    outside.mkdir()
+    database = PlatformDatabase(tmp_path / "state" / "platform.db", repository_root=base)
+
+    assert database.register_repository("ws", "ok", base / "inside").name == "ok"
+
+    for escape in (outside, Path("..") / "outside", base / "inside" / ".." / ".." / "outside"):
+        with pytest.raises(ValueError, match="must be within"):
+            database.register_repository("ws", "escape", escape)
+
+    link = base / "link"
+    try:
+        link.symlink_to(outside, target_is_directory=True)
+    except OSError:  # pragma: no cover - platform dependent
+        pytest.skip("symlinks unavailable on this platform")
+    with pytest.raises(ValueError, match="must be within"):
+        database.register_repository("ws", "symlink", link)
+
+    # A sibling whose name merely extends the base is outside it.
+    sibling = tmp_path / "basement"
+    sibling.mkdir()
+    with pytest.raises(ValueError, match="must be within"):
+        database.register_repository("ws", "sibling", sibling)
+
+
 def test_platform_database_full_local_lifecycle(tmp_path: Path) -> None:
     database = PlatformDatabase(
         tmp_path / "state" / "platform.db", repository_root=tmp_path
