@@ -199,7 +199,7 @@ def test_wire_reader_rejects_deep_nesting() -> None:
 
 def test_symbol_identity_decomposes_package_and_descriptors() -> None:
     identity = parse_symbol(AUTH_RUN)
-    assert identity.scheme == "index-python"
+    assert identity.scheme == "codecortex-indexer"
     assert identity.package_name == "app"
     assert identity.package_version == "1.0.0"
     assert identity.qualified_name == "auth.Service.run"
@@ -212,11 +212,11 @@ def test_symbol_identity_handles_locals_escapes_and_malformed_input() -> None:
     local = parse_symbol("local 4")
     assert local.is_local and local.display_name == "4"
 
-    escaped = parse_symbol("index-go gomod example  package 1.0 pkg/`My Type`#")
+    escaped = parse_symbol("codecortex-indexer gomod example  package 1.0 pkg/`My Type`#")
     assert escaped.package_name == "example package"
     assert escaped.display_name == "My Type"
 
-    broken = parse_symbol("index-python pypi app 1.0 bad~suffix")
+    broken = parse_symbol("codecortex-indexer pypi app 1.0 bad~suffix")
     assert broken.parse_error
     assert broken.display_name == broken.raw
     assert parse_symbol("").parse_error == "empty symbol"
