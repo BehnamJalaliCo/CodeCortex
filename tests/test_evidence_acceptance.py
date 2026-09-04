@@ -82,7 +82,7 @@ def _index() -> bytes:
 
 
 def _fresh_index(root: Path) -> Path:
-    path = root / "index.scip"
+    path = root / "index.cortexidx"
     path.write_bytes(_index())
     later = time.time() + 600
     os.utime(path, (later, later))
