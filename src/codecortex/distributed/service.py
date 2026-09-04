@@ -68,7 +68,7 @@ class DistributedMCPApplication:
         if name == "cortex_worker_complete":
             node_id = str(arguments.get("node_id") or self.node_id)
             raw_result = arguments.get("result", {})
-            result = raw_result if isinstance(raw_result, dict) else {}
-            task = self.workers.complete(str(arguments["task_id"]), node_id, result, lease_token=str(arguments["lease_token"]))
-            return {"task_id": task.task_id, "status": task.status}
+            task_result: dict[str, object] = raw_result if isinstance(raw_result, dict) else {}
+            completed = self.workers.complete(str(arguments["task_id"]), node_id, task_result, lease_token=str(arguments["lease_token"]))
+            return {"task_id": completed.task_id, "status": completed.status}
         return await self.base.call(name, arguments)

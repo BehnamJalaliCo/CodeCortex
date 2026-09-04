@@ -18,23 +18,30 @@ from codecortex.architecture import (
     ArchitectureInferenceEngine,
 )
 from codecortex.benchmark import BenchmarkSuite, CodeCortexGraphStrategy, FullTextBaseline
+from codecortex.config import CortexConfig
 from codecortex.dashboard import run_dashboard
+from codecortex.dependencies import DependencyIntelligence
 from codecortex.evaluation import (
     BenchmarkHistory,
+    EvidenceBenchmark,
     ExternalEvaluationSuite,
     RegressionGate,
     SubprocessEvaluationTarget,
 )
+from codecortex.evidence import EvidenceBundle, EvidenceFusionPolicy
 from codecortex.git_intelligence import GitIntelligence
+from codecortex.indexing.graph import ProjectGraph
 from codecortex.indexing.impact import ImpactAnalyzer
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.mcp.server import run_stdio
 from codecortex.memory import TeamMemoryStore
 from codecortex.memory.knowledge import ProjectKnowledgeExtractor
 from codecortex.pr_intelligence import PRIntelligence
+from codecortex.precision import PrecisionEvidenceProvider, PrecisionQuery
 from codecortex.retrieval import RepositorySemanticIndex
 from codecortex.runtime import build_runtime
 from codecortex.setup import ProjectSetup
+from codecortex.structural import StructuralError, StructuralRewriteService, StructuralSearch
 from codecortex.tracing import TaskTraceRecorder
 from codecortex.workspace import MultiRepositoryWorkspace
 
@@ -46,7 +53,7 @@ def _root(path: Path) -> Path:
     return path.expanduser().resolve()
 
 
-def _graph(root: Path):
+def _graph(root: Path) -> ProjectGraph:
     return IncrementalGraphIndex(root).refresh()[0]
 
 
@@ -293,6 +300,30 @@ def benchmark(
     console.print(f"Saved: {output_path}")
 
 
+@app.command("evidence-benchmark")
+def evidence_benchmark(
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+    output: Annotated[Path, typer.Option("--output", "-o")] = Path(
+        "benchmarks/evidence.json"
+    ),
+    index: Annotated[Path | None, typer.Option("--precision-index")] = None,
+) -> None:
+    """Measure heuristic-only against evidence-backed resolution on fixtures.
+
+    Strategies that need an uninstalled optional component are reported as
+    skipped rather than estimated.
+    """
+    root = _root(path)
+    output_path = output if output.is_absolute() else root / output
+    workdir = root / ".codecortex" / "benchmarks" / "evidence"
+    workdir.mkdir(parents=True, exist_ok=True)
+    payload = index.read_bytes() if index is not None else None
+    report = EvidenceBenchmark(workdir=workdir, precision_index=payload).run()
+    report.save(output_path)
+    console.print_json(data=report.to_dict())
+    console.print(f"Saved: {output_path}")
+
+
 @app.command("benchmark-gate")
 def benchmark_gate(
     path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
@@ -327,15 +358,189 @@ def evaluate_command(
     console.print_json(data=report.summary())
 
 
+def _evidence_payload(bundle: EvidenceBundle) -> dict[str, object]:
+    """Serialize an evidence bundle for CLI JSON output."""
+    ranked = EvidenceFusionPolicy.deduplicate(bundle.records)
+    return {
+        "evidence": [
+            {**record.model_dump(mode="json"), "rank_score": EvidenceFusionPolicy.score(record)}
+            for record in ranked
+        ],
+        "providers": [report.model_dump(mode="json") for report in bundle.providers],
+        "degraded": bundle.degraded,
+    }
+
+
+def _precision(root: Path) -> PrecisionEvidenceProvider:
+    return PrecisionEvidenceProvider(root, CortexConfig.load(root))
+
+
+@app.command()
+def definition(
+    target: Annotated[str, typer.Argument(help="Repository-relative file")],
+    line: Annotated[int, typer.Argument(help="One-based line")],
+    column: Annotated[int, typer.Argument(help="One-based column")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    """Resolve the exact definition at a file position."""
+    provider = _precision(_root(path))
+    query = PrecisionQuery(target, line, column)
+    console.print_json(
+        data={**_evidence_payload(provider.definition(query)), **provider.symbol_at(query)}
+    )
+
+
+@app.command()
+def references(
+    target: Annotated[str, typer.Argument(help="Repository-relative file")],
+    line: Annotated[int, typer.Argument(help="One-based line")],
+    column: Annotated[int, typer.Argument(help="One-based column")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    """Resolve exact references to the symbol at a file position."""
+    provider = _precision(_root(path))
+    query = PrecisionQuery(target, line, column)
+    console.print_json(
+        data={**_evidence_payload(provider.references(query)), **provider.symbol_at(query)}
+    )
+
+
+@app.command()
+def implementations(
+    target: Annotated[str, typer.Argument(help="Repository-relative file")],
+    line: Annotated[int, typer.Argument(help="One-based line")],
+    column: Annotated[int, typer.Argument(help="One-based column")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    """Resolve exact implementations of the symbol at a file position."""
+    provider = _precision(_root(path))
+    query = PrecisionQuery(target, line, column)
+    console.print_json(
+        data={**_evidence_payload(provider.implementations(query)), **provider.symbol_at(query)}
+    )
+
+
+@app.command("precision-status")
+def precision_status(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
+    """Report precision index availability, freshness, and fallback state."""
+    console.print_json(data=_precision(_root(path)).status().to_dict())
+
+
+@app.command("dependency")
+def dependency_command(
+    package: Annotated[str, typer.Argument(help="Dependency name")] = "",
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    """Show declared and resolved dependency versions found in the repository."""
+    root = _root(path)
+    service = DependencyIntelligence(root, CortexConfig.load(root))
+    inventory = service.inventory()
+    records = inventory.find(package) if package else inventory.records
+    console.print_json(
+        data={
+            "dependencies": [item.to_dict() for item in records[:200]],
+            "manifests": [item.to_dict() for item in inventory.manifests],
+            "documentation_provider": service.status().to_dict(),
+        }
+    )
+
+
+@app.command("dependency-docs")
+def dependency_docs(
+    package: Annotated[str, typer.Argument(help="Dependency name")],
+    query: Annotated[str, typer.Argument(help="What you need to know")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    """Fetch version-aware documentation, or report why it is unavailable."""
+    root = _root(path)
+    service = DependencyIntelligence(root, CortexConfig.load(root))
+    result = asyncio.run(service.docs(package, query))
+    console.print_json(data=result.to_dict())
+
+
+@app.command("structural-search")
+def structural_search(
+    pattern: Annotated[str, typer.Option("--pattern", help="Structural pattern")],
+    language: Annotated[str, typer.Option("--lang", help="Pattern language")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+    limit: Annotated[int, typer.Option("--limit", "-n")] = 100,
+    exclude: Annotated[list[str] | None, typer.Option("--exclude")] = None,
+) -> None:
+    """Find code by syntax structure rather than text."""
+    root = _root(path)
+    search = StructuralSearch(root, CortexConfig.load(root))
+    try:
+        matches = search.search(pattern, language, exclude=tuple(exclude or ()), limit=limit)
+    except StructuralError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=2) from None
+    console.print_json(
+        data={
+            "matches": [item.model_dump(mode="json") for item in matches],
+            "engine": search.status().to_dict(),
+        }
+    )
+
+
+@app.command("rewrite-preview")
+def rewrite_preview(
+    pattern: Annotated[str, typer.Option("--pattern")],
+    replacement: Annotated[str, typer.Option("--replacement")],
+    language: Annotated[str, typer.Option("--lang")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+    exclude: Annotated[list[str] | None, typer.Option("--exclude")] = None,
+) -> None:
+    """Plan a structural rewrite without changing any file."""
+    root = _root(path)
+    service = StructuralRewriteService(root, CortexConfig.load(root))
+    try:
+        preview = service.preview(
+            pattern, replacement, language, exclude=tuple(exclude or ())
+        )
+    except StructuralError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=2) from None
+    console.print_json(data=service.preview_payload(preview))
+
+
+@app.command("rewrite-apply")
+def rewrite_apply(
+    preview_id: Annotated[str, typer.Argument(help="Preview identifier")],
+    path: Annotated[Path, typer.Option("--path", "-p")] = Path("."),
+) -> None:
+    """Apply a reviewed structural rewrite preview."""
+    root = _root(path)
+    service = StructuralRewriteService(root, CortexConfig.load(root))
+    try:
+        result = service.apply_sync(preview_id)
+    except StructuralError as exc:
+        console.print(f"[red]{exc}[/red]")
+        raise typer.Exit(code=2) from None
+    console.print_json(data=result.model_dump(mode="json"))
+    if not result.applied:
+        raise typer.Exit(code=2)
+
+
 @app.command()
 def doctor(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> None:
-    runtime = build_runtime(_root(path))
+    root = _root(path)
+    runtime = build_runtime(root)
     health = asyncio.run(runtime.gateway.health())
     table = Table(title="CodeCortex Health")
     table.add_column("Capability")
     table.add_column("Status")
+    table.add_column("Detail")
     for capability, status in health.items():
-        table.add_row(capability, "OK" if status else "Unavailable")
+        table.add_row(capability, "OK" if status else "Unavailable", "")
+
+    precision = _precision(root).status()
+    table.add_row("precision intelligence", precision.label, precision.stale_reason or precision.detail)
+
+    dependencies = DependencyIntelligence(root, runtime.config).status()
+    table.add_row("dependency docs", dependencies.label, dependencies.detail)
+
+    structural = StructuralSearch(root, runtime.config).status()
+    table.add_row("structural engine", structural.label, structural.version or structural.detail)
     console.print(table)
 
 

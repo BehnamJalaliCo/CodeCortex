@@ -20,6 +20,16 @@ Early architecture and integration work involved source lineage from three publi
 
 Upstream copyright remains with the applicable upstream copyright holders. CodeCortex Git commits record the authorship of CodeCortex-specific integration and subsequent changes independently.
 
+## Integrated protocols and optional dependencies
+
+The evidence-fusion layers integrate three further public projects. None of them is vendored into this repository: one is consumed as a published protocol, one is reached as an optional remote service, and one is invoked as an optional external subprocess. Recorded revisions and licenses are maintained under `docs/provenance/` and summarized in `THIRD_PARTY_NOTICES.md`:
+
+- SCIP Code Intelligence Protocol — Apache-2.0 at the recorded revision; consumed as a protocol.
+- Context7 — MIT at the recorded revision; reached as an optional, disabled-by-default remote provider.
+- ast-grep — MIT at the recorded revision; invoked as an optional external subprocess and declared as the `structural` extra.
+
+CodeCortex does not present itself as a distribution of, or a wrapper around, any of these projects. Product-facing names in the CLI, MCP surface, dashboard, and documentation are CodeCortex-native; the upstream names appear in licensing and provenance records, where attribution belongs.
+
 ## NOTICE handling
 
 The root `NOTICE` file includes CodeCortex's project notice and applicable upstream attribution. `THIRD_PARTY_NOTICES.md` preserves more detailed license and provenance context, including the Serena MIT text and upstream NOTICE information.

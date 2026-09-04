@@ -13,8 +13,9 @@ import re
 import shlex
 import subprocess
 import tempfile
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from functools import partial
 from pathlib import Path
 from time import perf_counter
 from typing import Any, Literal
@@ -208,6 +209,11 @@ class RetrievalObservation:
     tool_calls: int
 
 
+def _identity(observation: RetrievalObservation) -> RetrievalObservation:
+    """Return an already-measured observation, for the no-op baseline scenario."""
+    return observation
+
+
 class RepositoryCheckout:
     """Materialize a public repository at an exact immutable revision."""
 
@@ -304,7 +310,9 @@ class ProductionBenchmarkRunner:
                     if scenario == "vanilla":
                         baseline = self._lexical(root, case)
                         report.results.append(
-                            self._measure(spec, case, scenario, lambda b=baseline: b)
+                            self._measure(
+                                spec, case, scenario, partial(_identity, baseline)
+                            )
                         )
                         continue
                     if not availability.get(scenario, False):
@@ -354,7 +362,11 @@ class ProductionBenchmarkRunner:
             "context": False,
             "full": False,
         }
-        adapters = {"graph": graph, "symbols": symbols, "context": context}
+        adapters: dict[ScenarioName, GraphBackendAdapter | SymbolBackendAdapter | ContextBackendAdapter] = {
+            "graph": graph,
+            "symbols": symbols,
+            "context": context,
+        }
         for key, adapter in adapters.items():
             needed = key in selected or "full" in selected
             if not needed:
@@ -374,17 +386,19 @@ class ProductionBenchmarkRunner:
                     detail = "healthy" if healthy else "health probe failed"
                     if healthy and key == "graph":
                         graph.build()
-                    elif healthy and key in {"symbols", "context"}:
+                    elif healthy and isinstance(
+                        adapter, (SymbolBackendAdapter, ContextBackendAdapter)
+                    ):
                         adapter.require_tools(adapter.tools(), adapter.required_tools)
-                availability[key] = healthy  # type: ignore[literal-required]
+                availability[key] = healthy
             except Exception as exc:
                 status = "error"
                 detail = f"{type(exc).__name__}: {exc}"
-                availability[key] = False  # type: ignore[literal-required]
+                availability[key] = False
             report.setup.append(
                 SetupMeasurement(
                     repository=spec.name,
-                    scenario=key,  # type: ignore[arg-type]
+                    scenario=key,
                     wall_time_ms=(perf_counter() - started) * 1000,
                     status=status,
                     detail=detail,
@@ -404,7 +418,7 @@ class ProductionBenchmarkRunner:
         symbols: SymbolBackendAdapter,
         context: ContextBackendAdapter,
         baseline: RetrievalObservation | None,
-    ):
+    ) -> Callable[[], RetrievalObservation]:
         if scenario == "graph":
             return lambda: RetrievalObservation(graph.query(case.query), None, 1)
         if scenario == "symbols":
@@ -495,7 +509,7 @@ class ProductionBenchmarkRunner:
         spec: RepositorySpec,
         case: BenchmarkCaseSpec,
         scenario: ScenarioName,
-        operation,
+        operation: Callable[[], RetrievalObservation],
     ) -> ScenarioResult:
         started = perf_counter()
         try:

@@ -45,6 +45,10 @@ class RoutePlan(BaseModel):
     scores: list[RouteScore]
     selected: list[Capability]
     context_budget: int = Field(default=32_000, gt=0)
+    #: Optional evidence layers the router judged worth consulting, with the
+    #: reason for each. Empty for requests that need only the core capabilities.
+    evidence_layers: list[str] = Field(default_factory=list)
+    evidence_reasons: list[str] = Field(default_factory=list)
 
 
 class ContextChunk(BaseModel):

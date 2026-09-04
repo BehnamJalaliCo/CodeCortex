@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from codecortex.core.models import AgentRequest, Capability, RequestKind, RoutePlan, RouteScore
 from codecortex.feedback import AgentFeedbackStore
+from codecortex.router.evidence_plan import plan_evidence
 
 
 class AdaptiveRouter:
@@ -75,11 +76,14 @@ class AdaptiveRouter:
         selected = [item.capability for item in route_scores if item.score >= 0.50]
         if not selected:
             selected = [Capability.REPOSITORY]
+        evidence = plan_evidence(request, kind)
         return RoutePlan(
             request_kind=kind,
             scores=route_scores,
             selected=selected,
             context_budget=self.default_budget,
+            evidence_layers=[item.value for item in evidence.layers],
+            evidence_reasons=list(evidence.reasons),
         )
 
     def _classify(self, text: str) -> RequestKind:

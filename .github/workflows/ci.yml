@@ -29,6 +29,7 @@ jobs:
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev]"
       - run: ruff check .
+      - run: mypy
       - name: Tests
         run: |
           if [ "${{ matrix.python-version }}" = "3.13" ]; then
@@ -67,6 +68,12 @@ jobs:
           tests/test_distributed_v2.py
           tests/test_unified_language_pipeline.py
           tests/test_retrieval_v2.py
+          tests/test_evidence_fusion.py
+          tests/test_evidence_surfaces.py
+          tests/test_precision_intelligence.py
+          tests/test_precision_generator.py
+          tests/test_dependency_intelligence.py
+          tests/test_structural_intelligence.py
 
   windows-compat:
     runs-on: windows-latest

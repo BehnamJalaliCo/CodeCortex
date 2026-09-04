@@ -8,7 +8,9 @@ from typing import Any
 
 from codecortex.editing import EditService
 from codecortex.mcp.server import MCPApplication, MCPServer
+from codecortex.mcp.validation import validate_tool_call
 from codecortex.runtime import build_runtime
+from codecortex.structural import StructuralRewriteService
 
 
 def _schema(properties: dict[str, Any], required: list[str]) -> dict[str, Any]:
@@ -21,11 +23,14 @@ def _schema(properties: dict[str, Any], required: list[str]) -> dict[str, Any]:
     }
 
 
+#: Tools that mutate source. Remote deployments gate these through the
+#: mutation-principal policy in ``codecortex.distributed.remote_mcp``.
 _EDIT_TOOLS = {
     "cortex_rename_symbol",
     "cortex_replace_symbol_body",
     "cortex_insert_before_symbol",
     "cortex_insert_after_symbol",
+    "cortex_rewrite_apply",
 }
 
 
@@ -67,6 +72,18 @@ class ExtendedMCPApplication(MCPApplication):
                         ["path", "name_path", "body"],
                     ),
                 },
+                {
+                    "name": "cortex_rewrite_apply",
+                    "description": (
+                        "Apply a structural rewrite previously returned by "
+                        "cortex_rewrite_preview. Refuses expired previews and files "
+                        "that changed after the preview was taken."
+                    ),
+                    "inputSchema": _schema(
+                        {"preview_id": {"type": "string", "minLength": 1, "maxLength": 64}},
+                        ["preview_id"],
+                    ),
+                },
             ]
         )
         return tools
@@ -75,6 +92,17 @@ class ExtendedMCPApplication(MCPApplication):
         self.runtime.telemetry.emit("mcp.tool.called", tool=name)
         if name not in _EDIT_TOOLS:
             return await super().call(name, arguments)
+        if name == "cortex_rewrite_apply":
+            validate_tool_call(self.tools(), name, arguments)
+            rewrites = StructuralRewriteService(self.root, self.runtime.config)
+            result = await rewrites.apply(str(arguments["preview_id"]))
+            self.runtime.telemetry.emit(
+                "structural.rewrite.applied",
+                preview_id=result.preview_id,
+                applied=result.applied,
+                files=result.files_changed,
+            )
+            return result.model_dump(mode="json")
         service = EditService(self.runtime)
         path = str(arguments["path"])
         name_path = str(arguments["name_path"])

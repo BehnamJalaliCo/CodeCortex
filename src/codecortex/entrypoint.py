@@ -26,7 +26,7 @@ from codecortex.mcp.extended import run_stdio as extended_run_stdio
 from codecortex.runtime import build_runtime
 from codecortex.setup import ProjectSetup
 
-cli_module.run_stdio = extended_run_stdio
+cli_module.run_stdio = extended_run_stdio  # type: ignore[attr-defined]
 
 console = Console()
 backend_app = typer.Typer(help="Install and inspect isolated intelligence backends.")
@@ -49,7 +49,9 @@ def _targets(value: str) -> tuple[str, ...]:
     return (value,)
 
 
-def _adapter(key: str, root: Path, manager: BackendManager):
+def _adapter(
+    key: str, root: Path, manager: BackendManager
+) -> GraphBackendAdapter | SymbolBackendAdapter | ContextBackendAdapter:
     if key == "graph":
         return GraphBackendAdapter(root, manager)
     if key == "symbols":

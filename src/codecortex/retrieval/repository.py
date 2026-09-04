@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from codecortex.context.slicing import AstContextSlicer
-from codecortex.indexing.graph import ProjectGraph
+from codecortex.indexing.graph import GraphNode, ProjectGraph
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.retrieval.hybrid import HybridRetriever, RetrievalHit
 from codecortex.retrieval.index import SemanticDocument, SemanticIndex
@@ -45,7 +45,7 @@ class RepositorySemanticIndex:
             self.refresh()
         return HybridRetriever(self.index).search(query, limit)
 
-    def _document(self, node, graph: ProjectGraph) -> SemanticDocument | None:
+    def _document(self, node: GraphNode, graph: ProjectGraph) -> SemanticDocument | None:
         if node.kind in {"module", "reference"}:
             return None
         metadata = {
