@@ -198,9 +198,9 @@ INTRO = r"""<div align="center">
 
 # 🧠 CodeCortex Context Engine
 
-### Context intelligence infrastructure for AI coding agents
+### Open-source context intelligence infrastructure for AI coding agents
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=22&pause=900&center=true&vCenter=true&width=900&lines=Map+the+repository.;Understand+the+architecture.;Retrieve+the+right+context.;Edit+with+impact+awareness.;Remember+what+the+team+learned.;Scale+context+across+nodes.)](https://github.com/BehnamJalaliCo/CodeCortex)
+**Map the repository · resolve symbols · retrieve task-specific evidence · estimate impact · edit with guardrails**
 
 [![PyPI](https://img.shields.io/pypi/v/codecortex-context-engine?label=PyPI&logo=pypi)](https://pypi.org/project/codecortex-context-engine/)
 [![Python](https://img.shields.io/pypi/pyversions/codecortex-context-engine?logo=python)](https://pypi.org/project/codecortex-context-engine/)
@@ -211,255 +211,89 @@ INTRO = r"""<div align="center">
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BehnamJalaliCo/CodeCortex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BehnamJalaliCo/CodeCortex)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-**Map · Understand · Retrieve · Edit · Compress · Remember · Scale**
+[**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**PyPI**](https://pypi.org/project/codecortex-context-engine/) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**Contribute**](CONTRIBUTING.md)
+
+[🇬🇧 English](#english) · [🇮🇷 فارسی](#فارسی)
 
 </div>
 
 ---
 
-## Install from PyPI
+## Why CodeCortex?
 
-CodeCortex supports Python 3.11, 3.12, and 3.13.
+A coding agent can read code. The harder problem is deciding **what matters, what is connected, what can break, and how much context is actually worth sending to the model**.
+
+CodeCortex turns a repository into a query-specific evidence system for coding agents:
+
+- **Repository + symbol intelligence** — structure, definitions, references, dependencies, and call relationships.
+- **Evidence-aware retrieval** — lexical, semantic, structural, graph, Git, architecture, and memory signals are ranked together.
+- **Impact before edits** — reverse dependencies, affected tests, ownership, and change risk are inspectable before mutation.
+- **Guarded changes** — semantic edits and structural rewrite previews keep source boundaries and review steps explicit.
+- **Persistent project context** — architecture, history, project/team memory, traces, and multi-repo workspaces survive beyond one chat.
+
+> **Core rule: retrieve evidence before generating confidence.**
+
+## 60-second start
+
+Requires Python 3.11–3.13.
 
 ```bash
 python -m pip install --upgrade codecortex-context-engine
-cortex version
-cortex init .
-```
-
-Optional language parser support:
-
-```bash
-python -m pip install "codecortex-context-engine[parsers]"
-```
-
-Optional local neural semantic embeddings:
-
-```bash
-python -m pip install "codecortex-context-engine[semantic]"
-```
-
-For development:
-
-```bash
-git clone https://github.com/BehnamJalaliCo/CodeCortex.git
-cd CodeCortex
-python -m pip install -e ".[dev]"
-pytest -q
-```
-
-## Thirty-second start
-
-Run CodeCortex inside a repository, build its local intelligence state, and expose the MCP surface to a coding agent.
-
-```bash
 cortex init .
 cortex index
 cortex doctor
-cortex mcp --path .
 ```
 
-A useful first exploration looks like this:
+Then ask the repository useful questions:
 
 ```bash
 cortex architecture
 cortex semantic "authentication and session lifecycle"
 cortex impact AuthService
-cortex workspace-search "payment retry policy"
 ```
 
-CodeCortex is not another general-purpose chat interface. It is a context engine. Its job is to turn a repository into a query-specific evidence surface so an agent can spend its context window on the code, relationships, decisions, and constraints that matter to the current task.
-
-## What CodeCortex changes
-
-A coding agent normally starts each task with a cold repository. It searches filenames, opens broad slices of source, rediscovers architecture, guesses which symbols matter, and uses expensive model context to reconstruct relationships already present in the codebase. That works on small repositories but becomes increasingly inefficient and risky as repositories grow, languages multiply, ownership fragments, and changes cross service or package boundaries.
-
-CodeCortex creates a durable intelligence layer between the repository and the agent. Repository structure, semantic symbols, references, dependency edges, Git history, ownership signals, architecture patterns, team memory, task traces, impact estimates, and compact retrieval are available through one coherent surface. The result is not a promise that an agent will always be correct. The result is a better evidence environment in which the agent can reason, verify, and edit.
-
-The project follows a simple principle: **retrieve evidence before generating confidence**. If a metric is unavailable, it remains unavailable. If a benchmark did not record a value, CodeCortex does not invent one. If an external integration lacks credentials, the corresponding test is reported as skipped rather than silently treated as passed. Release claims are intended to stay tied to reproducible artifacts.
-
-## Architecture at a glance
-
-```mermaid
-flowchart TB
-    A[AI Coding Agent] --> M[MCP / CodeCortex Gateway]
-    M --> R[Adaptive Router]
-    R --> REP[Repository Intelligence]
-    R --> SYM[Symbol Intelligence]
-    R --> RET[Hybrid Retrieval]
-    R --> GIT[Git + PR Intelligence]
-    R --> MEM[Project + Team Memory]
-    R --> ARC[Architecture + Drift]
-    R --> VAL[Validation + Impact]
-    REP --> CTX[Context Pipeline]
-    SYM --> CTX
-    RET --> CTX
-    GIT --> CTX
-    MEM --> CTX
-    ARC --> CTX
-    VAL --> CTX
-    CTX --> M
-    M --> A
-```
-
-At distributed scale, the same model extends across authenticated remote MCP endpoints, synchronized memory, persistent vector stores, worker coordination, longitudinal performance history, and organization-level policy.
-
-```mermaid
-flowchart LR
-    AG[Agents] --> GW[Remote MCP Gateway]
-    GW --> POL[Auth + Policy + Quotas]
-    POL --> C[Coordinator]
-    C --> W1[Index Worker]
-    C --> W2[Retrieval Worker]
-    C --> W3[Context Worker]
-    W1 --> V[(Persistent Vector Store)]
-    W2 --> V
-    W3 --> SM[(Synchronized Team Memory)]
-    C --> AUD[(Audit + Performance History)]
-```
-
-## Core surfaces
-
-### Repository intelligence
-
-The repository layer provides a structural map instead of forcing an agent to infer everything from raw file search. Incremental indexing keeps the local state aligned with code changes, while dependency and call relationships provide a graph for impact and retrieval. The graph is evidence, not a substitute for source inspection: callers can always move from summarized relationships back to the underlying files and symbols.
-
-### Symbol intelligence and guarded editing
-
-CodeCortex exposes symbols, references, language-aware structure, and guarded semantic edits. Python uses the standard AST; optional Tree-sitter parser providers cover additional languages. Editing commands perform semantic preflight reads and constrain paths to the project root.
+Or expose the repository to an MCP-capable coding agent:
 
 ```bash
-cortex edit rename src/auth.py AuthService SessionService
-cortex edit replace src/auth.py AuthService/refresh --body-file ./replacement.txt
-cortex edit insert-before src/auth.py AuthService --body-file ./imports.txt
-cortex edit insert-after src/auth.py AuthService --body-file ./helper.txt
+cortex mcp --path .
 ```
 
-### Hybrid retrieval and context compression
+## Works with coding agents
 
-Retrieval combines lexical, structural, symbol, graph, and optional embedding signals. The context pipeline ranks, deduplicates, budgets, and compacts results for the task. A context engine should not maximize the number of retrieved tokens; it should maximize useful evidence per token while retaining enough surrounding structure for reliable reasoning.
-
-### Git, PR, and change intelligence
-
-History changes how code should be interpreted. A mature module with stable ownership and long-lived contracts deserves different treatment from a recently rewritten experimental package. Git-aware symbol history, blame, pull-request analysis, and impact estimation add change context to the static repository model.
-
-### Memory
-
-Project memory stores durable facts and decisions. Shared team memory adds revisions, history, synchronization, and conflict resolution. Memory is intentionally separate from source truth: it can provide rationale and prior decisions, while source and tests remain authoritative for executable behavior.
-
-### Architecture and drift
-
-Architecture inference summarizes observable structure with confidence and evidence. Drift compares current structure with a baseline so teams can detect architectural movement before it becomes invisible convention. The goal is not to enforce a single architecture style. The goal is to make architectural change inspectable.
-
-### Distributed scale
-
-Version 0.5 of the roadmap adds remote shared-memory synchronization, persistent vector database providers, hosted remote MCP with authentication/TLS/quotas/access policy, multi-node indexing and retrieval workers, scheduled longitudinal performance history, and organization-level workspace policy with retained audit evidence.
-
-## One MCP surface
+CodeCortex includes merge-safe project configuration for **Claude Code, Codex, Cursor, Gemini CLI, and OpenCode**.
 
 ```bash
-cortex mcp --path /path/to/repository
+cortex agents detect
+cortex agents configure --dry-run
+# or configure every supported target explicitly:
+cortex agents configure --all
 ```
 
-The MCP application exposes repository mapping, semantic search, symbols, references, dependencies, impact analysis, architecture inference, context construction, project and team memory, PR intelligence, traces, validation, and guarded editing through a consistent contract. The distributed transport can host these capabilities remotely while enforcing principal identity and tool policy.
+The configurator only manages CodeCortex-owned MCP entries and keeps user-owned configuration intact.
 
-## Remote operation
+## See it work locally
 
-Use `cortex-remote` for the distributed service entry point. Remote deployments should terminate TLS with a valid certificate, issue separate bearer credentials per principal, keep tool allow-lists narrow, configure realistic quotas, retain audit records according to organizational policy, and avoid exposing internal indexing services directly to untrusted networks.
-
-The transport validates the endpoint scheme, authenticates before dispatch, applies policy before charging request quota, constrains request body size, and can wrap the server socket with TLS 1.2 or later. Production operators should still place the service behind infrastructure appropriate for their threat model, availability requirements, secrets management, and observability standards.
-
-## Persistent vector providers
-
-The core includes a dependency-free SQLite vector store with exact cosine search for local or shared-volume deployments. A provider registry allows larger installations to bind another persistent service without changing retrieval callers. This makes the storage boundary explicit: small repositories can remain simple, while larger deployments can adopt a service designed for their scale and operational requirements.
-
-## Multi-node workers
-
-Distributed workers advertise capabilities and coordinate through leases. A coordinator can assign work, detect expired leases, and retry tasks. This model is deliberately narrower than pretending arbitrary machines share one Python process. State, ownership, failure, retry, and observability remain explicit, which is essential when indexing or retrieval spans nodes.
-
-## Security model
-
-Security controls are layered. CI runs dependency auditing and Bandit in addition to CodeQL and security-boundary tests. Release artifacts include checksums, CycloneDX SBOMs, Sigstore bundles, and GitHub build-provenance attestations. Remote transport adds authentication, TLS support, quotas, request limits, and per-principal policy. Organization policy adds role checks, workspace policy, and audit retention.
-
-No single badge proves software is secure. These controls create auditable evidence and reduce classes of preventable mistakes. Consumers should evaluate the project against their own threat model and deployment context.
-
-## Quality model
-
-The repository enforces Ruff and tests across supported Python versions. The main CI coverage gate is 90 percent. A passing coverage number is treated as one quality signal, not as proof of correctness. High-value behavior still needs assertions that would fail for the wrong reason, security boundaries need adversarial tests, and benchmark claims need reproducible measurement.
-
-## Benchmark philosophy
+The repository ships a deterministic demo project and demo runner:
 
 ```bash
-python scripts/run_production_benchmark.py
+python scripts/demo.py
 ```
 
-Production benchmark specifications are revision-pinned and designed to preserve missing values as missing. Longitudinal history records reproducible runs so trend discussion can be based on artifacts rather than memory. Regression gates can compare relevant measurements and stop a change when it crosses an explicit policy threshold.
+The demo indexes the fixture repository, analyzes the blast radius of `AuthService`, routes an evidence request, and reports measured context/trace data. It does not fabricate benchmark values.
 
-## Observatory
+## Reproducible evidence snapshot
 
-```bash
-cortex dashboard -p /path/to/repository
-```
+These are committed hardening measurements, not generalized performance promises:
 
-The local dashboard surfaces backend health, routing distribution, context usage, engine latency, graph hotspots, task traces, architecture drift, benchmark history, and pull-request risk. It binds to loopback by default. The dashboard is an observability surface, not an authorization boundary; remote exposure should be handled deliberately.
+| Evidence | Recorded result |
+|---|---:|
+| Hardening test suite | **711 passed, 28 skipped, 0 failed** |
+| Coverage in hardening report | **91.74%** |
+| Warm exact definition lookup | **0.19–0.23 ms median** |
+| Freshness scan across 600 documents | **4.25 ms median** |
 
-## Docker
+See [HARDENING_REPORT.md](HARDENING_REPORT.md) and [benchmarks/](benchmarks/) for scope, methodology, limitations, and reproducibility notes.
 
-```bash
-docker build --target core -t codecortex:core .
-docker build --target full -t codecortex:full .
-docker compose up dashboard
-```
-
-The release pipeline also publishes container images with provenance attestations when a release is cut.
-
-## Agent-oriented command map
-
-```bash
-cortex init .
-cortex index
-cortex semantic "authentication refresh"
-cortex impact AuthService
-cortex architecture
-cortex architecture-drift
-cortex symbol-history src/auth.py 10 80
-cortex pr main --head HEAD
-cortex workspace-add backend ../backend
-cortex workspace-search "payment service"
-cortex benchmark
-cortex dashboard
-cortex doctor
-```
-
-## Operating principles
-
-1. **Evidence before confidence.** A summary should be traceable to repository, graph, Git, benchmark, policy, or test evidence.
-2. **Smallest useful context.** Retrieval should focus on the task instead of flooding an agent with files.
-3. **Explicit boundaries.** Local state, remote state, workers, vector stores, credentials, and organizational policy have clear contracts.
-4. **Reproducibility over marketing.** Performance and release claims should map to repeatable workflows.
-5. **Source remains source.** Memory and inference help interpretation but do not replace executable code and tests.
-6. **Security is layered.** Authentication, policy, limits, static analysis, dependency auditing, tests, and signed release evidence address different failure classes.
-7. **Scale through coordination.** Distributed scale is modeled as explicit services and leases rather than imaginary shared process state.
-
-## Documentation map
-
-- `docs/ARCHITECTURE.md` — architectural overview.
-- `docs/DISTRIBUTED.md` — distributed-scale design and operation.
-- `docs/ADVANCED_INTELLIGENCE.md` — advanced intelligence surfaces.
-- `docs/INTEGRATIONS.md` — agent integrations.
-- `docs/QUALITY.md` — measurable quality policy.
-- `docs/TESTING.md` — test strategy.
-- `docs/RELEASE.md` — release mechanics and evidence.
-- `docs/LICENSING.md` — licensing model and third-party treatment.
-- `THIRD_PARTY_NOTICES.md` — third-party notices.
-- `SECURITY.md` — private vulnerability reporting.
-- `CONTRIBUTING.md` — contribution workflow.
-- `GOVERNANCE.md` — project decision model.
-- `ROADMAP.md` — shipped capability milestones.
-
-## Global engineering field guide
-
-The remainder of this README is intentionally extensive. It is a field guide for applying a context engine to real engineering work rather than a list of feature slogans. Each playbook starts from a repository archetype and a mission, then describes how to build evidence, use CodeCortex surfaces, validate the result, and reason about distributed or organizational operation. The examples are patterns, not guarantees; adapt commands, policies, and tests to the repository in front of you.
 """
 
 OUTRO = r"""
