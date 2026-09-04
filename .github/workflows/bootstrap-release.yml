@@ -18,19 +18,19 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: true
-      - name: Create v0.1.0a3 release tag from validated main
+      - name: Create v0.1.0a4 release tag from validated main
         shell: bash
         run: |
           set -euo pipefail
           git config user.name "Behnam Jalali"
           git config user.email "behnamjalalico@gmail.com"
-          if git rev-parse -q --verify refs/tags/v0.1.0a3 >/dev/null; then
-            echo "v0.1.0a3 already exists"
+          if git rev-parse -q --verify refs/tags/v0.1.0a4 >/dev/null; then
+            echo "v0.1.0a4 already exists"
           else
-            git tag -a v0.1.0a3 -m "CodeCortex Context Engine v0.1.0a3"
-            git push origin refs/tags/v0.1.0a3
+            git tag -a v0.1.0a4 -m "CodeCortex Context Engine v0.1.0a4"
+            git push origin refs/tags/v0.1.0a4
           fi
       - name: Dispatch release workflow
         env:
           GH_TOKEN: ${{ github.token }}
-        run: gh workflow run release.yml --ref main -f tag=v0.1.0a3
+        run: gh workflow run release.yml --ref main -f tag=v0.1.0a4

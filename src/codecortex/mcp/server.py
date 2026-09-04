@@ -42,7 +42,7 @@ from codecortex.workspace import MultiRepositoryWorkspace
 
 PROTOCOL_VERSION = "2026-07-28"
 SUPPORTED_PROTOCOLS = frozenset({PROTOCOL_VERSION, "2025-06-18"})
-SERVER_INFO = {"name": "codecortex", "version": "0.1.0a3"}
+SERVER_INFO = {"name": "codecortex", "version": "0.1.0a4"}
 
 
 def _schema(properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
