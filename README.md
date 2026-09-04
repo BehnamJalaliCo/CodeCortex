@@ -541,9 +541,7 @@ See `docs/EVIDENCE_FUSION.md` for the full model, fallback behavior, and securit
 
 ## 1 — Precision Code Intelligence
 
-The current system can parse symbols, build relationships, and preserve ambiguity during cross-file resolution.
-
-The next precision layer is designed to consume exact compiler/indexer-grade occurrence evidence when available and distinguish:
+The Precision Code Intelligence layer consumes compiler/indexer-grade occurrence evidence when available and distinguishes:
 
 <pre>
 exact definition/reference
@@ -555,7 +553,7 @@ heuristic candidate
 lexical coincidence
 </pre>
 
-Target capabilities:
+Current capabilities:
 
 - precise definition lookup;
 - precise references;
@@ -580,7 +578,7 @@ The engine should know not only what it found, but how strongly it knows it.
 
 ## 2 — Version-Aware Dependency Intelligence
 
-The next dependency layer is designed to join:
+The Dependency Intelligence layer joins:
 
 <pre>
 manifest
@@ -591,7 +589,7 @@ manifest
 + version-relevant documentation evidence
 </pre>
 
-Target questions:
+Questions this layer answers:
 
 - Which version is actually resolved?
 - Is the requested API valid for that version?
@@ -603,7 +601,7 @@ External documentation remains optional, minimal-data, credential-aware, cached,
 
 ## 3 — Structural Search & Guarded Rewrite
 
-The next structural layer is designed for syntax-aware patterns:
+The Structural Search & Guarded Rewrite layer handles syntax-aware patterns:
 
 <pre>
 find calls shaped like old_api($X)
@@ -612,7 +610,7 @@ find handlers that swallow a particular exception form
 find all structural usages before a framework migration
 </pre>
 
-Target mutation lifecycle:
+Mutation lifecycle:
 
 ```mermaid
 flowchart LR
@@ -823,7 +821,7 @@ No. Window size and evidence quality are different problems.
 </details>
 
 <details><summary><b>Is every relationship exact?</b></summary>
-No. Inferred relationships preserve ambiguity. The planned precision layer is intended to add exact evidence when available.
+No. Inferred relationships preserve ambiguity. Precision Code Intelligence adds exact compiler/indexer evidence when available and falls back conservatively when it is not.
 </details>
 
 <details><summary><b>Can it work across repositories?</b></summary>
@@ -1385,9 +1383,7 @@ CodeCortex چند نوع evidence را با هم ترکیب می‌کند و ب�
 
 ## ۱ — Precision Code Intelligence
 
-سیستم فعلی symbol parse می‌کند، relationship می‌سازد و ambiguity cross-file را نگه می‌دارد.
-
-لایه precision بعدی قرار است در صورت وجود evidence دقیق compiler/indexer-grade فرق این‌ها را بداند:
+لایه Precision Code Intelligence در صورت وجود evidence دقیق compiler/indexer-grade تفاوت این سطوح را تشخیص می‌دهد:
 
 <pre>
 definition/reference دقیق
@@ -1399,7 +1395,7 @@ candidate heuristic
 lexical coincidence
 </pre>
 
-قابلیت‌های هدف:
+قابلیت‌های فعلی:
 
 - definition دقیق؛
 - reference دقیق؛
@@ -1424,7 +1420,7 @@ flowchart TB
 
 ## ۲ — Dependency Intelligence با آگاهی از نسخه
 
-لایه بعدی dependency قرار است این‌ها را کنار هم بگذارد:
+لایه Dependency Intelligence این اطلاعات را کنار هم قرار می‌دهد:
 
 <pre>
 manifest
@@ -1435,7 +1431,7 @@ manifest
 + documentation مربوط به همان نسخه
 </pre>
 
-سؤال‌های هدف:
+سؤال‌هایی که این لایه پاسخ می‌دهد:
 
 - نسخه واقعی resolveشده چیست؟
 - API پیشنهادی برای همین نسخه معتبر است؟
@@ -1447,7 +1443,7 @@ Documentation بیرونی باید optional، minimal-data، credential-aware،
 
 ## ۳ — Structural Search و Guarded Rewrite
 
-لایه structural برای patternهای syntax-aware:
+لایه Structural Search و Guarded Rewrite برای patternهای syntax-aware:
 
 <pre>
 callهایی با شکل old_api($X)
@@ -1456,7 +1452,7 @@ handler با exception pattern خاص
 همه usageهای ساختاری قبل از migration
 </pre>
 
-جریان mutation هدف:
+جریان mutation:
 
 ```mermaid
 flowchart LR
@@ -1658,7 +1654,7 @@ interfaceهای عمومی هنوز تکامل پیدا می‌کنند و قب�
 </details>
 
 <details><summary><b>همه relationshipها دقیق‌اند؟</b></summary>
-نه. رابطه‌های استنباطی ambiguity را نگه می‌دارند. لایه precision بعدی برای اضافه کردن evidence دقیق در صورت وجود طراحی شده.
+نه. رابطه‌های استنباطی ambiguity را نگه می‌دارند. Precision Code Intelligence در صورت وجود، evidence دقیق compiler/indexer را اضافه می‌کند و در نبود آن محافظه‌کارانه fallback می‌کند.
 </details>
 
 <details><summary><b>چند ریپو را پشتیبانی می‌کند؟</b></summary>
