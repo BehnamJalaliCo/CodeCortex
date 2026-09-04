@@ -37,6 +37,8 @@ CodeCortex turns a repository into a query-specific evidence system for coding a
 
 > **Core rule: retrieve evidence before generating confidence.**
 
+![CodeCortex product overview](docs/assets/codecortex-overview.svg)
+
 ## 60-second start
 
 Requires Python 3.11–3.13.
