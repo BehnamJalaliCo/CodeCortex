@@ -3,10 +3,11 @@ from __future__ import annotations
 import asyncio
 import json
 from concurrent.futures import ThreadPoolExecutor
+from pathlib import Path
 
 from codecortex.distributed.memory_sync import SharedMemoryReplica
 from codecortex.memory.json_store import JsonMemoryStore
-from codecortex.state import AtomicJsonFile
+from codecortex.state import AtomicJsonFile, FileMutex
 
 
 def test_atomic_json_update_keeps_concurrent_writes(tmp_path) -> None:
@@ -25,6 +26,28 @@ def test_atomic_json_update_keeps_concurrent_writes(tmp_path) -> None:
         list(executor.map(write, range(40)))
     payload = json.loads((tmp_path / "state.json").read_text(encoding="utf-8"))
     assert len(payload) == 40
+
+
+
+def test_file_mutex_retries_transient_permission_error(tmp_path, monkeypatch) -> None:
+    mutex = FileMutex(tmp_path / ".state.lock", timeout_seconds=1.0)
+    original_mkdir = Path.mkdir
+    injected = False
+
+    def flaky_mkdir(path: Path, *args, **kwargs):
+        nonlocal injected
+        if path == mutex.path and not injected:
+            injected = True
+            raise PermissionError("simulated Windows lock-directory race")
+        return original_mkdir(path, *args, **kwargs)
+
+    monkeypatch.setattr(Path, "mkdir", flaky_mkdir)
+
+    with mutex:
+        assert mutex.path.is_dir()
+
+    assert injected
+    assert not mutex.path.exists()
 
 
 def test_json_memory_namespaces_do_not_collide_and_writes_are_serialized(tmp_path) -> None:

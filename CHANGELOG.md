@@ -2,6 +2,13 @@
 
 All notable changes to CodeCortex are documented here. The project follows semantic versioning while in alpha; breaking changes may occur before 1.0 and will be called out explicitly.
 
+## 0.1.0a7
+
+- Fixed a Windows lock-directory race in `FileMutex` discovered by the release matrix.
+- Added bounded retry behavior for transient Windows `PermissionError` lock contention.
+- Added a deterministic regression test for the transient permission-error path.
+- Carries forward the GitHub discovery, onboarding, and official MCP Registry publication work from the unreleased `v0.1.0a6` attempt.
+
 ## 0.1.0a6
 
 - Reworked GitHub discovery and first-run onboarding for CodeCortex Context Engine.
