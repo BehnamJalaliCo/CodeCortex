@@ -19,6 +19,7 @@ jobs:
     timeout-minutes: 10
     env:
       CODECORTEX_DEPENDENCY_DOCS_API_KEY: ${{ secrets.CODECORTEX_DEPENDENCY_DOCS_API_KEY }}
+      CODECORTEX_DEPENDENCY_DOCS_BASE_URL: ${{ vars.CODECORTEX_DEPENDENCY_DOCS_BASE_URL }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
         with:
@@ -33,7 +34,7 @@ jobs:
         id: credential
         shell: bash
         run: |
-          if [ -n "${CODECORTEX_DEPENDENCY_DOCS_API_KEY:-}" ]; then
+          if [ -n "${CODECORTEX_DEPENDENCY_DOCS_API_KEY:-}" ] && [ -n "${CODECORTEX_DEPENDENCY_DOCS_BASE_URL:-}" ]; then
             echo "available=true" >> "$GITHUB_OUTPUT"
           else
             echo "available=false" >> "$GITHUB_OUTPUT"
@@ -44,4 +45,4 @@ jobs:
       - name: Record credential-gated skip
         if: steps.credential.outputs.available != 'true'
         run: |
-          echo "SKIPPED — CODECORTEX_DEPENDENCY_DOCS_API_KEY unavailable" | tee -a "$GITHUB_STEP_SUMMARY"
+          echo "SKIPPED — dependency documentation provider URL or credential unavailable" | tee -a "$GITHUB_STEP_SUMMARY"
