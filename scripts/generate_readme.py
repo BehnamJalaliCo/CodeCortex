@@ -198,6 +198,8 @@ INTRO = r"""<div align="center">
 
 # 🧠 CodeCortex Context Engine
 
+<!-- mcp-name: io.github.BehnamJalaliCo/codecortex-context-engine -->
+
 ### Open-source context intelligence infrastructure for AI coding agents
 
 **Map the repository · resolve symbols · retrieve task-specific evidence · estimate impact · edit with guardrails**
