@@ -48,14 +48,30 @@ class MemoryMutation:
     tombstone: bool = False
 
     def to_dict(self) -> dict[str, object]:
-        return {"namespace": self.namespace, "key": self.key, "value": self.value, "node_id": self.node_id, "clock": dict(self.clock), "updated_at": self.updated_at, "tombstone": self.tombstone}
+        return {
+            "namespace": self.namespace,
+            "key": self.key,
+            "value": self.value,
+            "node_id": self.node_id,
+            "clock": dict(self.clock),
+            "updated_at": self.updated_at,
+            "tombstone": self.tombstone,
+        }
 
     @classmethod
     def from_dict(cls, payload: dict[str, object]) -> MemoryMutation:
         raw_clock = payload.get("clock", {})
         if not isinstance(raw_clock, dict):
             raise ValueError("clock must be an object")
-        return cls(namespace=str(payload["namespace"]), key=str(payload["key"]), value=None if payload.get("value") is None else str(payload["value"]), node_id=str(payload["node_id"]), clock={str(key): int(value) for key, value in raw_clock.items()}, updated_at=str(payload["updated_at"]), tombstone=bool(payload.get("tombstone", False)))
+        return cls(
+            namespace=str(payload["namespace"]),
+            key=str(payload["key"]),
+            value=None if payload.get("value") is None else str(payload["value"]),
+            node_id=str(payload["node_id"]),
+            clock={str(key): int(value) for key, value in raw_clock.items()},
+            updated_at=str(payload["updated_at"]),
+            tombstone=bool(payload.get("tombstone", False)),
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -93,7 +109,9 @@ class SharedMemoryReplica:
 
     def get(self, namespace: str, key: str) -> MemoryMutation | None:
         with self._connect() as connection:
-            row = connection.execute("SELECT * FROM shared_memory WHERE namespace = ? AND key = ?", (namespace, key)).fetchone()
+            row = connection.execute(
+                "SELECT * FROM shared_memory WHERE namespace = ? AND key = ?", (namespace, key)
+            ).fetchone()
         return self._row_to_mutation(row) if row else None
 
     def value(self, namespace: str, key: str) -> str | None:
@@ -106,12 +124,16 @@ class SharedMemoryReplica:
     def delete(self, namespace: str, key: str) -> MemoryMutation:
         return self._local_mutation(namespace, key, None, tombstone=True)
 
-    def _local_mutation(self, namespace: str, key: str, value: str | None, *, tombstone: bool) -> MemoryMutation:
+    def _local_mutation(
+        self, namespace: str, key: str, value: str | None, *, tombstone: bool
+    ) -> MemoryMutation:
         if not namespace.strip() or not key.strip():
             raise ValueError("namespace and key are required")
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
-            row = connection.execute("SELECT * FROM shared_memory WHERE namespace = ? AND key = ?", (namespace, key)).fetchone()
+            row = connection.execute(
+                "SELECT * FROM shared_memory WHERE namespace = ? AND key = ?", (namespace, key)
+            ).fetchone()
             current = self._row_to_mutation(row) if row else None
             clock = dict(current.clock) if current else {}
             clock[self.node_id] = clock.get(self.node_id, 0) + 1
@@ -119,17 +141,28 @@ class SharedMemoryReplica:
             self._store(connection, mutation, record_change=True)
         return mutation
 
-    def export(self, after_sequence: int = 0, limit: int = 1000) -> list[tuple[int, MemoryMutation]]:
+    def export(
+        self, after_sequence: int = 0, limit: int = 1000
+    ) -> list[tuple[int, MemoryMutation]]:
         with self._connect() as connection:
-            rows = connection.execute("SELECT sequence, mutation FROM shared_memory_changes WHERE sequence > ? ORDER BY sequence ASC LIMIT ?", (max(0, after_sequence), max(1, limit))).fetchall()
-        return [(int(row["sequence"]), MemoryMutation.from_dict(json.loads(row["mutation"]))) for row in rows]
+            rows = connection.execute(
+                "SELECT sequence, mutation FROM shared_memory_changes WHERE sequence > ? ORDER BY sequence ASC LIMIT ?",
+                (max(0, after_sequence), max(1, limit)),
+            ).fetchall()
+        return [
+            (int(row["sequence"]), MemoryMutation.from_dict(json.loads(row["mutation"])))
+            for row in rows
+        ]
 
     def apply(self, mutations: list[MemoryMutation]) -> SyncResult:
         applied = ignored = conflicts = 0
         with self._connect() as connection:
             connection.execute("BEGIN IMMEDIATE")
             for incoming in mutations:
-                row = connection.execute("SELECT * FROM shared_memory WHERE namespace = ? AND key = ?", (incoming.namespace, incoming.key)).fetchone()
+                row = connection.execute(
+                    "SELECT * FROM shared_memory WHERE namespace = ? AND key = ?",
+                    (incoming.namespace, incoming.key),
+                ).fetchone()
                 current = self._row_to_mutation(row) if row else None
                 if current is None:
                     self._store(connection, incoming, record_change=True)
@@ -154,18 +187,51 @@ class SharedMemoryReplica:
 
     @staticmethod
     def _resolve_concurrent(current: MemoryMutation, incoming: MemoryMutation) -> MemoryMutation:
-        selected = incoming if (incoming.updated_at, incoming.node_id) > (current.updated_at, current.node_id) else current
-        return MemoryMutation(namespace=selected.namespace, key=selected.key, value=selected.value, node_id=selected.node_id, clock=merge_clocks(current.clock, incoming.clock), updated_at=selected.updated_at, tombstone=selected.tombstone)
+        selected = (
+            incoming
+            if (incoming.updated_at, incoming.node_id) > (current.updated_at, current.node_id)
+            else current
+        )
+        return MemoryMutation(
+            namespace=selected.namespace,
+            key=selected.key,
+            value=selected.value,
+            node_id=selected.node_id,
+            clock=merge_clocks(current.clock, incoming.clock),
+            updated_at=selected.updated_at,
+            tombstone=selected.tombstone,
+        )
 
-    def _store(self, connection: sqlite3.Connection, mutation: MemoryMutation, *, record_change: bool) -> None:
+    def _store(
+        self, connection: sqlite3.Connection, mutation: MemoryMutation, *, record_change: bool
+    ) -> None:
         encoded = json.dumps(mutation.to_dict(), sort_keys=True, separators=(",", ":"))
         connection.execute(
             "INSERT INTO shared_memory(namespace, key, value, node_id, clock, updated_at, tombstone) VALUES (?, ?, ?, ?, ?, ?, ?) ON CONFLICT(namespace, key) DO UPDATE SET value = excluded.value, node_id = excluded.node_id, clock = excluded.clock, updated_at = excluded.updated_at, tombstone = excluded.tombstone",
-            (mutation.namespace, mutation.key, mutation.value, mutation.node_id, json.dumps(mutation.clock, sort_keys=True), mutation.updated_at, int(mutation.tombstone)),
+            (
+                mutation.namespace,
+                mutation.key,
+                mutation.value,
+                mutation.node_id,
+                json.dumps(mutation.clock, sort_keys=True),
+                mutation.updated_at,
+                int(mutation.tombstone),
+            ),
         )
         if record_change:
-            connection.execute("INSERT OR IGNORE INTO shared_memory_changes(namespace, key, mutation) VALUES (?, ?, ?)", (mutation.namespace, mutation.key, encoded))
+            connection.execute(
+                "INSERT OR IGNORE INTO shared_memory_changes(namespace, key, mutation) VALUES (?, ?, ?)",
+                (mutation.namespace, mutation.key, encoded),
+            )
 
     @staticmethod
     def _row_to_mutation(row: sqlite3.Row) -> MemoryMutation:
-        return MemoryMutation(namespace=str(row["namespace"]), key=str(row["key"]), value=None if row["value"] is None else str(row["value"]), node_id=str(row["node_id"]), clock={str(key): int(value) for key, value in json.loads(row["clock"]).items()}, updated_at=str(row["updated_at"]), tombstone=bool(row["tombstone"]))
+        return MemoryMutation(
+            namespace=str(row["namespace"]),
+            key=str(row["key"]),
+            value=None if row["value"] is None else str(row["value"]),
+            node_id=str(row["node_id"]),
+            clock={str(key): int(value) for key, value in json.loads(row["clock"]).items()},
+            updated_at=str(row["updated_at"]),
+            tombstone=bool(row["tombstone"]),
+        )

@@ -12,7 +12,7 @@ import threading
 import time
 import uuid
 from collections import defaultdict, deque
-from collections.abc import Awaitable, Callable
+from collections.abc import Awaitable, Callable, Coroutine, Mapping
 from dataclasses import dataclass, field
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from typing import Any
@@ -138,6 +138,7 @@ class RemoteMCPServer:
         return str(host), int(port)
 
     def _dispatch(self, tool: str, arguments: dict[str, Any], principal: str) -> Any:
+        parameters: Mapping[str, inspect.Parameter]
         try:
             parameters = inspect.signature(self.dispatcher).parameters
         except (TypeError, ValueError):
@@ -146,7 +147,7 @@ class RemoteMCPServer:
             result = self.dispatcher(tool, arguments, principal)
         else:
             result = self.dispatcher(tool, arguments)
-        if inspect.isawaitable(result):
+        if isinstance(result, Coroutine):
             return asyncio.run(result)
         return result
 
@@ -210,9 +211,7 @@ class RemoteMCPServer:
                 if not isinstance(payload, dict):
                     self._write(400, {"error": "body_must_be_object"})
                     return
-                status, response = owner.handle_call(
-                    self.headers.get("Authorization"), payload
-                )
+                status, response = owner.handle_call(self.headers.get("Authorization"), payload)
                 self._write(status, response)
 
             def _write(self, status: int, payload: dict[str, Any]) -> None:
@@ -309,9 +308,7 @@ class RemoteMCPClient:
                 detail = json.loads(exc.read())
             except json.JSONDecodeError:
                 detail = {"error": "http_error"}
-            raise RuntimeError(
-                f"remote MCP request failed ({exc.code}): {detail}"
-            ) from exc
+            raise RuntimeError(f"remote MCP request failed ({exc.code}): {detail}") from exc
         if not isinstance(payload, dict):
             raise RuntimeError("remote MCP response must be an object")
         result = payload.get("result", {})

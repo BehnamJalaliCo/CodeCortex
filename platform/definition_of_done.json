@@ -1,0 +1,17 @@
+{
+  "version": 1,
+  "required": [
+    "core_implementation",
+    "unit_tests",
+    "api_contract",
+    "authorization_defined",
+    "audit_requirement_defined",
+    "error_handling",
+    "loading_state",
+    "empty_state",
+    "responsive_ui",
+    "documentation",
+    "ci_passes",
+    "no_regression"
+  ]
+}

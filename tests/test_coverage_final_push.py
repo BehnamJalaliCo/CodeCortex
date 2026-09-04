@@ -83,9 +83,7 @@ async def worker():
         (".rb", 'require_relative "helper"\nrender()', "helper"),
     ],
 )
-def test_relationship_extractor_import_languages(
-    suffix: str, source: str, target: str
-) -> None:
+def test_relationship_extractor_import_languages(suffix: str, source: str, target: str) -> None:
     relationships = RelationshipExtractor().extract(Path(f"sample{suffix}"), source)
     assert any(item.kind == "imports" and item.target == target for item in relationships)
 
@@ -473,8 +471,7 @@ def test_backend_factory_modes_and_activation(monkeypatch: pytest.MonkeyPatch) -
     manager = _Manager()
     config = SimpleNamespace(project_root=Path("/tmp/project"))
     specs = {
-        key: SimpleNamespace(key=key, configured=True)
-        for key in ("graph", "symbols", "context")
+        key: SimpleNamespace(key=key, configured=True) for key in ("graph", "symbols", "context")
     }
 
     monkeypatch.setattr(backend_factory, "build_default_registry", lambda *a, **k: registry)

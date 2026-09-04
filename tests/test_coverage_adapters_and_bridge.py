@@ -53,9 +53,7 @@ async def test_protocol_bridge_definitions_and_calls() -> None:
     }
     assert await bridge.call("cortex_route", {"query": "map"}) == {"route": "map"}
     assert await bridge.call("cortex_query", {"query": "find"}) == {"query": "find"}
-    assert await bridge.call("cortex_remember", {"key": "k", "value": "v"}) == {
-        "saved": True
-    }
+    assert await bridge.call("cortex_remember", {"key": "k", "value": "v"}) == {"saved": True}
     assert gateway.remembered == ("k", "v")
     assert await bridge.call("cortex_health", {}) == {"healthy": True}
     with pytest.raises(KeyError, match="Unknown tool"):
@@ -105,40 +103,43 @@ class _CompressionBackend:
 @pytest.mark.asyncio
 async def test_integrated_context_fallbacks_and_compression() -> None:
     chunks = [ContextChunk(source="a", content="A" * 800, tokens=800, relevance=1.0)]
-    assert (await IntegratedContextProcessor(None).fit(chunks, 1000))[0].content == chunks[0].content
+    assert (await IntegratedContextProcessor(None).fit(chunks, 1000))[0].content == chunks[
+        0
+    ].content
 
     unhealthy = IntegratedContextProcessor(
-        _CompressionBackend(healthy=False), compression_threshold=100  # type: ignore[arg-type]
+        _CompressionBackend(healthy=False),
+        compression_threshold=100,  # type: ignore[arg-type]
     )
     assert (await unhealthy.fit(chunks, 1000))[0].content == chunks[0].content
 
     short = [ContextChunk(source="s", content="small", tokens=5, relevance=1.0)]
     healthy = IntegratedContextProcessor(
-        _CompressionBackend(), compression_threshold=100  # type: ignore[arg-type]
+        _CompressionBackend(),
+        compression_threshold=100,  # type: ignore[arg-type]
     )
     assert (await healthy.fit(short, 1000))[0].content == "small"
 
-    backend = _CompressionBackend(
-        payloads=[{"content": [{"type": "text", "text": "tiny"}]}]
-    )
+    backend = _CompressionBackend(payloads=[{"content": [{"type": "text", "text": "tiny"}]}])
     compressed = await IntegratedContextProcessor(
-        backend, compression_threshold=100  # type: ignore[arg-type]
+        backend,
+        compression_threshold=100,  # type: ignore[arg-type]
     ).fit(chunks, 1000)
     assert compressed[0].content == "tiny"
     assert compressed[0].metadata["compressed"] is True
     assert compressed[0].metadata["original_tokens"] == 800
 
-    no_gain = _CompressionBackend(
-        payloads=[{"content": [{"type": "text", "text": "B" * 4000}]}]
-    )
+    no_gain = _CompressionBackend(payloads=[{"content": [{"type": "text", "text": "B" * 4000}]}])
     unchanged = await IntegratedContextProcessor(
-        no_gain, compression_threshold=100  # type: ignore[arg-type]
+        no_gain,
+        compression_threshold=100,  # type: ignore[arg-type]
     ).fit(chunks, 1000)
     assert unchanged[0].content == chunks[0].content
 
     empty = _CompressionBackend(payloads=[{"content": []}])
     unchanged = await IntegratedContextProcessor(
-        empty, compression_threshold=100  # type: ignore[arg-type]
+        empty,
+        compression_threshold=100,  # type: ignore[arg-type]
     ).fit(chunks, 1000)
     assert unchanged[0].content == chunks[0].content
 
@@ -147,7 +148,8 @@ async def test_integrated_context_fallbacks_and_compression() -> None:
             raise RuntimeError("boom")
 
     fallback = await IntegratedContextProcessor(
-        _Broken(), compression_threshold=100  # type: ignore[arg-type]
+        _Broken(),
+        compression_threshold=100,  # type: ignore[arg-type]
     ).fit(chunks, 1000)
     assert fallback[0].content == chunks[0].content
 
@@ -304,9 +306,7 @@ def test_symbol_backend_planning_edits_and_paths(
     manager = _Manager()
     adapter = SymbolBackendAdapter(tmp_path, manager)  # type: ignore[arg-type]
     pool = _Pool()
-    pool.catalog = [
-        {"name": name} for name in adapter.required_tools | adapter.editing_tools
-    ]
+    pool.catalog = [{"name": name} for name in adapter.required_tools | adapter.editing_tools]
     adapter.pool = pool  # type: ignore[assignment]
     assert "start-mcp-server" in adapter.server_args()
     assert adapter._relative_path("a.py") == "a.py"
@@ -335,9 +335,7 @@ def test_symbol_backend_planning_edits_and_paths(
         adapter.rename_symbol("f", "a.py", "g")
 
     tool, args = adapter._plan(
-        AgentRequest(
-            query="f", kind=RequestKind.REFACTOR, metadata={"relative_path": "a.py"}
-        )
+        AgentRequest(query="f", kind=RequestKind.REFACTOR, metadata={"relative_path": "a.py"})
     )
     assert tool == "find_symbol" and args["include_body"] is True
     tool, args = adapter._plan(

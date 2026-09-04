@@ -89,12 +89,13 @@ class BenchmarkHistory:
                         commit=str(item["commit"]) if item.get("commit") else None,
                         metrics={
                             str(strategy): {
-                                str(metric): float(value)
-                                for metric, value in values.items()
+                                str(metric): float(value) for metric, value in values.items()
                             }
                             for strategy, values in item["metrics"].items()
                         },
-                        metadata={str(key): str(value) for key, value in item.get("metadata", {}).items()},
+                        metadata={
+                            str(key): str(value) for key, value in item.get("metadata", {}).items()
+                        },
                     )
                 )
             except (KeyError, TypeError, ValueError):

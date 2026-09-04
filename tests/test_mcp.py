@@ -7,14 +7,10 @@ from codecortex.runtime import build_runtime
 @pytest.mark.asyncio
 async def test_mcp_lists_tools_and_supports_discovery(tmp_path):
     server = MCPServer(MCPApplication(build_runtime(tmp_path)))
-    discovery = await server.dispatch(
-        {"jsonrpc": "2.0", "id": 1, "method": "server/discover"}
-    )
+    discovery = await server.dispatch({"jsonrpc": "2.0", "id": 1, "method": "server/discover"})
     assert discovery["result"]["protocolVersion"] == PROTOCOL_VERSION
 
-    listed = await server.dispatch(
-        {"jsonrpc": "2.0", "id": 2, "method": "tools/list"}
-    )
+    listed = await server.dispatch({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
     names = {tool["name"] for tool in listed["result"]["tools"]}
     assert "cortex_impact" in names
     assert "cortex_context" in names

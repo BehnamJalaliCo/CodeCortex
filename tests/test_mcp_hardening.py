@@ -67,12 +67,8 @@ def test_remote_mutations_require_explicit_opt_in() -> None:
             mutating_tools=frozenset({"write"}),
         ),
     )
-    assert server.handle_call(
-        "Bearer token", {"tool": "write", "arguments": {}}
-    )[0] == 403
-    status, payload = server.handle_call(
-        "Bearer token", {"tool": "read", "arguments": {}}
-    )
+    assert server.handle_call("Bearer token", {"tool": "write", "arguments": {}})[0] == 403
+    status, payload = server.handle_call("Bearer token", {"tool": "read", "arguments": {}})
     assert status == 500
     assert "secret-detail" not in str(payload)
     assert "error_id" in payload

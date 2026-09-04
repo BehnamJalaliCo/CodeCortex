@@ -13,8 +13,9 @@ import re
 import shlex
 import subprocess
 import tempfile
-from collections.abc import Iterable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import asdict, dataclass, field
+from functools import partial
 from pathlib import Path
 from time import perf_counter
 from typing import Any, Literal
@@ -58,9 +59,7 @@ _TEXT_SUFFIXES = {
     ".json",
 }
 _EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build", "target"}
-_PATH_RE = re.compile(
-    r"(?:^|[\s\[(`'\"])([A-Za-z0-9_.@+-]+(?:/[A-Za-z0-9_.@+-]+)+\.[A-Za-z0-9]+)"
-)
+_PATH_RE = re.compile(r"(?:^|[\s\[(`'\"])([A-Za-z0-9_.@+-]+(?:/[A-Za-z0-9_.@+-]+)+\.[A-Za-z0-9]+)")
 
 ScenarioName = Literal["vanilla", "graph", "symbols", "context", "full"]
 
@@ -208,6 +207,11 @@ class RetrievalObservation:
     tool_calls: int
 
 
+def _identity(observation: RetrievalObservation) -> RetrievalObservation:
+    """Return an already-measured observation, for the no-op baseline scenario."""
+    return observation
+
+
 class RepositoryCheckout:
     """Materialize a public repository at an exact immutable revision."""
 
@@ -304,7 +308,9 @@ class ProductionBenchmarkRunner:
                     if scenario == "vanilla":
                         baseline = self._lexical(root, case)
                         report.results.append(
-                            self._measure(spec, case, scenario, lambda b=baseline: b)
+                            self._measure(
+                                spec, case, scenario, partial(_identity, baseline)
+                            )
                         )
                         continue
                     if not availability.get(scenario, False):
@@ -354,7 +360,11 @@ class ProductionBenchmarkRunner:
             "context": False,
             "full": False,
         }
-        adapters = {"graph": graph, "symbols": symbols, "context": context}
+        adapters: dict[ScenarioName, GraphBackendAdapter | SymbolBackendAdapter | ContextBackendAdapter] = {
+            "graph": graph,
+            "symbols": symbols,
+            "context": context,
+        }
         for key, adapter in adapters.items():
             needed = key in selected or "full" in selected
             if not needed:
@@ -374,17 +384,19 @@ class ProductionBenchmarkRunner:
                     detail = "healthy" if healthy else "health probe failed"
                     if healthy and key == "graph":
                         graph.build()
-                    elif healthy and key in {"symbols", "context"}:
+                    elif healthy and isinstance(
+                        adapter, (SymbolBackendAdapter, ContextBackendAdapter)
+                    ):
                         adapter.require_tools(adapter.tools(), adapter.required_tools)
-                availability[key] = healthy  # type: ignore[literal-required]
+                availability[key] = healthy
             except Exception as exc:
                 status = "error"
                 detail = f"{type(exc).__name__}: {exc}"
-                availability[key] = False  # type: ignore[literal-required]
+                availability[key] = False
             report.setup.append(
                 SetupMeasurement(
                     repository=spec.name,
-                    scenario=key,  # type: ignore[arg-type]
+                    scenario=key,
                     wall_time_ms=(perf_counter() - started) * 1000,
                     status=status,
                     detail=detail,
@@ -404,7 +416,7 @@ class ProductionBenchmarkRunner:
         symbols: SymbolBackendAdapter,
         context: ContextBackendAdapter,
         baseline: RetrievalObservation | None,
-    ):
+    ) -> Callable[[], RetrievalObservation]:
         if scenario == "graph":
             return lambda: RetrievalObservation(graph.query(case.query), None, 1)
         if scenario == "symbols":
@@ -460,10 +472,7 @@ class ProductionBenchmarkRunner:
         root: Path,
         case: BenchmarkCaseSpec,
     ) -> RetrievalObservation:
-        terms = {
-            term.lower()
-            for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", case.query)
-        }
+        terms = {term.lower() for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", case.query)}
         scored: list[tuple[int, str, str]] = []
         files_read = 0
         for path in root.rglob("*"):
@@ -479,10 +488,7 @@ class ProductionBenchmarkRunner:
             files_read += 1
             lowered = text.lower()
             path_text = relative.as_posix().lower()
-            score = sum(
-                lowered.count(term) + (5 if term in path_text else 0)
-                for term in terms
-            )
+            score = sum(lowered.count(term) + (5 if term in path_text else 0) for term in terms)
             if score:
                 scored.append((score, relative.as_posix(), text[:8000]))
         scored.sort(key=lambda row: (-row[0], row[1]))
@@ -495,7 +501,7 @@ class ProductionBenchmarkRunner:
         spec: RepositorySpec,
         case: BenchmarkCaseSpec,
         scenario: ScenarioName,
-        operation,
+        operation: Callable[[], RetrievalObservation],
     ) -> ScenarioResult:
         started = perf_counter()
         try:
@@ -563,7 +569,7 @@ class InstrumentedAgentRunner:
         if os.name == "nt":
             parts = [
                 part[1:-1]
-                if len(part) >= 2 and part[0] == part[-1] and part[0] in {"\"", "'"}
+                if len(part) >= 2 and part[0] == part[-1] and part[0] in {'"', "'"}
                 else part
                 for part in parts
             ]
@@ -597,9 +603,7 @@ class InstrumentedAgentRunner:
             check=False,
         )
         if process.returncode != 0:
-            raise RuntimeError(
-                process.stderr.strip() or f"agent exited with {process.returncode}"
-            )
+            raise RuntimeError(process.stderr.strip() or f"agent exited with {process.returncode}")
         payload = json.loads(process.stdout)
         if not isinstance(payload, dict) or not isinstance(payload.get("answer"), str):
             raise ValueError("agent must return a JSON object containing string field 'answer'")
@@ -611,9 +615,7 @@ class InstrumentedAgentRunner:
             output_tokens=_optional_int(payload.get("output_tokens")),
             cost_usd=_optional_float(payload.get("cost_usd")),
             cost_source=(
-                str(payload["cost_source"])
-                if payload.get("cost_source") is not None
-                else None
+                str(payload["cost_source"]) if payload.get("cost_source") is not None else None
             ),
         )
 
@@ -644,11 +646,7 @@ def _optional_int(value: Any) -> int | None:
 
 
 def _optional_float(value: Any) -> float | None:
-    return (
-        float(value)
-        if isinstance(value, (int, float)) and not isinstance(value, bool)
-        else None
-    )
+    return float(value) if isinstance(value, (int, float)) and not isinstance(value, bool) else None
 
 
 def _safe_name(value: str) -> str:

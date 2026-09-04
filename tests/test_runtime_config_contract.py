@@ -10,7 +10,9 @@ def test_runtime_loads_project_config(tmp_path) -> None:
     state = tmp_path / ".codecortex"
     state.mkdir()
     (state / "config.json").write_text(
-        json.dumps({"version": 1, "context_budget": 4096, "hard_context_limit": 8192, "telemetry": False}),
+        json.dumps(
+            {"version": 1, "context_budget": 4096, "hard_context_limit": 8192, "telemetry": False}
+        ),
         encoding="utf-8",
     )
     runtime = build_runtime(tmp_path)
@@ -37,7 +39,9 @@ def test_environment_overrides_project_config(tmp_path, monkeypatch) -> None:  #
 def test_hard_context_limit_is_enforced(tmp_path) -> None:
     with pytest.raises(ValueError):
         CortexConfig(project_root=tmp_path, default_context_budget=9000, hard_context_limit=8000)
-    config = CortexConfig(project_root=tmp_path, default_context_budget=4000, hard_context_limit=8000)
+    config = CortexConfig(
+        project_root=tmp_path, default_context_budget=4000, hard_context_limit=8000
+    )
     assert config.validate_budget(8000) == 8000
     with pytest.raises(ValueError):
         config.validate_budget(8001)

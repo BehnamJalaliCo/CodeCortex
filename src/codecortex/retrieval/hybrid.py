@@ -38,7 +38,9 @@ class HybridRetriever:
         query_terms = {term.lower() for term in re.findall(r"[A-Za-z_][\w.-]*", query)}
         hits: list[RetrievalHit] = []
         for match in candidates:
-            text_terms = {term.lower() for term in re.findall(r"[A-Za-z_][\w.-]*", match.document.text)}
+            text_terms = {
+                term.lower() for term in re.findall(r"[A-Za-z_][\w.-]*", match.document.text)
+            }
             lexical = len(query_terms & text_terms) / max(1, len(query_terms))
             metadata = match.document.metadata
             structural = 0.0

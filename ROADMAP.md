@@ -67,6 +67,21 @@
 - [x] Published longitudinal performance history from scheduled reproducible runs
 - [x] Organization-level policy, audit retention, and workspace administration
 
+## 0.6 — Evidence fusion
+
+- [x] Unified evidence model with categorical trust tiers and provenance
+- [x] Central ranking, deduplication, and conflict policy
+- [x] Precision code intelligence: exact definitions, references, implementations
+- [x] Precision graph fusion with staleness detection and conservative fallback
+- [x] Dependency inventory across Python, Node, Rust, Go, JVM, and .NET manifests
+- [x] Declared-constraint and resolved-version separation
+- [x] Optional, disabled-by-default version-aware documentation provider
+- [x] Structural search with typed matches and captures
+- [x] Guarded structural rewrite: preview, content-hash transaction, rollback, validation
+- [x] Evidence-aware impact analysis and context pipeline
+- [x] Router evidence planning that keeps local questions local
+- [x] Measured heuristic-versus-evidence benchmark cases
+
 ## Release gates
 
 A public release is considered evidence-backed only when the exact release commit has passed Core CI, backend conformance, parser-provider tests, Docker integration, security checks, and the relevant benchmark run. Credential-gated external services must be reported as skipped rather than silently treated as passed.

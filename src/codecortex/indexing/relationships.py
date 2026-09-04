@@ -86,7 +86,10 @@ class RelationshipExtractor:
                 self.generic_visit(node)
                 containers.pop()
 
-            visit_AsyncFunctionDef = visit_FunctionDef
+            def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+                containers.append(node.name)
+                self.generic_visit(node)
+                containers.pop()
 
             def visit_Import(self, node: ast.Import) -> None:
                 for alias in node.names:
@@ -141,13 +144,17 @@ class RelationshipExtractor:
         if pattern is None:
             return []
         return [
-            Relationship("imports", match.group(1).strip(), source.count("\n", 0, match.start()) + 1)
+            Relationship(
+                "imports", match.group(1).strip(), source.count("\n", 0, match.start()) + 1
+            )
             for match in pattern.finditer(source)
         ]
 
     def _inheritance(self, source: str) -> list[Relationship]:
         result = [
-            Relationship("inherits", match.group(2), source.count("\n", 0, match.start()) + 1, match.group(1))
+            Relationship(
+                "inherits", match.group(2), source.count("\n", 0, match.start()) + 1, match.group(1)
+            )
             for match in self._EXTENDS_RE.finditer(source)
         ]
         for match in self._IMPLEMENTS_RE.finditer(source):

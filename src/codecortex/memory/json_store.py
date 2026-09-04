@@ -34,11 +34,7 @@ class JsonMemoryStore(MemoryStore):
             raise ValueError("namespace and key are required")
 
         def update(current: object) -> dict[str, str]:
-            data = (
-                {str(k): str(v) for k, v in current.items()}
-                if isinstance(current, dict)
-                else {}
-            )
+            data = {str(k): str(v) for k, v in current.items()} if isinstance(current, dict) else {}
             data[key] = value
             return data
 

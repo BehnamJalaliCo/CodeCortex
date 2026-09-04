@@ -46,9 +46,7 @@ def build_backend_stack(config: CortexConfig, memory_store: MemoryStore) -> Back
                 registry.register(adapter)
                 active.append(key)
         context_spec = BACKENDS["context"]
-        if context_spec.configured and (
-            mode == "external" or manager.is_installed(context_spec)
-        ):
+        if context_spec.configured and (mode == "external" or manager.is_installed(context_spec)):
             context_backend = context
             active.append("context")
 

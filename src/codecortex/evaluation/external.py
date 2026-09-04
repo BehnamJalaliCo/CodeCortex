@@ -178,7 +178,9 @@ class SubprocessEvaluationTarget:
         except TimeoutError:
             process.kill()
             await process.wait()
-            raise RuntimeError(f"evaluation target timed out after {self.timeout_seconds}s") from None
+            raise RuntimeError(
+                f"evaluation target timed out after {self.timeout_seconds}s"
+            ) from None
         if process.returncode != 0:
             message = stderr.decode("utf-8", errors="replace")[-2_000:]
             raise RuntimeError(f"evaluation target exited {process.returncode}: {message}")
@@ -222,13 +224,25 @@ class ExternalEvaluationSuite:
                     id=str(item["id"]),
                     prompt=str(item["prompt"]),
                     expectation=EvaluationExpectation(
-                        required_strings=tuple(str(value) for value in expectation.get("required_strings", [])),
-                        forbidden_strings=tuple(str(value) for value in expectation.get("forbidden_strings", [])),
-                        required_paths=tuple(str(value) for value in expectation.get("required_paths", [])),
-                        max_tokens=int(expectation["max_tokens"]) if expectation.get("max_tokens") is not None else None,
-                        max_tool_calls=int(expectation["max_tool_calls"]) if expectation.get("max_tool_calls") is not None else None,
+                        required_strings=tuple(
+                            str(value) for value in expectation.get("required_strings", [])
+                        ),
+                        forbidden_strings=tuple(
+                            str(value) for value in expectation.get("forbidden_strings", [])
+                        ),
+                        required_paths=tuple(
+                            str(value) for value in expectation.get("required_paths", [])
+                        ),
+                        max_tokens=int(expectation["max_tokens"])
+                        if expectation.get("max_tokens") is not None
+                        else None,
+                        max_tool_calls=int(expectation["max_tool_calls"])
+                        if expectation.get("max_tool_calls") is not None
+                        else None,
                     ),
-                    metadata={str(key): str(value) for key, value in item.get("metadata", {}).items()},
+                    metadata={
+                        str(key): str(value) for key, value in item.get("metadata", {}).items()
+                    },
                 )
             )
         return cls(str(payload.get("name", path.stem)), cases)

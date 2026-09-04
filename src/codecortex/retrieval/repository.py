@@ -5,7 +5,7 @@ from __future__ import annotations
 from pathlib import Path
 
 from codecortex.context.slicing import AstContextSlicer
-from codecortex.indexing.graph import ProjectGraph
+from codecortex.indexing.graph import GraphNode, ProjectGraph
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.retrieval.hybrid import HybridRetriever, RetrievalHit
 from codecortex.retrieval.index import SemanticDocument, SemanticIndex
@@ -35,7 +35,9 @@ class RepositorySemanticIndex:
         removed = self.index.document_ids - set(current)
         if removed:
             self.index.delete(removed)
-        changed = [document for document in filtered if self.index.document(document.id) != document]
+        changed = [
+            document for document in filtered if self.index.document(document.id) != document
+        ]
         if changed:
             self.index.upsert(changed)
         return len(filtered)
@@ -45,7 +47,7 @@ class RepositorySemanticIndex:
             self.refresh()
         return HybridRetriever(self.index).search(query, limit)
 
-    def _document(self, node, graph: ProjectGraph) -> SemanticDocument | None:
+    def _document(self, node: GraphNode, graph: ProjectGraph) -> SemanticDocument | None:
         if node.kind in {"module", "reference"}:
             return None
         metadata = {
@@ -87,7 +89,9 @@ class RepositorySemanticIndex:
         if line is None:
             return source[: self.max_snippet_chars]
         lines = source.splitlines()
-        return "\n".join(lines[max(0, line - 8) : min(len(lines), line + 20)])[: self.max_snippet_chars]
+        return "\n".join(lines[max(0, line - 8) : min(len(lines), line + 20)])[
+            : self.max_snippet_chars
+        ]
 
     @staticmethod
     def _structural_context(node_id: str, graph: ProjectGraph) -> str:

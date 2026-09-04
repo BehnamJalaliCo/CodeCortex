@@ -1,0 +1,12 @@
+{
+  "version": 1,
+  "milestones": [
+    {"id":"A","name":"Foundation","requires":["application-service","repository-context","runtime-manager","persistence"]},
+    {"id":"B","name":"API Ready","requires":["rest-api","authentication","rbac","jobs","sse","audit"]},
+    {"id":"C","name":"Console MVP","requires":["console","workspace","repository-explorer","overview","graph","search","traces","backends"]},
+    {"id":"D","name":"Intelligence Console","requires":["context-lab","impact","routing","architecture","git","pr-intelligence","quality"]},
+    {"id":"E","name":"Team Platform","requires":["members","policies","team-memory","audit","notifications"]},
+    {"id":"F","name":"Distributed Control Plane","requires":["cluster","workers","jobs","distributed-graph","observability"]},
+    {"id":"G","name":"Safe Development Platform","requires":["code-actions","preview","impact","approval","validation","audit"]}
+  ]
+}

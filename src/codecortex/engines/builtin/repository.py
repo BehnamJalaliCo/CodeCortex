@@ -6,23 +6,30 @@ from pathlib import Path
 
 from codecortex.core.contracts import Engine
 from codecortex.core.models import AgentRequest, Capability, ContextChunk, EngineResult
-from codecortex.indexing import ProjectIndexer
+from codecortex.projects import RepositoryContext
 
 
 class RepositoryEngine(Engine):
     capability = Capability.REPOSITORY
 
-    def __init__(self, project_root: Path, max_files: int = 5_000) -> None:
+    def __init__(
+        self,
+        project_root: Path,
+        max_files: int = 5_000,
+        *,
+        context: RepositoryContext | None = None,
+    ) -> None:
         self.project_root = project_root.resolve()
         self.max_files = max_files
+        self.context = context or RepositoryContext(self.project_root)
 
     async def health(self) -> bool:
         return self.project_root.exists() and self.project_root.is_dir()
 
     async def execute(self, request: AgentRequest) -> EngineResult:
-        graph = ProjectIndexer(self.project_root, max_files=self.max_files).build()
+        snapshot = self.context.refresh()
+        graph = snapshot.graph
         graph_path = self.project_root / ".codecortex" / "index" / "graph.json"
-        graph.save(graph_path)
 
         counts = graph.counts()
         matches = graph.search(request.query)
@@ -69,5 +76,8 @@ class RepositoryEngine(Engine):
                 "edges": len(graph.edges),
                 "node_counts": counts,
                 "graph_path": str(graph_path),
+                "files_reparsed": snapshot.stats.files_reparsed,
+                "full_rebuild": snapshot.stats.full_rebuild,
+                "repository_generation": snapshot.generation,
             },
         )

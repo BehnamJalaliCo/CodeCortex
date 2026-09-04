@@ -51,7 +51,9 @@ class LanguageRegistry:
     )
 
     def __init__(self, *, native: bool = True) -> None:
-        self.native = TreeSitterParserProvider() if native and TreeSitterParserProvider.available() else None
+        self.native = (
+            TreeSitterParserProvider() if native and TreeSitterParserProvider.available() else None
+        )
 
     @property
     def suffixes(self) -> frozenset[str]:
@@ -132,7 +134,9 @@ class LanguageRegistry:
                 if container:
                     kind = "method"
                 else:
-                    kind = "async_function" if isinstance(node, ast.AsyncFunctionDef) else "function"
+                    kind = (
+                        "async_function" if isinstance(node, ast.AsyncFunctionDef) else "function"
+                    )
                 units.append(
                     ParsedUnit(
                         name=node.name,
@@ -219,8 +223,17 @@ class LanguageRegistry:
         if language == "ruby":
             return (("class", ruby_class), ("function", function_keyword))
         if language in {"typescript", "javascript"}:
-            return (("class", common_class), ("function", function_keyword), ("function", arrow), ("function", c_like_function))
-        return (("class", common_class), ("function", function_keyword), ("function", c_like_function))
+            return (
+                ("class", common_class),
+                ("function", function_keyword),
+                ("function", arrow),
+                ("function", c_like_function),
+            )
+        return (
+            ("class", common_class),
+            ("function", function_keyword),
+            ("function", c_like_function),
+        )
 
     def resolve_types(self, units: list[ParsedUnit]) -> dict[str, set[str]]:
         names = {unit.name for unit in units}

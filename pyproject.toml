@@ -19,6 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
+  "defusedxml>=0.7,<1",
   "pydantic>=2.8,<3",
   "typer>=0.27.1,<1",
   "rich>=13.7,<15",
@@ -27,6 +28,8 @@ dependencies = [
 [project.optional-dependencies]
 semantic = ["sentence-transformers>=3,<6"]
 parsers = ["tree-sitter-language-pack>=1.15.8,<2"]
+web = ["fastapi>=0.116,<1", "uvicorn>=0.35,<1"]
+structural = ["ast-grep-cli>=0.45.3,<1"]
 dev = [
   "pytest>=8.2",
   "pytest-asyncio>=1.4.0",
@@ -35,6 +38,7 @@ dev = [
   "mypy>=1.11",
   "build>=1.2",
   "twine>=7.0.0",
+  "httpx>=0.27,<1",
 ]
 security = ["pip-audit>=2.7", "bandit>=1.7", "cyclonedx-bom>=4"]
 
@@ -49,12 +53,13 @@ Documentation = "https://behnamjalalico.github.io/CodeCortex/"
 codecortex = "codecortex.entrypoint:app"
 cortex = "codecortex.entrypoint:app"
 cortex-remote = "codecortex.distributed.cli:app"
+cortex-api = "codecortex.api.cli:app"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/codecortex"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "--strict-markers"
@@ -83,3 +88,14 @@ ignore = ["E501"]
 python_version = "3.11"
 strict = true
 packages = ["codecortex"]
+
+[[tool.mypy.overrides]]
+# Optional extras without published type information, each imported behind a
+# guard and not installed in the type-check job.
+module = ["sentence_transformers.*", "tree_sitter_language_pack.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# defusedxml mirrors the stdlib API but ships no type information.
+module = ["defusedxml.*"]
+ignore_missing_imports = true

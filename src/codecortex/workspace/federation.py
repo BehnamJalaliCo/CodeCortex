@@ -66,9 +66,7 @@ class MultiRepositoryWorkspace:
         if not self._graphs:
             self.refresh()
         query_terms = {
-            term.lower().strip(".,:;()[]{}")
-            for term in query.split()
-            if len(term.strip()) > 2
+            term.lower().strip(".,:;()[]{}") for term in query.split() if len(term.strip()) > 2
         }
         hits: list[FederatedHit] = []
         for descriptor in self.repositories:
@@ -81,7 +79,9 @@ class MultiRepositoryWorkspace:
                     for term in query_terms
                 )
                 structural = 1.10 if node.kind not in {"file", "module", "reference"} else 1.0
-                hits.append(FederatedHit(descriptor.name, node, lexical * descriptor.weight * structural))
+                hits.append(
+                    FederatedHit(descriptor.name, node, lexical * descriptor.weight * structural)
+                )
         hits.sort(key=lambda item: (-item.score, item.repository, item.node.id))
         return hits[: max(1, limit)]
 
@@ -101,7 +101,9 @@ class MultiRepositoryWorkspace:
                 metadata["repository"] = repository
                 nodes.append(node.model_copy(update={"id": namespaced, "metadata": metadata}))
                 if node.kind not in {"file", "module", "reference"}:
-                    symbol_groups.setdefault((node.kind, node.name.lower()), []).append((repository, namespaced))
+                    symbol_groups.setdefault((node.kind, node.name.lower()), []).append(
+                        (repository, namespaced)
+                    )
                 elif node.kind == "file" and node.path:
                     for alias in self._path_aliases(node.path):
                         file_aliases.setdefault(alias, []).append((repository, namespaced))
@@ -110,7 +112,15 @@ class MultiRepositoryWorkspace:
             for edge in graph.edges:
                 metadata = dict(edge.metadata)
                 metadata["repository"] = repository
-                edges.append(edge.model_copy(update={"source": self._node_id(repository, edge.source), "target": self._node_id(repository, edge.target), "metadata": metadata}))
+                edges.append(
+                    edge.model_copy(
+                        update={
+                            "source": self._node_id(repository, edge.source),
+                            "target": self._node_id(repository, edge.target),
+                            "metadata": metadata,
+                        }
+                    )
+                )
 
         for members in symbol_groups.values():
             if len({repository for repository, _ in members}) < 2:
@@ -119,7 +129,18 @@ class MultiRepositoryWorkspace:
                 for right_repo, right_id in members[index + 1 :]:
                     if left_repo == right_repo:
                         continue
-                    edges.append(GraphEdge(source=left_id, target=right_id, kind="cross_repo_symbol", metadata={"confidence": 0.85, "left_repository": left_repo, "right_repository": right_repo}))
+                    edges.append(
+                        GraphEdge(
+                            source=left_id,
+                            target=right_id,
+                            kind="cross_repo_symbol",
+                            metadata={
+                                "confidence": 0.85,
+                                "left_repository": left_repo,
+                                "right_repository": right_repo,
+                            },
+                        )
+                    )
 
         for source_repo, node, source_id in unresolved:
             normalized = self._normalize_dependency(node.name)
@@ -149,7 +170,11 @@ class MultiRepositoryWorkspace:
                         },
                     )
                 )
-        unique = {(edge.source, edge.target, edge.kind): edge for edge in edges if edge.source != edge.target}
+        unique = {
+            (edge.source, edge.target, edge.kind): edge
+            for edge in edges
+            if edge.source != edge.target
+        }
         return ProjectGraph(nodes=nodes, edges=list(unique.values()))
 
     @staticmethod
@@ -173,7 +198,12 @@ class MultiRepositoryWorkspace:
         if self.state_path is None:
             return
         self.state_path.parent.mkdir(parents=True, exist_ok=True)
-        payload = {"version": self.VERSION, "repositories": [{**asdict(item), "root": str(item.root)} for item in self.repositories]}
+        payload = {
+            "version": self.VERSION,
+            "repositories": [
+                {**asdict(item), "root": str(item.root)} for item in self.repositories
+            ],
+        }
         temp = self.state_path.with_suffix(self.state_path.suffix + ".tmp")
         temp.write_text(json.dumps(payload, ensure_ascii=False, indent=2), encoding="utf-8")
         temp.replace(self.state_path)
@@ -189,7 +219,9 @@ class MultiRepositoryWorkspace:
             return
         for item in payload.get("repositories", []):
             try:
-                self.add_repository(str(item["name"]), Path(str(item["root"])), float(item.get("weight", 1.0)))
+                self.add_repository(
+                    str(item["name"]), Path(str(item["root"])), float(item.get("weight", 1.0))
+                )
             except (KeyError, TypeError, ValueError):
                 continue
 

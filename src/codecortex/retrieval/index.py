@@ -76,25 +76,56 @@ class SemanticIndex:
             if score >= min_score:
                 ranked.append((score, document_id))
         ranked.sort(key=lambda item: (-item[0], item[1]))
-        return [SemanticMatch(document=self._documents[document_id], score=score) for score, document_id in ranked[: max(1, limit)]]
+        return [
+            SemanticMatch(document=self._documents[document_id], score=score)
+            for score, document_id in ranked[: max(1, limit)]
+        ]
 
     def save(self) -> None:
         if self.path is None:
             return
-        AtomicJsonFile(self.path).write({"version": self.VERSION, "provider": self.provider.name, "dimensions": self.provider.dimensions, "documents": {document_id: asdict(document) for document_id, document in sorted(self._documents.items())}, "vectors": self._vectors})
+        AtomicJsonFile(self.path).write(
+            {
+                "version": self.VERSION,
+                "provider": self.provider.name,
+                "dimensions": self.provider.dimensions,
+                "documents": {
+                    document_id: asdict(document)
+                    for document_id, document in sorted(self._documents.items())
+                },
+                "vectors": self._vectors,
+            }
+        )
 
     def load(self) -> None:
         if self.path is None:
             return
         payload = AtomicJsonFile(self.path).read({})
-        if not isinstance(payload, dict) or payload.get("version") != self.VERSION or payload.get("provider") != self.provider.name or int(payload.get("dimensions", -1)) != self.provider.dimensions:
+        if (
+            not isinstance(payload, dict)
+            or payload.get("version") != self.VERSION
+            or payload.get("provider") != self.provider.name
+            or int(payload.get("dimensions", -1)) != self.provider.dimensions
+        ):
             return
         documents = payload.get("documents", {})
         vectors = payload.get("vectors", {})
         if not isinstance(documents, dict) or not isinstance(vectors, dict):
             return
-        self._documents = {str(document_id): SemanticDocument(id=str(value["id"]), text=str(value["text"]), metadata=dict(value.get("metadata", {}))) for document_id, value in documents.items() if isinstance(value, dict) and "id" in value and "text" in value}
-        self._vectors = {str(document_id): [float(value) for value in vector] for document_id, vector in vectors.items() if document_id in self._documents and isinstance(vector, list)}
+        self._documents = {
+            str(document_id): SemanticDocument(
+                id=str(value["id"]),
+                text=str(value["text"]),
+                metadata=dict(value.get("metadata", {})),
+            )
+            for document_id, value in documents.items()
+            if isinstance(value, dict) and "id" in value and "text" in value
+        }
+        self._vectors = {
+            str(document_id): [float(value) for value in vector]
+            for document_id, vector in vectors.items()
+            if document_id in self._documents and isinstance(vector, list)
+        }
 
     @staticmethod
     def _cosine(left: list[float], right: list[float]) -> float:

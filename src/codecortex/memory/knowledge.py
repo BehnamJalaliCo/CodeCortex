@@ -156,8 +156,10 @@ class ProjectKnowledgeExtractor:
         test_frameworks = {
             name
             for name, markers in _TEST_MARKERS.items()
-            if any(marker.lower() in joined or any(marker.lower() in p.name.lower() for p in files)
-                   for marker in markers)
+            if any(
+                marker.lower() in joined or any(marker.lower() in p.name.lower() for p in files)
+                for marker in markers
+            )
         }
         git = GitIntelligence(self.root).analyze(limit=300)
         return ProjectKnowledge(

@@ -20,6 +20,17 @@ The project aims to acknowledge credible reports promptly, coordinate remediatio
 - External adapters are disabled unless explicitly configured.
 - Backend commands execute without a shell.
 - Semantic edit paths are constrained to the project root.
+- Optional external engines run with an explicit argument vector, a resolved
+  absolute executable, a bounded timeout, and a bounded output size.
+- Dependency documentation lookups are disabled by default. When enabled they
+  transmit only a library name, a resolved version, and the user's question;
+  repository source, paths, secrets, Git history, and memory are never sent.
+- Documentation API keys are read only from a configured environment variable,
+  are never persisted to project state or traces, and are redacted from
+  diagnostics.
+- Structural rewrites require a preview, re-verify every file's content hash
+  before writing, enforce file/match/byte limits, write atomically, and roll
+  back on partial failure.
 - Task traces redact common credential/token fields.
 - Agent configuration is merge-safe and refuses malformed configuration.
 - Secrets should never be deliberately stored in project or team memory.

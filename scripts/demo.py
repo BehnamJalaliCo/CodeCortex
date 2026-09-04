@@ -20,7 +20,9 @@ async def main() -> None:
     print(f"Indexed {setup.index.tracked} files / {setup.symbols} symbols")
     graph, _ = IncrementalGraphIndex(root).refresh()
     impact = ImpactAnalyzer(graph).analyze("AuthService")
-    print(f"Impact risk: {impact.risk_score:.3f}; direct={len(impact.direct)} indirect={len(impact.indirect)}")
+    print(
+        f"Impact risk: {impact.risk_score:.3f}; direct={len(impact.direct)} indirect={len(impact.indirect)}"
+    )
     runtime = build_runtime(root)
     result = await runtime.gateway.query("Find AuthService and explain token refresh", str(root))
     print(f"Route: {', '.join(cap.value for cap in result.plan.selected)}")

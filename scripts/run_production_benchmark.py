@@ -14,7 +14,9 @@ def main() -> int:
     parser.add_argument("--spec", type=Path, default=Path("benchmarks/production/spec.json"))
     parser.add_argument("--workspace", type=Path, default=Path(".codecortex/benchmarks/production"))
     parser.add_argument("--output", type=Path, default=Path("benchmarks/production/results.json"))
-    parser.add_argument("--provision", action="store_true", help="Install pinned mature backends before running")
+    parser.add_argument(
+        "--provision", action="store_true", help="Install pinned mature backends before running"
+    )
     parser.add_argument(
         "--scenario",
         action="append",

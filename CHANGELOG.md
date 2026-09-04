@@ -15,14 +15,29 @@ All notable changes to CodeCortex are documented here. The project follows seman
 - CodeQL, dependency review, Bandit, dependency audit, SBOM generation, and security-boundary tests.
 - Production observability dashboard with traces, graph hotspots, architecture drift, benchmark history, latency, token savings, and PR-risk API.
 - Signed release pipeline with checksums, Sigstore bundles, GitHub provenance attestations, PyPI Trusted Publishing, and GHCR publishing.
+- Unified evidence model with categorical trust tiers, provenance, and a central ranking, deduplication, and conflict policy.
+- Precision code intelligence: exact definition, reference, implementation, and occurrence resolution from a compiler/indexer-grade index, with symbol-identity decomposition, staleness detection, incremental caching, and graph fusion.
+- Dependency intelligence: manifest and lockfile discovery across Python, Node, Rust, Go, JVM, and .NET, separating declared constraints from resolved versions, behind an optional documentation-provider contract.
+- Structural search and guarded structural rewrite with typed matches, captures, expiring previews, content-hash transactions, rollback, post-apply reindexing, and validation.
+- New MCP tools: `cortex_precise_definition`, `cortex_precise_references`, `cortex_precise_implementations`, `cortex_symbol_occurrences`, `cortex_precision_status`, `cortex_dependency_info`, `cortex_dependency_docs`, `cortex_dependency_context`, `cortex_structural_search`, `cortex_rewrite_preview`, and `cortex_rewrite_apply` (mutating surface only).
+- New CLI commands: `definition`, `references`, `implementations`, `precision-status`, `dependency`, `dependency-docs`, `structural-search`, `rewrite-preview`, `rewrite-apply`, and `evidence-benchmark`.
+- Measured heuristic-versus-evidence benchmark cases for duplicate symbol names, resolved dependency versions, and mechanical migrations; unmeasurable strategies are reported as skipped.
+- `docs/EVIDENCE_FUSION.md`, plus provenance records for the integrated protocol and optional dependencies under `docs/provenance/`.
 
 ### Changed
 
 - Python distribution identity is now `codecortex-context-engine`; the public brand remains CodeCortex Context Engine and the recommended CLI remains `cortex`.
 - Optional backend processes remain isolated from the Core Python dependency environment and are pinned to exact compatible revisions.
 - Documentation now treats benchmark output as evidence only after reproducible execution; missing metrics are never synthesized.
+- Impact analysis weighs exact relationships above inferred ones and reports the evidence mix; `cortex doctor` reports the state of each optional evidence layer.
+- The context pipeline accepts ranked evidence and keeps the stronger record when two providers point at the same location.
+- The package now ships a `py.typed` marker, so `mypy --strict` runs against the distribution and is green across all source files; it is enforced in CI.
 
 ### Security
 
 - Semantic edit paths are constrained to the repository root and reject path traversal, absolute escape, and symlink escape.
 - Security reporting now uses GitHub's private vulnerability-reporting flow.
+- Optional external engines run with an explicit argument vector, a resolved absolute executable, bounded runtime, and bounded output; no shell is ever used and nothing is downloaded implicitly.
+- Dependency documentation is disabled by default, transmits only a library name, resolved version, and question, and reads its API key solely from a configured environment variable; credentials are redacted from diagnostics and never persisted.
+- Structural rewrites require an unexpired preview, re-verify every file's content hash before writing, enforce file/match/byte limits, write atomically, and roll back on partial failure.
+- Structural matches and paths are constrained to the repository root, rejecting traversal, absolute escape, and symlink escape.

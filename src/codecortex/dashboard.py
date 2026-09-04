@@ -12,10 +12,13 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 from codecortex.architecture import ArchitectureDriftDetector, ArchitectureFingerprint
+from codecortex.dependencies import DependencyIntelligence
 from codecortex.evaluation import BenchmarkHistory
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.pr_intelligence import PRIntelligence
+from codecortex.precision import PrecisionEvidenceProvider
 from codecortex.runtime import CortexRuntime
+from codecortex.structural import StructuralSearch
 from codecortex.tracing import TaskTraceRecorder
 
 _SAFE_REF = re.compile(r"^[A-Za-z0-9._/@+-]{1,200}$")
@@ -46,7 +49,8 @@ def _event_stats(events: list[dict[str, Any]]) -> dict[str, Any]:
     engine_calls: Counter[str] = Counter()
     for event in events:
         name = str(event.get("name", "unknown"))
-        attrs = event.get("attributes") if isinstance(event.get("attributes"), dict) else {}
+        raw_attrs = event.get("attributes")
+        attrs: dict[str, Any] = raw_attrs if isinstance(raw_attrs, dict) else {}
         counts[name] += 1
         if name == "route.created":
             routes[str(attrs.get("kind", "unknown"))] += 1
@@ -57,9 +61,7 @@ def _event_stats(events: list[dict[str, Any]]) -> dict[str, Any]:
             engine_calls[capability] += 1
             engine_ms[capability] += float(attrs.get("duration_ms", 0.0) or 0.0)
     engine_latency = {
-        key: round(engine_ms[key] / count, 2)
-        for key, count in engine_calls.items()
-        if count
+        key: round(engine_ms[key] / count, 2) for key, count in engine_calls.items() if count
     }
     return {
         "counts": dict(counts),
@@ -103,6 +105,45 @@ def _architecture_drift(runtime: CortexRuntime, graph: Any) -> dict[str, Any]:
     return {"status": "compared", "report": asdict(report)}
 
 
+def _evidence_layers(runtime: CortexRuntime, events: list[dict[str, Any]]) -> dict[str, Any]:
+    """Report capability state for the optional evidence layers.
+
+    Labels are CodeCortex-native; nothing here names an upstream project.
+    """
+    root = runtime.config.project_root
+    precision = PrecisionEvidenceProvider(root, runtime.config).status()
+    dependencies = DependencyIntelligence(root, runtime.config).status()
+    structural = StructuralSearch(root, runtime.config).status()
+    rewrites = [
+        event
+        for event in events
+        if event.get("name") == "structural.rewrite.applied"
+    ]
+    applied = sum(1 for event in rewrites if event.get("attributes", {}).get("applied"))
+    return {
+        "precision": {
+            "status": precision.label,
+            "documents": precision.documents,
+            "symbols": precision.symbols,
+            "occurrences": precision.occurrences,
+            "stale": precision.stale,
+            "detail": precision.stale_reason or precision.detail,
+        },
+        "dependencies": {
+            "status": dependencies.label,
+            "cache_writable": dependencies.cache_writable,
+            "detail": dependencies.detail,
+        },
+        "structural": {
+            "status": structural.label,
+            "version": structural.version,
+            "detail": structural.detail,
+            "rewrites_applied": applied,
+            "rewrites_failed": len(rewrites) - applied,
+        },
+    }
+
+
 async def _overview(runtime: CortexRuntime) -> dict[str, Any]:
     graph, index_stats = await asyncio.to_thread(
         IncrementalGraphIndex(runtime.config.project_root).refresh
@@ -144,13 +185,12 @@ async def _overview(runtime: CortexRuntime) -> dict[str, Any]:
         "traces": _recent_traces(runtime),
         "benchmarks": _benchmark_history(runtime),
         "architecture": _architecture_drift(runtime, graph),
+        "evidence": await asyncio.to_thread(_evidence_layers, runtime, events),
     }
 
 
 def _html(project: str) -> str:
-    escaped = (
-        project.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
-    )
+    escaped = project.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
     return f"""<!doctype html>
 <html lang="en">
 <head>
@@ -180,12 +220,13 @@ section{{margin-top:12px}}h2{{font-size:16px;margin:0 0 12px}}table{{width:100%;
 <div class="panel wide"><h2>Recent traces</h2><table><thead><tr><th>Trace</th><th>Spans</th><th>ms</th><th>Tokens</th><th>Errors</th></tr></thead><tbody id="traces"></tbody></table></div>
 <div class="panel wide"><h2>Engine latency</h2><div id="latency"></div></div>
 <div class="panel wide"><h2>Architecture drift</h2><pre id="drift" class="muted"></pre></div>
+<div class="panel full"><h2>Evidence layers</h2><table><thead><tr><th>Layer</th><th>Status</th><th>Detail</th></tr></thead><tbody id="evidence"></tbody></table></div>
 <div class="panel full"><h2>Benchmark history</h2><table><thead><tr><th>Time</th><th>Commit</th><th>Strategies</th></tr></thead><tbody id="bench"></tbody></table></div>
 </section>
 <script>
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({{'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}}[c]));
 function bars(target,obj){{const max=Math.max(1,...Object.values(obj||{{}}));document.getElementById(target).innerHTML=Object.entries(obj||{{}}).sort((a,b)=>b[1]-a[1]).map(([k,v])=>`<div>${{esc(k)}} <span class="muted">${{Number(v).toFixed(2)}}</span><div class="bar"><i style="width:${{Math.max(2,100*v/max)}}%"></i></div></div>`).join('')||'<span class="muted">No data yet.</span>'}}
-async function load(){{const d=await fetch('/api/overview',{{cache:'no-store'}}).then(r=>r.json());const c=d.runtime.counts||{{}};const cards=[['Files',d.index.tracked],['Graph nodes',d.graph.nodes],['Graph edges',d.graph.edges],['Tokens saved',d.runtime.context_tokens_saved],['Routes',c['route.created']||0],['Engine calls',c['engine.executed']||0],['MCP calls',c['mcp.tool.called']||0],['Reparsed',d.index.files_reparsed]];document.getElementById('metrics').innerHTML=cards.map(([k,v])=>`<div class="card"><div class="muted">${{esc(k)}}</div><div class="metric">${{Number(v||0).toLocaleString()}}</div></div>`).join('');document.getElementById('health').innerHTML=Object.entries(d.health||{{}}).map(([k,v])=>`<span class="pill ${{v?'ok':'bad'}}">${{esc(k)}} · ${{v?'ready':'unavailable'}}</span>`).join('');bars('routes',d.runtime.routes);bars('latency',d.runtime.engine_avg_latency_ms);document.getElementById('hot').innerHTML=(d.graph.hot_nodes||[]).map(x=>`<tr><td>${{esc(x.name)}}</td><td class="muted">${{esc(x.path||'')}}</td><td>${{x.degree}}</td></tr>`).join('');document.getElementById('traces').innerHTML=(d.traces||[]).map(x=>`<tr><td><code>${{esc(x.trace_id.slice(0,10))}}</code></td><td>${{x.spans}}</td><td>${{Number(x.duration_ms).toFixed(1)}}</td><td>${{x.context_tokens}}</td><td>${{x.errors}}</td></tr>`).join('');document.getElementById('drift').textContent=JSON.stringify(d.architecture,null,2);document.getElementById('bench').innerHTML=(d.benchmarks||[]).slice().reverse().map(x=>`<tr><td>${{esc(x.created_at)}}</td><td><code>${{esc((x.commit||'').slice(0,10))}}</code></td><td>${{esc(Object.keys(x.metrics||{{}}).join(', '))}}</td></tr>`).join('');document.getElementById('updated').textContent='Updated '+new Date().toLocaleTimeString();}}
+async function load(){{const d=await fetch('/api/overview',{{cache:'no-store'}}).then(r=>r.json());const c=d.runtime.counts||{{}};const cards=[['Files',d.index.tracked],['Graph nodes',d.graph.nodes],['Graph edges',d.graph.edges],['Tokens saved',d.runtime.context_tokens_saved],['Routes',c['route.created']||0],['Engine calls',c['engine.executed']||0],['MCP calls',c['mcp.tool.called']||0],['Reparsed',d.index.files_reparsed]];document.getElementById('metrics').innerHTML=cards.map(([k,v])=>`<div class="card"><div class="muted">${{esc(k)}}</div><div class="metric">${{Number(v||0).toLocaleString()}}</div></div>`).join('');document.getElementById('health').innerHTML=Object.entries(d.health||{{}}).map(([k,v])=>`<span class="pill ${{v?'ok':'bad'}}">${{esc(k)}} · ${{v?'ready':'unavailable'}}</span>`).join('');bars('routes',d.runtime.routes);bars('latency',d.runtime.engine_avg_latency_ms);document.getElementById('hot').innerHTML=(d.graph.hot_nodes||[]).map(x=>`<tr><td>${{esc(x.name)}}</td><td class="muted">${{esc(x.path||'')}}</td><td>${{x.degree}}</td></tr>`).join('');document.getElementById('traces').innerHTML=(d.traces||[]).map(x=>`<tr><td><code>${{esc(x.trace_id.slice(0,10))}}</code></td><td>${{x.spans}}</td><td>${{Number(x.duration_ms).toFixed(1)}}</td><td>${{x.context_tokens}}</td><td>${{x.errors}}</td></tr>`).join('');document.getElementById('drift').textContent=JSON.stringify(d.architecture,null,2);const ev=d.evidence||{{}};document.getElementById('evidence').innerHTML=[['Precision intelligence',ev.precision],['Dependency documentation',ev.dependencies],['Structural engine',ev.structural]].map(([k,v])=>`<tr><td>${{esc(k)}}</td><td class="${{(v&&(v.status==='available'))?'ok':'bad'}}">${{esc((v||{{}}).status||'unknown')}}</td><td class="muted">${{esc((v||{{}}).detail||'')}}</td></tr>`).join('');document.getElementById('bench').innerHTML=(d.benchmarks||[]).slice().reverse().map(x=>`<tr><td>${{esc(x.created_at)}}</td><td><code>${{esc((x.commit||'').slice(0,10))}}</code></td><td>${{esc(Object.keys(x.metrics||{{}}).join(', '))}}</td></tr>`).join('');document.getElementById('updated').textContent='Updated '+new Date().toLocaleTimeString();}}
 load().catch(e=>document.getElementById('updated').textContent='Dashboard error: '+e);setInterval(load,15000);
 </script></main></body></html>"""
 

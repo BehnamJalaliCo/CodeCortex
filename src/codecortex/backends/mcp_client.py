@@ -50,7 +50,7 @@ class MCPStdioClient:
         self.start()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:  # noqa: ANN001
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
     def start(self) -> None:
@@ -110,7 +110,9 @@ class MCPStdioClient:
             while time.monotonic() < deadline:
                 self._raise_if_exited()
                 try:
-                    message = self._messages.get(timeout=min(0.25, max(0.01, deadline - time.monotonic())))
+                    message = self._messages.get(
+                        timeout=min(0.25, max(0.01, deadline - time.monotonic()))
+                    )
                 except queue.Empty:
                     continue
                 if message.get("id") != request_id:

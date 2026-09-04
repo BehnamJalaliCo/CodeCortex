@@ -221,9 +221,7 @@ def test_retrieval_quality_metrics_and_hit_shapes() -> None:
 
 def _graph(name: str) -> ProjectGraph:
     file_node = GraphNode(id=f"file:{name}", kind="file", name=f"{name}.py", path=f"{name}.py")
-    symbol = GraphNode(
-        id=f"symbol:{name}", kind="function", name=name, path=f"{name}.py", line=1
-    )
+    symbol = GraphNode(id=f"symbol:{name}", kind="function", name=name, path=f"{name}.py", line=1)
     return ProjectGraph(
         nodes=[file_node, symbol],
         edges=[GraphEdge(source=file_node.id, target=symbol.id, kind="contains")],

@@ -45,9 +45,7 @@ class ProjectGraph(BaseModel):
 
     def search(self, query: str, limit: int = 40) -> list[GraphNode]:
         terms = {
-            term.lower().strip(".,:;()[]{}")
-            for term in query.split()
-            if len(term.strip()) > 2
+            term.lower().strip(".,:;()[]{}") for term in query.split() if len(term.strip()) > 2
         }
         scored: list[tuple[int, GraphNode]] = []
         for node in self.nodes:

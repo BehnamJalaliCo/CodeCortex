@@ -4,7 +4,7 @@
 
 ### Context intelligence infrastructure for AI coding agents
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=22&pause=900&center=true&vCenter=true&width=900&lines=Map+the+repository.;Understand+the+architecture.;Retrieve+the+right+context.;Edit+with+impact+awareness.;Remember+what+the+team+learned.;Scale+context+across+nodes.)](https://github.com/BehnamJalaliCo/CodeCortex)
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=24&duration=2500&pause=650&center=true&vCenter=true&repeat=true&width=1000&lines=Map+the+repository.;Resolve+the+relationships.;Retrieve+the+right+evidence.;Understand+the+blast+radius.;Change+with+guardrails.;Remember+what+the+team+learned.;Scale+without+hiding+failure.)](https://github.com/BehnamJalaliCo/CodeCortex)
 
 [![PyPI](https://img.shields.io/pypi/v/codecortex-context-engine?label=PyPI&logo=pypi)](https://pypi.org/project/codecortex-context-engine/)
 [![Python](https://img.shields.io/pypi/pyversions/codecortex-context-engine?logo=python)](https://pypi.org/project/codecortex-context-engine/)
@@ -14,1669 +14,1688 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14379/badge)](https://www.bestpractices.dev/projects/14379)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BehnamJalaliCo/CodeCortex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BehnamJalaliCo/CodeCortex)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+[![Status](https://img.shields.io/badge/status-alpha-orange.svg)](#project-status)
 
-**Map · Understand · Retrieve · Edit · Compress · Remember · Scale**
+**Map · Understand · Retrieve · Explain · Impact · Guard · Validate · Remember · Scale**
+
+[🇬🇧 English](#english) · [🇮🇷 فارسی](#فارسی)
 
 </div>
 
 ---
 
-## Install from PyPI
 
-CodeCortex supports Python 3.11, 3.12, and 3.13.
+<a id="english"></a>
 
-```bash
-python -m pip install --upgrade codecortex-context-engine
-cortex version
-cortex init .
-```
+# 🇬🇧 English
 
-Optional language parser support:
+<div align="center">
 
-```bash
-python -m pip install "codecortex-context-engine[parsers]"
-```
+### Give the coding agent a map before asking it to navigate the codebase.
 
-Optional local neural semantic embeddings:
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=20&duration=3000&pause=850&center=true&vCenter=true&repeat=true&width=980&lines=Repository+map+%E2%86%92+symbols+%E2%86%92+graph+%E2%86%92+history+%E2%86%92+impact.;Task+%E2%86%92+evidence+%E2%86%92+budget+%E2%86%92+agent-ready+context.;Less+noise.+More+provenance.+Safer+change.)](https://github.com/BehnamJalaliCo/CodeCortex)
 
-```bash
-python -m pip install "codecortex-context-engine[semantic]"
-```
+</div>
 
-For development:
+## CodeCortex in one sentence
 
-```bash
-git clone https://github.com/BehnamJalaliCo/CodeCortex.git
-cd CodeCortex
-python -m pip install -e ".[dev]"
-pytest -q
-```
+**CodeCortex turns a software repository into a query-specific evidence system for AI coding agents.**
 
-## Thirty-second start
+It sits between an agent and a codebase. It builds durable intelligence about repository structure, symbols, relationships, Git history, ownership, architecture, team decisions, impact, and validation. For each task, it tries to return the smallest useful evidence package instead of forcing the model to reopen broad parts of the repository and reconstruct the same facts again.
 
-Run CodeCortex inside a repository, build its local intelligence state, and expose the MCP surface to a coding agent.
+CodeCortex is not another general chat UI. It is not a model provider. It does not claim that an agent becomes infallible. It is context infrastructure: a layer that improves what the agent gets to reason with.
 
-```bash
-cortex init .
-cortex index
-cortex doctor
-cortex mcp --path .
-```
+> **Core rule: retrieve evidence before generating confidence.**
 
-A useful first exploration looks like this:
+---
 
-```bash
-cortex architecture
-cortex semantic "authentication and session lifecycle"
-cortex impact AuthService
-cortex workspace-search "payment retry policy"
-```
+## Why this exists
 
-CodeCortex is not another general-purpose chat interface. It is a context engine. Its job is to turn a repository into a query-specific evidence surface so an agent can spend its context window on the code, relationships, decisions, and constraints that matter to the current task.
+A strong coding model can read code. The harder engineering problem is deciding **what deserves attention, what is connected to it, what changed, what is ambiguous, who owns the area, and what can break after a change**.
 
-## What CodeCortex changes
+Without a context engine, the work often looks like this:
 
-A coding agent normally starts each task with a cold repository. It searches filenames, opens broad slices of source, rediscovers architecture, guesses which symbols matter, and uses expensive model context to reconstruct relationships already present in the codebase. That works on small repositories but becomes increasingly inefficient and risky as repositories grow, languages multiply, ownership fragments, and changes cross service or package boundaries.
+<pre>
+search filenames
+→ open broad files
+→ rediscover architecture
+→ guess symbol ownership
+→ infer references
+→ inspect Git manually
+→ guess blast radius
+→ consume a large context window
+→ edit
+→ discover a hidden dependency later
+</pre>
 
-CodeCortex creates a durable intelligence layer between the repository and the agent. Repository structure, semantic symbols, references, dependency edges, Git history, ownership signals, architecture patterns, team memory, task traces, impact estimates, and compact retrieval are available through one coherent surface. The result is not a promise that an agent will always be correct. The result is a better evidence environment in which the agent can reason, verify, and edit.
+CodeCortex changes the stream:
 
-The project follows a simple principle: **retrieve evidence before generating confidence**. If a metric is unavailable, it remains unavailable. If a benchmark did not record a value, CodeCortex does not invent one. If an external integration lacks credentials, the corresponding test is reported as skipped rather than silently treated as passed. Release claims are intended to stay tied to reproducible artifacts.
+<pre>
+task
+→ classify intent
+→ gather repository evidence
+→ rank evidence for this task
+→ preserve provenance and uncertainty
+→ fit evidence into a context budget
+→ expose one agent-facing surface
+→ validate the proposed change
+</pre>
 
-## Architecture at a glance
+The goal is not more context.
+
+**The goal is higher-value evidence per token.**
+
+---
+
+# Architecture
+
+## Live evidence stream
 
 ```mermaid
-flowchart TB
-    A[AI Coding Agent] --> M[MCP / CodeCortex Gateway]
-    M --> R[Adaptive Router]
+flowchart LR
+    A[AI Coding Agent] --> G[CodeCortex Gateway]
+    G --> R[Adaptive Router]
+
     R --> REP[Repository Intelligence]
     R --> SYM[Symbol Intelligence]
     R --> RET[Hybrid Retrieval]
     R --> GIT[Git + PR Intelligence]
     R --> MEM[Project + Team Memory]
     R --> ARC[Architecture + Drift]
-    R --> VAL[Validation + Impact]
-    REP --> CTX[Context Pipeline]
-    SYM --> CTX
-    RET --> CTX
-    GIT --> CTX
-    MEM --> CTX
-    ARC --> CTX
-    VAL --> CTX
-    CTX --> M
-    M --> A
+    R --> IMP[Impact + Validation]
+
+    REP --> E[Evidence Surface]
+    SYM --> E
+    RET --> E
+    GIT --> E
+    MEM --> E
+    ARC --> E
+    IMP --> E
+
+    E --> C[Context Pipeline]
+    C --> B[Rank + Dedup + Slice + Budget]
+    B --> G
+    G --> A
 ```
 
-At distributed scale, the same model extends across authenticated remote MCP endpoints, synchronized memory, persistent vector stores, worker coordination, longitudinal performance history, and organization-level policy.
+The repository remains the source of executable truth. Graphs, memory, semantic retrieval, architecture inference, and summaries help interpretation. They do not replace current source, configuration, and tests.
+
+---
+
+## Current capability map
+
+| Layer | What it does | Why it matters |
+|---|---|---|
+| Repository map | indexes structure and files | gives the agent a bounded map |
+| Multi-language symbols | extracts language-aware units | moves beyond filename search |
+| Tree-aware parsing | preserves structural code units | improves code-level context |
+| Dependency + call graph | records relationships | supports navigation and impact |
+| Cross-file resolution | ranks ambiguous targets | keeps uncertainty visible |
+| Incremental graph | reparses changed state | avoids blind rebuilds |
+| Hybrid retrieval | combines lexical, semantic, structural signals | improves task-specific recall |
+| Context pipeline | ranks, deduplicates, slices, budgets, compacts | spends tokens on useful evidence |
+| Git intelligence | history, blame, churn, ownership | makes change history queryable |
+| PR intelligence | maps diffs to symbols, tests, impact, risk | reviews behavior, not only lines |
+| Impact analysis | walks reverse relationships | estimates blast radius |
+| Architecture inference | infers observable structure with confidence | makes architecture inspectable |
+| Architecture drift | compares structure with a baseline | exposes architectural movement |
+| Project memory | stores durable decisions and facts | preserves rationale |
+| Shared team memory | revisions + conflict-aware shared state | makes team knowledge durable |
+| Multi-repo workspace | federates search and graph evidence | supports systems split across repos |
+| Task traces | records bounded execution evidence | makes routing behavior inspectable |
+| Guarded semantic editing | performs preflight-aware edits | reduces broad unsafe replacements |
+| Native MCP | exposes one stable agent surface | integrates with coding agents |
+| Remote MCP | authenticated remote operation | enables controlled shared use |
+| Persistent vector providers | separates storage from retrieval contract | supports larger deployments |
+| Distributed workers | capabilities + leases + retries | makes node failure explicit |
+| Observatory | health, traces, drift, graph, benchmark, PR signals | makes the engine observable |
+| Precision code intelligence | resolves definitions and references by symbol identity | distinguishes packages that export the same name |
+| Dependency intelligence | separates declared constraints from resolved versions | answers which API the repository actually runs |
+| Structural search and rewrite | matches syntax, previews guarded migrations | finds calls, not comments that mention them |
+| Platform API and console | HTTP surface, jobs, persistence, realtime events | drives CodeCortex from outside the CLI |
+| Python and TypeScript SDKs | typed clients for the platform API | embeds CodeCortex in other tooling |
+| Release evidence | scans, SBOM, signatures, provenance | ties release claims to artifacts |
+
+---
+
+# The CodeCortex Doctrine
+
+These are engineering rules, not marketing slogans.
+
+## Doctrine 01 — Evidence before confidence
+
+A resolved symbol, a semantic match, an inferred edge, a memory entry, and a Git observation are different evidence classes. CodeCortex should not flatten them into one certainty level.
+
+<pre>
+exact evidence      → present as exact
+strong inference    → preserve provenance
+ambiguous inference → keep alternatives visible
+missing evidence    → report missing
+stale evidence      → report stale
+</pre>
+
+## Doctrine 02 — Smallest useful context
+
+The best context package is not the largest package that fits. It is the smallest package that contains enough source, relationships, history, and validation evidence to reason about the current task.
+
+## Doctrine 03 — Source remains source
+
+Memory can explain intent. Git can explain history. Graphs can explain relationships. Retrieval can suggest relevance. Current source, configuration, tests, and reproducible artifacts remain authoritative for executable behavior.
+
+## Doctrine 04 — Uncertainty is information
+
+If two symbols are plausible targets, that ambiguity matters. If architecture is inferred, missing signals matter. If an optional integration cannot run, “unavailable” is more useful than a fabricated success.
+
+## Doctrine 05 — Every change has a blast radius
+
+A small diff can be high risk. A large diff can be mechanical. The useful questions are: which symbols changed, who depends on them, which tests exercise them, who owns the area, and what evidence supports the risk.
+
+## Doctrine 06 — Local-first is a trust decision
+
+Core repository intelligence works locally. Any network boundary, credential, remote tool, quota, policy, and data transfer must remain explicit.
+
+## Doctrine 07 — Reproducibility beats impressive numbers
+
+A benchmark claim without a reproducible specification, pinned revision, environment, measured output, and artifact is not strong evidence.
+
+## Doctrine 08 — Scale through explicit coordination
+
+Workers have identity, capability, leases, failure, retry, and state. Shared memory has synchronization and conflict behavior. Remote tools have authentication and policy.
+
+---
+
+# Quick Start
+
+## Install
+
+CodeCortex supports Python 3.11, 3.12, and 3.13.
+
+<pre>
+python -m pip install --upgrade codecortex-context-engine
+</pre>
+
+Optional parser support:
+
+<pre>
+python -m pip install "codecortex-context-engine[parsers]"
+</pre>
+
+Optional local neural semantic embeddings:
+
+<pre>
+python -m pip install "codecortex-context-engine[semantic]"
+</pre>
+
+## Start inside a repository
+
+<pre>
+cortex init .
+cortex index
+cortex doctor
+
+cortex architecture
+cortex semantic "authentication and session lifecycle"
+cortex impact AuthService
+cortex symbol-history src/auth.py 10 80
+
+cortex mcp --path .
+</pre>
+
+---
+
+# A 30-second mental model
+
+<pre>
+          ┌────────────────────────────┐
+          │       Coding Agent         │
+          └─────────────┬──────────────┘
+                        │ task
+          ┌─────────────▼──────────────┐
+          │        CodeCortex          │
+          │ map · symbols · history    │
+          │ graph · retrieval · memory │
+          │ impact · architecture      │
+          │ validation · policy        │
+          └─────────────┬──────────────┘
+                        │ bounded evidence
+          ┌─────────────▼──────────────┐
+          │       Coding Agent         │
+          │ reasons with a better map  │
+          └────────────────────────────┘
+</pre>
+
+The agent still reasons. CodeCortex changes what it gets to reason **with**.
+
+---
+
+# Task streams
+
+## Bug investigation
 
 ```mermaid
-flowchart LR
-    AG[Agents] --> GW[Remote MCP Gateway]
-    GW --> POL[Auth + Policy + Quotas]
-    POL --> C[Coordinator]
-    C --> W1[Index Worker]
-    C --> W2[Retrieval Worker]
-    C --> W3[Context Worker]
-    W1 --> V[(Persistent Vector Store)]
-    W2 --> V
-    W3 --> SM[(Synchronized Team Memory)]
-    C --> AUD[(Audit + Performance History)]
+sequenceDiagram
+    participant A as Agent
+    participant C as CodeCortex
+    participant R as Repository
+    participant G as Graph
+    participant H as Git/History
+    participant V as Validation
+
+    A->>C: Trace a failing behavior
+    C->>R: locate source and symbols
+    C->>G: resolve callers and dependencies
+    C->>H: inspect recent change and ownership
+    C->>V: identify tests and validation signals
+    C-->>A: compact evidence package + impact
 ```
 
-## Core surfaces
+A useful investigation should answer:
 
-### Repository intelligence
+1. Where is the behavior implemented?
+2. What callers and references participate?
+3. What changed recently?
+4. Which alternate path can invalidate the hypothesis?
+5. Which test would fail if the explanation is wrong?
+6. What is the smallest safe change?
 
-The repository layer provides a structural map instead of forcing an agent to infer everything from raw file search. Incremental indexing keeps the local state aligned with code changes, while dependency and call relationships provide a graph for impact and retrieval. The graph is evidence, not a substitute for source inspection: callers can always move from summarized relationships back to the underlying files and symbols.
+## Pull-request review
 
-### Symbol intelligence and guarded editing
+<pre>
+diff
+→ changed files
+→ changed symbols
+→ downstream impact
+→ affected tests
+→ churn / ownership
+→ architecture movement
+→ risk evidence
+→ review context
+</pre>
 
-CodeCortex exposes symbols, references, language-aware structure, and guarded semantic edits. Python uses the standard AST; optional Tree-sitter parser providers cover additional languages. Editing commands perform semantic preflight reads and constrain paths to the project root.
+PR size is only one signal.
 
-```bash
+## Multi-repository work
+
+<pre>
+frontend repo ───────┐
+backend repo ────────┼── federated evidence ──→ task context
+contracts repo ──────┘
+</pre>
+
+The repositories keep their identity. CodeCortex federates evidence instead of pretending they are one physical codebase.
+
+---
+
+# Intelligence surfaces
+
+<details>
+<summary><b>Repository Intelligence</b> — structure before speculation</summary>
+
+Incremental indexing turns files and program units into durable repository state. Retrieval, architecture inference, impact analysis, and MCP tools can reuse that state instead of rediscovering the whole repository for every request.
+
+</details>
+
+<details>
+<summary><b>Symbol Intelligence</b> — names, containers, signatures, references</summary>
+
+Language-aware parsing extracts program units and keeps container identity where possible. Cross-file resolution intentionally preserves ambiguity and candidate reasons instead of silently choosing a same-name symbol.
+
+</details>
+
+<details>
+<summary><b>Hybrid Retrieval</b> — lexical + semantic + structural</summary>
+
+Code is not ordinary prose. CodeCortex combines lexical evidence, semantic similarity, symbol metadata, and structural context. Context slicing favors meaningful structural units and bounded windows instead of uncontrolled file dumps.
+
+</details>
+
+<details>
+<summary><b>Git & PR Intelligence</b> — code has history</summary>
+
+Current source answers what the code does now. Git explains how it arrived there. History, blame, ownership, churn, and PR analysis add change evidence to the static code model.
+
+</details>
+
+<details>
+<summary><b>Memory</b> — durable rationale, not a truth replacement</summary>
+
+Project memory stores reusable facts and decisions. Team memory adds revisions, actor/source metadata, optimistic concurrency, and conflict behavior. Memory can explain “why,” but current source and tests remain authoritative.
+
+</details>
+
+<details>
+<summary><b>Architecture Intelligence</b> — make structural movement visible</summary>
+
+Architecture inference returns evidence and confidence. A saved fingerprint can be compared with the current graph so new dependency directions, coupling growth, and structural drift become inspectable.
+
+</details>
+
+<details>
+<summary><b>Impact & Validation</b> — reason about blast radius</summary>
+
+Impact analysis walks reverse relationships and affected tests. Validation challenges a proposed change against repository evidence. A risk score is useful only when the evidence behind it stays visible.
+
+</details>
+
+---
+
+# Guarded editing
+
+Current semantic edit operations include:
+
+<pre>
 cortex edit rename src/auth.py AuthService SessionService
 cortex edit replace src/auth.py AuthService/refresh --body-file ./replacement.txt
 cortex edit insert-before src/auth.py AuthService --body-file ./imports.txt
 cortex edit insert-after src/auth.py AuthService --body-file ./helper.txt
-```
+</pre>
 
-### Hybrid retrieval and context compression
+The intended change discipline is:
 
-Retrieval combines lexical, structural, symbol, graph, and optional embedding signals. The context pipeline ranks, deduplicates, budgets, and compacts results for the task. A context engine should not maximize the number of retrieved tokens; it should maximize useful evidence per token while retaining enough surrounding structure for reliable reasoning.
+<pre>
+read enough to understand
+→ estimate impact
+→ mutate narrowly
+→ validate
+</pre>
 
-### Git, PR, and change intelligence
+Not:
 
-History changes how code should be interpreted. A mature module with stable ownership and long-lived contracts deserves different treatment from a recently rewritten experimental package. Git-aware symbol history, blame, pull-request analysis, and impact estimation add change context to the static repository model.
+<pre>
+replace text everywhere
+→ hope tests catch it
+</pre>
 
-### Memory
+---
 
-Project memory stores durable facts and decisions. Shared team memory adds revisions, history, synchronization, and conflict resolution. Memory is intentionally separate from source truth: it can provide rationale and prior decisions, while source and tests remain authoritative for executable behavior.
+# MCP: one agent-facing surface
 
-### Architecture and drift
-
-Architecture inference summarizes observable structure with confidence and evidence. Drift compares current structure with a baseline so teams can detect architectural movement before it becomes invisible convention. The goal is not to enforce a single architecture style. The goal is to make architectural change inspectable.
-
-### Distributed scale
-
-Version 0.5 of the roadmap adds remote shared-memory synchronization, persistent vector database providers, hosted remote MCP with authentication/TLS/quotas/access policy, multi-node indexing and retrieval workers, scheduled longitudinal performance history, and organization-level workspace policy with retained audit evidence.
-
-## One MCP surface
-
-```bash
+<pre>
 cortex mcp --path /path/to/repository
+</pre>
+
+The MCP surface exposes repository mapping, symbol search, references, dependency graph inspection, impact analysis, hybrid retrieval, compact context, architecture intelligence, Git history, PR intelligence, memory, workspace search, traces, validation, and statistics.
+
+| Category | Agent can request |
+|---|---|
+| Repository | map, matching nodes, graph counts |
+| Symbols | program units and locations |
+| References | relationships around a target |
+| Dependencies | local call/import relationships |
+| Impact | direct, indirect, affected-test evidence |
+| Retrieval | semantic/lexical/structural hits |
+| Context | compact evidence under an explicit budget |
+| Architecture | inferred structure and drift |
+| History | Git history, blame, ownership |
+| Pull requests | changed symbols, impact, tests, risk |
+| Memory | project and team knowledge |
+| Workspace | multi-repository search |
+| Traces | execution summaries |
+| Validation | validation evidence |
+| Stats | repository, graph, Git, runtime state |
+
+---
+
+# Distributed operation
+
+```mermaid
+flowchart TB
+    AG[AI Agents] --> GW[Remote MCP Gateway]
+    GW --> AUTH[Authentication]
+    AUTH --> POL[Tool Policy + Quotas]
+    POL --> COORD[Coordinator]
+
+    COORD --> IDX[Index Workers]
+    COORD --> RET[Retrieval Workers]
+    COORD --> CTX[Context Workers]
+
+    IDX --> GRAPH[(Graph State)]
+    RET --> VEC[(Persistent Vector Store)]
+    CTX --> MEM[(Synchronized Team Memory)]
+
+    COORD --> AUDIT[(Audit + Performance History)]
 ```
 
-The MCP application exposes repository mapping, semantic search, symbols, references, dependencies, impact analysis, architecture inference, context construction, project and team memory, PR intelligence, traces, validation, and guarded editing through a consistent contract. The distributed transport can host these capabilities remotely while enforcing principal identity and tool policy.
+Workers advertise capabilities. Work is leased. Expired work can be requeued. Remote operation adds authentication, TLS support, quotas, tool policy, organization/workspace policy, and audit evidence.
 
-## Remote operation
+The dashboard is an observability surface, not an authorization boundary.
 
-Use `cortex-remote` for the distributed service entry point. Remote deployments should terminate TLS with a valid certificate, issue separate bearer credentials per principal, keep tool allow-lists narrow, configure realistic quotas, retain audit records according to organizational policy, and avoid exposing internal indexing services directly to untrusted networks.
+---
 
-The transport validates the endpoint scheme, authenticates before dispatch, applies policy before charging request quota, constrains request body size, and can wrap the server socket with TLS 1.2 or later. Production operators should still place the service behind infrastructure appropriate for their threat model, availability requirements, secrets management, and observability standards.
+# Observatory
 
-## Persistent vector providers
-
-The core includes a dependency-free SQLite vector store with exact cosine search for local or shared-volume deployments. A provider registry allows larger installations to bind another persistent service without changing retrieval callers. This makes the storage boundary explicit: small repositories can remain simple, while larger deployments can adopt a service designed for their scale and operational requirements.
-
-## Multi-node workers
-
-Distributed workers advertise capabilities and coordinate through leases. A coordinator can assign work, detect expired leases, and retry tasks. This model is deliberately narrower than pretending arbitrary machines share one Python process. State, ownership, failure, retry, and observability remain explicit, which is essential when indexing or retrieval spans nodes.
-
-## Security model
-
-Security controls are layered. CI runs dependency auditing and Bandit in addition to CodeQL and security-boundary tests. Release artifacts include checksums, CycloneDX SBOMs, Sigstore bundles, and GitHub build-provenance attestations. Remote transport adds authentication, TLS support, quotas, request limits, and per-principal policy. Organization policy adds role checks, workspace policy, and audit retention.
-
-No single badge proves software is secure. These controls create auditable evidence and reduce classes of preventable mistakes. Consumers should evaluate the project against their own threat model and deployment context.
-
-## Quality model
-
-The repository enforces Ruff and tests across supported Python versions. The main CI coverage gate is 90 percent. A passing coverage number is treated as one quality signal, not as proof of correctness. High-value behavior still needs assertions that would fail for the wrong reason, security boundaries need adversarial tests, and benchmark claims need reproducible measurement.
-
-## Benchmark philosophy
-
-```bash
-python scripts/run_production_benchmark.py
-```
-
-Production benchmark specifications are revision-pinned and designed to preserve missing values as missing. Longitudinal history records reproducible runs so trend discussion can be based on artifacts rather than memory. Regression gates can compare relevant measurements and stop a change when it crosses an explicit policy threshold.
-
-## Observatory
-
-```bash
+<pre>
 cortex dashboard -p /path/to/repository
+</pre>
+
+The local observatory can surface:
+
+<pre>
+backend health
+routing distribution
+context use
+engine latency
+graph hotspots
+task traces
+architecture drift
+benchmark history
+pull-request risk
+</pre>
+
+A context engine should be able to explain its own routing, evidence sources, and failure states.
+
+---
+
+# Security model
+
+| Boundary | Control direction |
+|---|---|
+| Source paths | constrain operations to project root |
+| Semantic edits | preflight + bounded path handling |
+| Task traces | bounded attributes + redaction |
+| Optional backends | process isolation |
+| Remote MCP | authentication before dispatch |
+| Remote tools | policy + allow lists + quotas |
+| Organizations | roles + workspace policy + audit retention |
+| Dependencies | audit + dependency review |
+| Source | static analysis + CodeQL |
+| Releases | checksums + SBOM + signatures + provenance |
+
+Security badges are evidence, not a proof that every deployment is secure. A deployment-specific threat model still matters.
+
+---
+
+# Quality, release, and benchmark doctrine
+
+<pre>
+exact commit
+→ quality matrix
+→ security checks
+→ build
+→ smoke test
+→ checksums
+→ SBOM
+→ signing / attestations
+→ release
+</pre>
+
+A credential-gated integration that cannot run is reported as skipped. It is not counted as success.
+
+Benchmark command:
+
+<pre>
+python scripts/run_production_benchmark.py
+</pre>
+
+A public performance claim should map to a reproducible spec, pinned revision, environment, measured result, and artifact. CodeCortex does not invent token savings, speedups, task-success gains, or accuracy percentages.
+
+---
+
+# Evidence Fusion Layer
+
+> **Status: shipped.** Implementation, tests, benchmarks, documentation, and provenance records are in the repository. All three layers are optional: CodeCortex Core runs with none of them installed and no network access.
+
+CodeCortex fuses several kinds of evidence and tells the agent, for every result, **how that result was established**. Each record carries a categorical trust tier — `exact`, `near_exact`, `structural`, `inferred_high`, `inferred`, `weak` — plus a provenance label. Two properties are enforced in code, not merely documented: evidence cannot claim the `exact` tier unless it is fresh, and stale exact evidence never outranks fresh structural evidence.
+
+See `docs/EVIDENCE_FUSION.md` for the full model, fallback behavior, and security boundaries.
+
+## 1 — Precision Code Intelligence
+
+The current system can parse symbols, build relationships, and preserve ambiguity during cross-file resolution.
+
+The next precision layer is designed to consume exact compiler/indexer-grade occurrence evidence when available and distinguish:
+
+<pre>
+exact definition/reference
+        vs
+structural relationship
+        vs
+heuristic candidate
+        vs
+lexical coincidence
+</pre>
+
+Target capabilities:
+
+- precise definition lookup;
+- precise references;
+- implementation relationships;
+- symbol occurrences;
+- stale-index detection;
+- graph fusion with exact/inferred provenance;
+- graceful fallback to current intelligence.
+
+```mermaid
+flowchart TB
+    EX[Exact index/compiler evidence] --> F[Evidence Fusion]
+    SEM[Language-aware semantic evidence] --> F
+    AST[AST / structural evidence] --> F
+    GR[Graph inference] --> F
+    HEU[Heuristic resolution] --> F
+    LEX[Lexical match] --> F
+    F --> CTX[Task-ranked context]
 ```
 
-The local dashboard surfaces backend health, routing distribution, context usage, engine latency, graph hotspots, task traces, architecture drift, benchmark history, and pull-request risk. It binds to loopback by default. The dashboard is an observability surface, not an authorization boundary; remote exposure should be handled deliberately.
+The engine should know not only what it found, but how strongly it knows it.
 
-## Docker
+## 2 — Version-Aware Dependency Intelligence
 
-```bash
-docker build --target core -t codecortex:core .
-docker build --target full -t codecortex:full .
-docker compose up dashboard
+The next dependency layer is designed to join:
+
+<pre>
+manifest
++ lockfile
++ declared version
++ resolved version
++ repository usage
++ version-relevant documentation evidence
+</pre>
+
+Target questions:
+
+- Which version is actually resolved?
+- Is the requested API valid for that version?
+- Is the current pattern outdated?
+- Which migration guidance applies?
+- Which local files and symbols use the dependency?
+
+External documentation remains optional, minimal-data, credential-aware, cached, and explicit. Core repository intelligence must continue to work offline. Repository source should not leave the system by default just to answer a dependency question.
+
+## 3 — Structural Search & Guarded Rewrite
+
+The next structural layer is designed for syntax-aware patterns:
+
+<pre>
+find calls shaped like old_api($X)
+find constructors using a legacy option shape
+find handlers that swallow a particular exception form
+find all structural usages before a framework migration
+</pre>
+
+Target mutation lifecycle:
+
+```mermaid
+flowchart LR
+    Q[Migration request] --> S[Structural search]
+    S --> M[Match set]
+    M --> I[Impact analysis]
+    I --> P[Rewrite preview]
+    P --> A{Mutation allowed?}
+    A -- No --> STOP[Preview only]
+    A -- Yes --> W[Bounded rewrite]
+    W --> R[Reindex]
+    R --> V[Validation]
+    V --> POST[Post-change impact]
 ```
 
-The release pipeline also publishes container images with provenance attestations when a release is cut.
+A rewrite should be previewed, bounded, content-hash checked, policy-authorized, reindexed, and validated.
 
-## Agent-oriented command map
+## Evidence fusion in practice
 
-```bash
+Example, covered end to end by an acceptance test:
+
+> Migrate authentication middleware to the supported API for the version used by this repository.
+
+Stream:
+
+<pre>
+dependency manifest
+→ resolved version
+→ current middleware
+→ precise references
+→ version-relevant documentation
+→ structural occurrences
+→ affected symbols and tests
+→ guarded rewrite preview
+→ mutation policy
+→ validation
+→ post-change impact
+</pre>
+
+The value is not three disconnected tools. The value is one context engine joining **local code truth, precise relationships, dependency-version evidence, structural patterns, history, and validation** for one task.
+
+Measured on fixture repositories (`cortex evidence-benchmark`; strategies that cannot be measured are reported as skipped, never estimated):
+
+| Case | Heuristic baseline | Evidence-backed |
+|---|---|---|
+| Duplicate symbol names | precision 0.50 | precision **1.00** |
+| Resolved dependency version | precision 0.00 | precision **1.00** |
+| Mechanical migration | precision 0.50 | precision **1.00** |
+
+---
+
+# Shipped capabilities and fallback behavior
+
+| Capability | Shipped | Fallback when the optional layer is absent |
+|---|---|---|
+| Symbols | language-aware parsing + exact occurrence fusion | structural and heuristic resolution |
+| References | exact/inferred provenance hierarchy | graph + semantic intelligence |
+| Dependencies | resolved version + optional documentation evidence | local manifest facts, explicit docs-unavailable state |
+| Search | lexical + semantic + structural + AST-pattern search | lexical and symbol search |
+| Editing | guarded semantic edits + preview-first structural migrations | guarded semantic edits only |
+| Impact | evidence-quality-aware impact | graph walk + affected tests |
+| Context | unified cross-provider evidence ranking | ranked, deduplicated, budgeted chunks |
+| Confidence | provenance + trust tiers | explicit ambiguity |
+| Offline behavior | local-first | unchanged; no network is ever required |
+
+---
+
+# Operating profiles
+
+| Profile | Typical shape |
+|---|---|
+| Solo | local repository → local index → local memory → MCP agent |
+| Team | shared conventions → team memory → workspace → PR intelligence |
+| Large workspace | many repos → federated evidence → remote authenticated surface |
+| Distributed | gateway → policy → coordinator → workers → persistent stores |
+
+---
+
+# What CodeCortex is not
+
+| It is not | Why |
+|---|---|
+| a general chat application | its job is repository context intelligence |
+| a model provider | it improves evidence available to models |
+| a magic correctness layer | models and humans can still be wrong |
+| a replacement for tests | validation needs executable evidence |
+| a replacement for Git | it makes history useful to context |
+| a vector database product | storage is a replaceable boundary |
+| a source-truth replacement | source remains authoritative |
+| a benchmark marketing page | claims require reproducible artifacts |
+
+---
+
+# Design rules
+
+1. **Typed boundaries.**
+2. **Replaceable intelligence.**
+3. **Local operation first.**
+4. **Explicit context budgets.**
+5. **Project-scoped state by default.**
+6. **Provenance survives summarization.**
+7. **Mutation is a separate privilege.**
+8. **Distributed state is explicit.**
+9. **Missing evidence stays missing.**
+10. **Release claims map to evidence.**
+
+---
+
+# Command map
+
+<pre>
 cortex init .
 cortex index
-cortex semantic "authentication refresh"
-cortex impact AuthService
 cortex architecture
 cortex architecture-drift
+cortex semantic "authentication refresh"
+cortex impact AuthService
 cortex symbol-history src/auth.py 10 80
 cortex pr main --head HEAD
 cortex workspace-add backend ../backend
 cortex workspace-search "payment service"
+cortex definition src/auth.py 12 7
+cortex references src/auth.py 12 7
+cortex implementations src/auth.py 12 7
+cortex precision-status
+cortex dependency next
+cortex dependency-docs next "middleware authentication"
+cortex structural-search --lang python --pattern 'old_api($X)'
+cortex rewrite-preview --lang python --pattern 'old_api($X)' --replacement 'new_api($X)'
+cortex rewrite-apply &lt;preview-id&gt;
 cortex benchmark
+cortex evidence-benchmark
 cortex dashboard
 cortex doctor
-```
-
-## Operating principles
-
-1. **Evidence before confidence.** A summary should be traceable to repository, graph, Git, benchmark, policy, or test evidence.
-2. **Smallest useful context.** Retrieval should focus on the task instead of flooding an agent with files.
-3. **Explicit boundaries.** Local state, remote state, workers, vector stores, credentials, and organizational policy have clear contracts.
-4. **Reproducibility over marketing.** Performance and release claims should map to repeatable workflows.
-5. **Source remains source.** Memory and inference help interpretation but do not replace executable code and tests.
-6. **Security is layered.** Authentication, policy, limits, static analysis, dependency auditing, tests, and signed release evidence address different failure classes.
-7. **Scale through coordination.** Distributed scale is modeled as explicit services and leases rather than imaginary shared process state.
-
-## Documentation map
-
-- `docs/ARCHITECTURE.md` — architectural overview.
-- `docs/DISTRIBUTED.md` — distributed-scale design and operation.
-- `docs/ADVANCED_INTELLIGENCE.md` — advanced intelligence surfaces.
-- `docs/INTEGRATIONS.md` — agent integrations.
-- `docs/QUALITY.md` — measurable quality policy.
-- `docs/TESTING.md` — test strategy.
-- `docs/RELEASE.md` — release mechanics and evidence.
-- `docs/LICENSING.md` — licensing model and third-party treatment.
-- `THIRD_PARTY_NOTICES.md` — third-party notices.
-- `SECURITY.md` — private vulnerability reporting.
-- `CONTRIBUTING.md` — contribution workflow.
-- `GOVERNANCE.md` — project decision model.
-- `ROADMAP.md` — shipped capability milestones.
-
-## Global engineering field guide
-
-The remainder of this README is intentionally extensive. It is a field guide for applying a context engine to real engineering work rather than a list of feature slogans. Each playbook starts from a repository archetype and a mission, then describes how to build evidence, use CodeCortex surfaces, validate the result, and reason about distributed or organizational operation. The examples are patterns, not guarantees; adapt commands, policies, and tests to the repository in front of you.
-
-
-## Python monolith playbooks
-
-
-### 1. Onboarding — Python monolith
-
-**Mission.** The objective is to build an accurate mental model before editing. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 2. Bug Investigation — Python monolith
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 3. Feature Implementation — Python monolith
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 4. Large Refactor — Python monolith
-
-**Mission.** The objective is to change structure without losing behavior. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“identify all references, dependency edges, ownership, tests, and migration order.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means semantic edits and tests show that contracts remain intact throughout staged changes. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 5. Dependency Migration — Python monolith
-
-**Mission.** The objective is to upgrade or replace a dependency with bounded risk. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“find imports, wrappers, version assumptions, configuration, and affected tests.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means old dependency usage is removed or intentionally isolated and compatibility checks pass. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 6. Security Review — Python monolith
-
-**Mission.** The objective is to reason about trust boundaries and dangerous data flows. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map authentication, authorization, input validation, secrets, and externally reachable paths.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means findings are tied to concrete code paths and mitigations have regression tests. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 7. Pull-Request Review — Python monolith
-
-**Mission.** The objective is to evaluate a change by impact rather than diff size. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“summarize changed symbols, downstream impact, missing tests, architecture drift, and risk.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means review comments are evidence-backed and focus on behavior, contracts, and blast radius. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 8. Performance Investigation — Python monolith
-
-**Mission.** The objective is to connect latency or throughput symptoms to the responsible code path. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map hot paths, dependencies, repeated work, caching, and benchmark history.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the optimization is measured reproducibly and does not trade correctness for speed. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 9. Architecture Evolution — Python monolith
-
-**Mission.** The objective is to move toward a target architecture while preserving operational continuity. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“compare current structure, inferred architecture, drift, coupling, and migration seams.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means each step has a reversible boundary and architecture evidence improves rather than merely moving files. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 10. Incident Response — Python monolith
-
-**Mission.** The objective is to reduce time to a reliable code-level hypothesis. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 11. Release Readiness — Python monolith
-
-**Mission.** The objective is to decide whether a revision is safe and reproducible to ship. In a Python monolith, the context engine must account for deep internal coupling, mature business rules, and a large historical surface. The dominant failure mode to keep visible is hidden cross-module impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“collect CI, security, benchmark, packaging, dependency, and change-impact evidence.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the exact release commit passes declared gates and artifacts can be independently verified. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a Python monolith, where hidden cross-module impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-## polyglot monorepo playbooks
-
-
-### 12. Onboarding — polyglot monorepo
-
-**Mission.** The objective is to build an accurate mental model before editing. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 13. Bug Investigation — polyglot monorepo
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 14. Feature Implementation — polyglot monorepo
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 15. Large Refactor — polyglot monorepo
-
-**Mission.** The objective is to change structure without losing behavior. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“identify all references, dependency edges, ownership, tests, and migration order.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means semantic edits and tests show that contracts remain intact throughout staged changes. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 16. Dependency Migration — polyglot monorepo
-
-**Mission.** The objective is to upgrade or replace a dependency with bounded risk. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“find imports, wrappers, version assumptions, configuration, and affected tests.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means old dependency usage is removed or intentionally isolated and compatibility checks pass. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 17. Security Review — polyglot monorepo
-
-**Mission.** The objective is to reason about trust boundaries and dangerous data flows. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map authentication, authorization, input validation, secrets, and externally reachable paths.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means findings are tied to concrete code paths and mitigations have regression tests. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 18. Pull-Request Review — polyglot monorepo
-
-**Mission.** The objective is to evaluate a change by impact rather than diff size. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“summarize changed symbols, downstream impact, missing tests, architecture drift, and risk.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means review comments are evidence-backed and focus on behavior, contracts, and blast radius. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 19. Performance Investigation — polyglot monorepo
-
-**Mission.** The objective is to connect latency or throughput symptoms to the responsible code path. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map hot paths, dependencies, repeated work, caching, and benchmark history.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the optimization is measured reproducibly and does not trade correctness for speed. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 20. Architecture Evolution — polyglot monorepo
-
-**Mission.** The objective is to move toward a target architecture while preserving operational continuity. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“compare current structure, inferred architecture, drift, coupling, and migration seams.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means each step has a reversible boundary and architecture evidence improves rather than merely moving files. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 21. Incident Response — polyglot monorepo
-
-**Mission.** The objective is to reduce time to a reliable code-level hypothesis. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 22. Release Readiness — polyglot monorepo
-
-**Mission.** The objective is to decide whether a revision is safe and reproducible to ship. In a polyglot monorepo, the context engine must account for multiple languages, build systems, ownership boundaries, and shared packages. The dominant failure mode to keep visible is cross-language dependency drift. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“collect CI, security, benchmark, packaging, dependency, and change-impact evidence.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the exact release commit passes declared gates and artifacts can be independently verified. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a polyglot monorepo, where cross-language dependency drift can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-## microservices platform playbooks
-
-
-### 23. Onboarding — microservices platform
-
-**Mission.** The objective is to build an accurate mental model before editing. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 24. Bug Investigation — microservices platform
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 25. Feature Implementation — microservices platform
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 26. Large Refactor — microservices platform
-
-**Mission.** The objective is to change structure without losing behavior. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“identify all references, dependency edges, ownership, tests, and migration order.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means semantic edits and tests show that contracts remain intact throughout staged changes. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 27. Dependency Migration — microservices platform
-
-**Mission.** The objective is to upgrade or replace a dependency with bounded risk. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“find imports, wrappers, version assumptions, configuration, and affected tests.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means old dependency usage is removed or intentionally isolated and compatibility checks pass. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 28. Security Review — microservices platform
-
-**Mission.** The objective is to reason about trust boundaries and dangerous data flows. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map authentication, authorization, input validation, secrets, and externally reachable paths.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means findings are tied to concrete code paths and mitigations have regression tests. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 29. Pull-Request Review — microservices platform
-
-**Mission.** The objective is to evaluate a change by impact rather than diff size. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“summarize changed symbols, downstream impact, missing tests, architecture drift, and risk.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means review comments are evidence-backed and focus on behavior, contracts, and blast radius. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 30. Performance Investigation — microservices platform
-
-**Mission.** The objective is to connect latency or throughput symptoms to the responsible code path. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map hot paths, dependencies, repeated work, caching, and benchmark history.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the optimization is measured reproducibly and does not trade correctness for speed. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 31. Architecture Evolution — microservices platform
-
-**Mission.** The objective is to move toward a target architecture while preserving operational continuity. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“compare current structure, inferred architecture, drift, coupling, and migration seams.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means each step has a reversible boundary and architecture evidence improves rather than merely moving files. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 32. Incident Response — microservices platform
-
-**Mission.** The objective is to reduce time to a reliable code-level hypothesis. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 33. Release Readiness — microservices platform
-
-**Mission.** The objective is to decide whether a revision is safe and reproducible to ship. In a microservices platform, the context engine must account for many independently deployed services with contracts and operational coupling. The dominant failure mode to keep visible is distributed change impact. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“collect CI, security, benchmark, packaging, dependency, and change-impact evidence.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the exact release commit passes declared gates and artifacts can be independently verified. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a microservices platform, where distributed change impact can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-## TypeScript product frontend playbooks
-
-
-### 34. Onboarding — TypeScript product frontend
-
-**Mission.** The objective is to build an accurate mental model before editing. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 35. Bug Investigation — TypeScript product frontend
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 36. Feature Implementation — TypeScript product frontend
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 37. Large Refactor — TypeScript product frontend
-
-**Mission.** The objective is to change structure without losing behavior. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“identify all references, dependency edges, ownership, tests, and migration order.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means semantic edits and tests show that contracts remain intact throughout staged changes. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 38. Dependency Migration — TypeScript product frontend
-
-**Mission.** The objective is to upgrade or replace a dependency with bounded risk. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“find imports, wrappers, version assumptions, configuration, and affected tests.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means old dependency usage is removed or intentionally isolated and compatibility checks pass. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 39. Security Review — TypeScript product frontend
-
-**Mission.** The objective is to reason about trust boundaries and dangerous data flows. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map authentication, authorization, input validation, secrets, and externally reachable paths.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means findings are tied to concrete code paths and mitigations have regression tests. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 40. Pull-Request Review — TypeScript product frontend
-
-**Mission.** The objective is to evaluate a change by impact rather than diff size. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“summarize changed symbols, downstream impact, missing tests, architecture drift, and risk.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means review comments are evidence-backed and focus on behavior, contracts, and blast radius. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 41. Performance Investigation — TypeScript product frontend
-
-**Mission.** The objective is to connect latency or throughput symptoms to the responsible code path. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map hot paths, dependencies, repeated work, caching, and benchmark history.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the optimization is measured reproducibly and does not trade correctness for speed. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 42. Architecture Evolution — TypeScript product frontend
-
-**Mission.** The objective is to move toward a target architecture while preserving operational continuity. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“compare current structure, inferred architecture, drift, coupling, and migration seams.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means each step has a reversible boundary and architecture evidence improves rather than merely moving files. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 43. Incident Response — TypeScript product frontend
-
-**Mission.** The objective is to reduce time to a reliable code-level hypothesis. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 44. Release Readiness — TypeScript product frontend
-
-**Mission.** The objective is to decide whether a revision is safe and reproducible to ship. In a TypeScript product frontend, the context engine must account for component trees, state management, API clients, tests, and rapid UI iteration. The dominant failure mode to keep visible is behavior hidden across component boundaries. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“collect CI, security, benchmark, packaging, dependency, and change-impact evidence.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the exact release commit passes declared gates and artifacts can be independently verified. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a TypeScript product frontend, where behavior hidden across component boundaries can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-## mobile-connected backend playbooks
-
-
-### 45. Onboarding — mobile-connected backend
-
-**Mission.** The objective is to build an accurate mental model before editing. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 46. Bug Investigation — mobile-connected backend
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 47. Feature Implementation — mobile-connected backend
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 48. Large Refactor — mobile-connected backend
-
-**Mission.** The objective is to change structure without losing behavior. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“identify all references, dependency edges, ownership, tests, and migration order.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means semantic edits and tests show that contracts remain intact throughout staged changes. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 49. Dependency Migration — mobile-connected backend
-
-**Mission.** The objective is to upgrade or replace a dependency with bounded risk. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“find imports, wrappers, version assumptions, configuration, and affected tests.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means old dependency usage is removed or intentionally isolated and compatibility checks pass. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 50. Security Review — mobile-connected backend
-
-**Mission.** The objective is to reason about trust boundaries and dangerous data flows. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map authentication, authorization, input validation, secrets, and externally reachable paths.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means findings are tied to concrete code paths and mitigations have regression tests. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 51. Pull-Request Review — mobile-connected backend
-
-**Mission.** The objective is to evaluate a change by impact rather than diff size. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“summarize changed symbols, downstream impact, missing tests, architecture drift, and risk.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means review comments are evidence-backed and focus on behavior, contracts, and blast radius. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 52. Performance Investigation — mobile-connected backend
-
-**Mission.** The objective is to connect latency or throughput symptoms to the responsible code path. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map hot paths, dependencies, repeated work, caching, and benchmark history.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the optimization is measured reproducibly and does not trade correctness for speed. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 53. Architecture Evolution — mobile-connected backend
-
-**Mission.** The objective is to move toward a target architecture while preserving operational continuity. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“compare current structure, inferred architecture, drift, coupling, and migration seams.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means each step has a reversible boundary and architecture evidence improves rather than merely moving files. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 54. Incident Response — mobile-connected backend
-
-**Mission.** The objective is to reduce time to a reliable code-level hypothesis. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 55. Release Readiness — mobile-connected backend
-
-**Mission.** The objective is to decide whether a revision is safe and reproducible to ship. In a mobile-connected backend, the context engine must account for versioned APIs, compatibility windows, authentication, and client release lag. The dominant failure mode to keep visible is breaking older clients. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“collect CI, security, benchmark, packaging, dependency, and change-impact evidence.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the exact release commit passes declared gates and artifacts can be independently verified. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a mobile-connected backend, where breaking older clients can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-## data platform playbooks
-
-
-### 56. Onboarding — data platform
-
-**Mission.** The objective is to build an accurate mental model before editing. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 57. Bug Investigation — data platform
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 58. Feature Implementation — data platform
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 59. Large Refactor — data platform
-
-**Mission.** The objective is to change structure without losing behavior. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“identify all references, dependency edges, ownership, tests, and migration order.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means semantic edits and tests show that contracts remain intact throughout staged changes. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 60. Dependency Migration — data platform
-
-**Mission.** The objective is to upgrade or replace a dependency with bounded risk. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“find imports, wrappers, version assumptions, configuration, and affected tests.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means old dependency usage is removed or intentionally isolated and compatibility checks pass. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 61. Security Review — data platform
-
-**Mission.** The objective is to reason about trust boundaries and dangerous data flows. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map authentication, authorization, input validation, secrets, and externally reachable paths.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means findings are tied to concrete code paths and mitigations have regression tests. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 62. Pull-Request Review — data platform
-
-**Mission.** The objective is to evaluate a change by impact rather than diff size. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“summarize changed symbols, downstream impact, missing tests, architecture drift, and risk.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means review comments are evidence-backed and focus on behavior, contracts, and blast radius. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 63. Performance Investigation — data platform
-
-**Mission.** The objective is to connect latency or throughput symptoms to the responsible code path. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map hot paths, dependencies, repeated work, caching, and benchmark history.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the optimization is measured reproducibly and does not trade correctness for speed. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 64. Architecture Evolution — data platform
-
-**Mission.** The objective is to move toward a target architecture while preserving operational continuity. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“compare current structure, inferred architecture, drift, coupling, and migration seams.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means each step has a reversible boundary and architecture evidence improves rather than merely moving files. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 65. Incident Response — data platform
-
-**Mission.** The objective is to reduce time to a reliable code-level hypothesis. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 66. Release Readiness — data platform
-
-**Mission.** The objective is to decide whether a revision is safe and reproducible to ship. In a data platform, the context engine must account for pipelines, schemas, transformations, lineage, schedulers, and storage contracts. The dominant failure mode to keep visible is silent downstream data breakage. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“collect CI, security, benchmark, packaging, dependency, and change-impact evidence.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the exact release commit passes declared gates and artifacts can be independently verified. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a data platform, where silent downstream data breakage can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-## machine-learning repository playbooks
-
-
-### 67. Onboarding — machine-learning repository
-
-**Mission.** The objective is to build an accurate mental model before editing. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 68. Bug Investigation — machine-learning repository
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 69. Feature Implementation — machine-learning repository
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 70. Large Refactor — machine-learning repository
-
-**Mission.** The objective is to change structure without losing behavior. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“identify all references, dependency edges, ownership, tests, and migration order.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means semantic edits and tests show that contracts remain intact throughout staged changes. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 71. Dependency Migration — machine-learning repository
-
-**Mission.** The objective is to upgrade or replace a dependency with bounded risk. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“find imports, wrappers, version assumptions, configuration, and affected tests.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the symbol index to identify the relevant structural neighborhood, then use the dependency and call graph to find named program elements rather than relying only on textual coincidence. Add the hybrid semantic retrieval so the agent can see upstream and downstream relationships. Bring in the Git and ownership intelligence when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the project and team memory to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means old dependency usage is removed or intentionally isolated and compatibility checks pass. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 72. Security Review — machine-learning repository
-
-**Mission.** The objective is to reason about trust boundaries and dangerous data flows. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map authentication, authorization, input validation, secrets, and externally reachable paths.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the dependency and call graph to identify the relevant structural neighborhood, then use the hybrid semantic retrieval to find named program elements rather than relying only on textual coincidence. Add the Git and ownership intelligence so the agent can see upstream and downstream relationships. Bring in the project and team memory when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the architecture inference and drift to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means findings are tied to concrete code paths and mitigations have regression tests. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 73. Pull-Request Review — machine-learning repository
-
-**Mission.** The objective is to evaluate a change by impact rather than diff size. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“summarize changed symbols, downstream impact, missing tests, architecture drift, and risk.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the hybrid semantic retrieval to identify the relevant structural neighborhood, then use the Git and ownership intelligence to find named program elements rather than relying only on textual coincidence. Add the project and team memory so the agent can see upstream and downstream relationships. Bring in the architecture inference and drift when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the impact analysis to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means review comments are evidence-backed and focus on behavior, contracts, and blast radius. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 74. Performance Investigation — machine-learning repository
-
-**Mission.** The objective is to connect latency or throughput symptoms to the responsible code path. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map hot paths, dependencies, repeated work, caching, and benchmark history.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the Git and ownership intelligence to identify the relevant structural neighborhood, then use the project and team memory to find named program elements rather than relying only on textual coincidence. Add the architecture inference and drift so the agent can see upstream and downstream relationships. Bring in the impact analysis when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the validation to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the optimization is measured reproducibly and does not trade correctness for speed. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 75. Architecture Evolution — machine-learning repository
-
-**Mission.** The objective is to move toward a target architecture while preserving operational continuity. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“compare current structure, inferred architecture, drift, coupling, and migration seams.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the project and team memory to identify the relevant structural neighborhood, then use the architecture inference and drift to find named program elements rather than relying only on textual coincidence. Add the impact analysis so the agent can see upstream and downstream relationships. Bring in the validation when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the task traces to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means each step has a reversible boundary and architecture evidence improves rather than merely moving files. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 76. Incident Response — machine-learning repository
-
-**Mission.** The objective is to reduce time to a reliable code-level hypothesis. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“connect the symptom to owners, recent changes, dependency paths, configuration, and recovery options.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the architecture inference and drift to identify the relevant structural neighborhood, then use the impact analysis to find named program elements rather than relying only on textual coincidence. Add the validation so the agent can see upstream and downstream relationships. Bring in the task traces when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the repository map to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the response has an evidence trail, a bounded mitigation, and follow-up tests or monitors. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 77. Release Readiness — machine-learning repository
-
-**Mission.** The objective is to decide whether a revision is safe and reproducible to ship. In a machine-learning repository, the context engine must account for training code, evaluation, serving paths, datasets, and experiment infrastructure. The dominant failure mode to keep visible is training-serving skew. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“collect CI, security, benchmark, packaging, dependency, and change-impact evidence.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the impact analysis to identify the relevant structural neighborhood, then use the validation to find named program elements rather than relying only on textual coincidence. Add the task traces so the agent can see upstream and downstream relationships. Bring in the repository map when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the symbol index to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the exact release commit passes declared gates and artifacts can be independently verified. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a machine-learning repository, where training-serving skew can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-## financial service playbooks
-
-
-### 78. Onboarding — financial service
-
-**Mission.** The objective is to build an accurate mental model before editing. In a financial service, the context engine must account for transactional correctness, auditability, authorization, and strict change controls. The dominant failure mode to keep visible is incorrect money movement or incomplete audit evidence. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“show the architecture, central symbols, ownership, and the safest starting points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the validation to identify the relevant structural neighborhood, then use the task traces to find named program elements rather than relying only on textual coincidence. Add the repository map so the agent can see upstream and downstream relationships. Bring in the symbol index when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the dependency and call graph to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means a new engineer can explain the main execution path and locate evidence without reading the whole repository. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a financial service, where incorrect money movement or incomplete audit evidence can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 79. Bug Investigation — financial service
-
-**Mission.** The objective is to localize a defect and its real dependency neighborhood. In a financial service, the context engine must account for transactional correctness, auditability, authorization, and strict change controls. The dominant failure mode to keep visible is incorrect money movement or incomplete audit evidence. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“trace the failing behavior, references, callers, recent history, and likely impact.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the task traces to identify the relevant structural neighborhood, then use the repository map to find named program elements rather than relying only on textual coincidence. Add the symbol index so the agent can see upstream and downstream relationships. Bring in the dependency and call graph when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the hybrid semantic retrieval to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the proposed fix addresses the causal path and targeted tests cover the affected behavior. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a financial service, where incorrect money movement or incomplete audit evidence can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-
-### 80. Feature Implementation — financial service
-
-**Mission.** The objective is to find the smallest architecture-consistent change set. In a financial service, the context engine must account for transactional correctness, auditability, authorization, and strict change controls. The dominant failure mode to keep visible is incorrect money movement or incomplete audit evidence. A useful agent prompt is not “understand everything.” Start with a bounded request such as: **“map the existing feature pattern, related symbols, tests, and extension points.”** That request gives routing and retrieval a concrete reason to include or exclude evidence.
-
-**Build the evidence surface.** Begin with the repository map to identify the relevant structural neighborhood, then use the symbol index to find named program elements rather than relying only on textual coincidence. Add the dependency and call graph so the agent can see upstream and downstream relationships. Bring in the hybrid semantic retrieval when history, prior decisions, or task-specific retrieval can disambiguate intent. Finally use the Git and ownership intelligence to challenge the proposed change before editing. The sequence is deliberately evidence-first: source, relationships, history, and validation should narrow the hypothesis before a large model is asked to synthesize a solution.
-
-**Practical sequence.** Initialize and refresh repository state with `cortex init .` and `cortex index`. Ask `cortex architecture` for the observable architecture, then run a semantic query focused on the mission. Use `cortex impact <target>` for a candidate symbol or module. When the task involves a change already represented in Git, use PR and symbol-history intelligence to inspect recent movement. If the repository participates in a multi-repository workspace, search the workspace before assuming a local reference is the end of the dependency chain. Record only durable decisions in memory; do not copy transient debugging guesses into long-lived team knowledge.
-
-**Change discipline.** Prefer the smallest change that respects existing boundaries. For edits that can be expressed semantically, use the guarded edit surface so the operation receives a preflight read and project-root path constraints. If manual editing is more appropriate, retain the same reasoning discipline: identify the target, enumerate references, estimate impact, change behavior, and validate the affected contracts. A broad mechanical rewrite without dependency evidence can create a large diff while still missing the one dynamic path that matters.
-
-**Validation.** Success means the feature follows existing boundaries and adds evidence at the right test level. Run the repository's targeted tests first, then the broader test and lint gates required by the project. For security-sensitive paths, include negative cases and authorization boundaries rather than testing only the happy path. For performance work, compare reproducible measurements instead of using a single anecdotal run. For releases, tie conclusions to the exact commit that produced the artifacts. Code coverage is useful evidence, but a percentage cannot prove the assertions are meaningful.
-
-**Scale and governance.** In a distributed deployment, keep worker ownership, leases, retry behavior, synchronized memory conflicts, persistent vector storage, and remote MCP policy explicit. Remote access should use separate principals, TLS, narrow tool permissions, realistic quotas, and retained audit evidence. If an organization policy denies a remote tool, changing the code path to bypass the policy is not a workaround; the policy itself must be reviewed by an authorized administrator. These controls matter especially in a financial service, where incorrect money movement or incomplete audit evidence can make an apparently local optimization or refactor operationally expensive.
-
-**Review questions.** What source lines support the current hypothesis? Which references or dependency edges could invalidate the local view? What changed recently and who understands the area? Which test would fail if the proposed explanation were wrong? Which context was excluded and why? Is there a smaller change with the same outcome? If the answer depends on a missing metric or unavailable integration, is that uncertainty stated explicitly rather than converted into a confident claim? Those questions keep CodeCortex useful as infrastructure for reasoning instead of turning it into a source of decorative summaries.
-
-## Maintainer and project ownership
-
-CodeCortex is maintained by **Behnam Jalali**. CodeCortex-owned material in this repository is licensed under Apache-2.0. Third-party material remains subject to its applicable copyright and license terms; see `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `docs/LICENSING.md` for the repository's licensing records.
-
-## Contributing
-
-Contributions should preserve the project's evidence-first standard. Run formatting/linting and tests before opening a pull request, add tests for changed behavior, document public contract changes, and avoid weakening security or release controls merely to make a check green. See `CONTRIBUTING.md` and `CODE_OF_CONDUCT.md`.
-
-## Vulnerability reporting
-
-Do not disclose suspected vulnerabilities in a public issue when the report contains exploit details or sensitive information. Follow the private reporting process in `SECURITY.md`.
-
-## Release integrity
-
-Releases are built by repository workflows. The pipeline validates tag/version identity, runs the quality matrix, builds wheel and source distribution artifacts, smoke-tests the wheel, generates checksums and a CycloneDX SBOM, signs release payloads through Sigstore, produces GitHub provenance attestations, creates or updates the GitHub release, publishes to PyPI through Trusted Publishing when enabled, and publishes attested container images.
-
-## License
-
-Apache License 2.0. See `LICENSE` and the accompanying notices for details.
+cortex mcp --path .
+</pre>
 
 ---
+
+# Docker
+
+<pre>
+docker build --target core -t codecortex:core .
+docker build --target full -t codecortex:full .
+docker compose up dashboard
+</pre>
+
+Containerization does not replace authentication, TLS, policy, secret management, or an appropriate deployment threat model.
+
+---
+
+# Project status
+
+CodeCortex is currently **alpha**.
+
+Public interfaces are still evolving. Breaking changes can occur before 1.0. Evaluate the project by what the current code, tests, CI, documentation, and reproducible artifacts demonstrate.
+
+---
+
+# Engineering use cases
+
+| Mission | Start with | Verify with |
+|---|---|---|
+| Onboarding | architecture + repository map | source + execution paths |
+| Bug investigation | semantic + symbols + history | targeted tests |
+| Feature work | existing pattern + dependencies | architecture + tests |
+| Refactor | references + impact | staged edits + contract tests |
+| Dependency migration | imports + usage + assumptions | compatibility checks |
+| Security review | trust boundaries + call paths | negative/adversarial tests |
+| PR review | changed symbols + impact | affected tests + drift |
+| Release readiness | CI + security + benchmark evidence | exact release artifacts |
+
+---
+
+# Documentation
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Distributed operation](docs/DISTRIBUTED.md)
+- [Advanced intelligence](docs/ADVANCED_INTELLIGENCE.md)
+- [Evidence fusion](docs/EVIDENCE_FUSION.md)
+- [Provenance records](docs/provenance/)
+- [Integrations](docs/INTEGRATIONS.md)
+- [Quality](docs/QUALITY.md)
+- [Testing](docs/TESTING.md)
+- [Release](docs/RELEASE.md)
+- [Licensing](docs/LICENSING.md)
+- [Security](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+- [Governance](GOVERNANCE.md)
+- [Roadmap](ROADMAP.md)
+
+Third-party license and provenance obligations remain in the repository's legal/provenance files. Product-facing documentation uses CodeCortex-native capability names.
+
+---
+
+# FAQ
+
+<details><summary><b>Does CodeCortex replace the coding model?</b></summary>
+No. The model still reasons and generates. CodeCortex improves the evidence environment.
+</details>
+
+<details><summary><b>Does Core require a remote service?</b></summary>
+No. Core is local-first. Optional providers can introduce explicit remote boundaries.
+</details>
+
+<details><summary><b>Does a huge context window make this unnecessary?</b></summary>
+No. Window size and evidence quality are different problems.
+</details>
+
+<details><summary><b>Is every relationship exact?</b></summary>
+No. Inferred relationships preserve ambiguity. The planned precision layer is intended to add exact evidence when available.
+</details>
+
+<details><summary><b>Can it work across repositories?</b></summary>
+Yes. Workspaces federate evidence while preserving repository identity.
+</details>
+
+<details><summary><b>Can it edit code?</b></summary>
+Guarded semantic editing is available through the appropriate backend surface. Read intelligence and mutation remain separate privileges.
+</details>
+
+---
+
+# Maintainer, contribution, and license
+
+CodeCortex is built and maintained by **Behnam Jalali**.
+
+<pre>
+python -m pip install -e ".[dev]"
+ruff check .
+mypy src/codecortex
+pytest
+</pre>
+
+CodeCortex-owned material is licensed under Apache License 2.0. Third-party material remains subject to the license and attribution records kept in the repository.
+
+See [LICENSE](LICENSE), [NOTICE](NOTICE), [SECURITY.md](SECURITY.md), and [CONTRIBUTING.md](CONTRIBUTING.md).
 
 <div align="center">
 
 ### CodeCortex Context Engine
 
-**Give coding agents a map before asking them to navigate the codebase.**
+**Give the agent a map before asking it to navigate the codebase.**
 
-Built and maintained by **Behnam Jalali**.
+**Less noise. More evidence. Inspectable change.**
+
+</div>
+
+
+---
+
+
+<a id="فارسی"></a>
+
+<div dir="rtl">
+
+# 🇮🇷 فارسی
+
+<div align="center">
+
+## 🧠 موتور کانتکست CodeCortex
+
+### قبل از اینکه ایجنت حدس بزند، ریپو باید بتواند خودش را توضیح بدهد.
+
+[![Typing SVG](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=600&size=20&duration=3000&pause=850&center=true&vCenter=true&repeat=true&width=980&lines=%D9%86%D9%82%D8%B4%D9%87+%D8%B1%DB%8C%D9%BE%D9%88+%E2%86%92+%D8%B3%DB%8C%D9%85%D8%A8%D9%84+%E2%86%92+%DA%AF%D8%B1%D8%A7%D9%81+%E2%86%92+%D8%AA%D8%A7%D8%B1%DB%8C%D8%AE%DA%86%D9%87+%E2%86%92+%D8%A7%D8%AB%D8%B1.;%D8%AA%D8%B3%DA%A9+%E2%86%92+%D8%B4%D9%88%D8%A7%D9%87%D8%AF+%E2%86%92+%D8%A8%D9%88%D8%AF%D8%AC%D9%87+%E2%86%92+%DA%A9%D8%A7%D9%86%D8%AA%DA%A9%D8%B3%D8%AA+%D8%A2%D9%85%D8%A7%D8%AF%D9%87+%D8%A7%DB%8C%D8%AC%D9%86%D8%AA.;%D9%86%D9%88%DB%8C%D8%B2+%DA%A9%D9%85%D8%AA%D8%B1.+%D8%B4%D9%88%D8%A7%D9%87%D8%AF+%D8%A8%DB%8C%D8%B4%D8%AA%D8%B1.+%D8%AA%D8%BA%DB%8C%DB%8C%D8%B1+%D8%A7%D9%85%D9%86%E2%80%8C%D8%AA%D8%B1.)](https://github.com/BehnamJalaliCo/CodeCortex)
+
+</div>
+
+## CodeCortex در یک جمله
+
+**CodeCortex یک ریپوی نرم‌افزاری را به یک سیستم شواهدِ مخصوص همان سؤال تبدیل می‌کند تا ایجنت برنامه‌نویسی به‌جای حدس زدن، با نقشه و مدرک جلو برود.**
+
+CodeCortex بین ایجنت و کدبیس می‌ایستد. از ساختار ریپو، سیمبل‌ها، رابطه‌ها، تاریخچه Git، ownership، معماری، تصمیم‌های تیم، impact و validation یک لایه هوشمندی ماندگار می‌سازد. بعد برای هر تسک تلاش می‌کند کوچک‌ترین بسته evidence مفید را برگرداند، نه اینکه مدل را مجبور کند هر بار نصف ریپو را باز کند و همان واقعیت‌ها را دوباره از صفر بسازد.
+
+این پروژه یک چت‌بات دیگر نیست. model provider هم نیست. قرار نیست ادعا کند ایجنت را بدون خطا می‌کند. CodeCortex زیرساخت کانتکست است؛ یعنی چیزی که کیفیت اطلاعات ورودی به reasoning ایجنت را بهتر می‌کند.
+
+> **قاعده اصلی: اول evidence را پیدا کن، بعد با confidence حرف بزن.**
+
+---
+
+## چرا اصلاً به چنین چیزی نیاز داریم؟
+
+مدل قوی می‌تواند کد بخواند. مسئله سخت مهندسی این است که بداند **کدام کد ارزش توجه دارد، چه چیزی به آن وصل است، چه چیزی عوض شده، کجا ambiguity داریم، مالک آن بخش کیست و اگر تغییر اشتباه باشد چه چیزی می‌شکند**.
+
+بدون موتور کانتکست، جریان معمولاً این شکلی می‌شود:
+
+<pre>
+جست‌وجوی اسم فایل
+→ باز کردن فایل‌های زیاد
+→ کشف دوباره معماری
+→ حدس زدن مالکیت سیمبل
+→ حدس referenceها
+→ بررسی دستی Git
+→ حدس blast radius
+→ مصرف کانتکست زیاد
+→ ویرایش
+→ کشف یک dependency پنهان در مرحله بعد
+</pre>
+
+CodeCortex جریان را عوض می‌کند:
+
+<pre>
+تسک
+→ تشخیص intent
+→ جمع‌آوری evidence ریپو
+→ rank کردن برای همین تسک
+→ حفظ provenance و uncertainty
+→ جا دادن evidence داخل context budget
+→ ارائه از یک سطح واحد به ایجنت
+→ validation تغییر پیشنهادی
+</pre>
+
+هدف کانتکست بیشتر نیست.
+
+**هدف evidence مفیدتر به ازای هر توکن است.**
+
+---
+
+# معماری سیستم
+
+## استریم زنده Evidence
+
+```mermaid
+flowchart LR
+    A[AI Coding Agent] --> G[CodeCortex Gateway]
+    G --> R[Adaptive Router]
+
+    R --> REP[Repository Intelligence]
+    R --> SYM[Symbol Intelligence]
+    R --> RET[Hybrid Retrieval]
+    R --> GIT[Git + PR Intelligence]
+    R --> MEM[Project + Team Memory]
+    R --> ARC[Architecture + Drift]
+    R --> IMP[Impact + Validation]
+
+    REP --> E[Evidence Surface]
+    SYM --> E
+    RET --> E
+    GIT --> E
+    MEM --> E
+    ARC --> E
+    IMP --> E
+
+    E --> C[Context Pipeline]
+    C --> B[Rank + Dedup + Slice + Budget]
+    B --> G
+    G --> A
+```
+
+حقیقت اجرایی همچنان سورس فعلی، کانفیگ و تست است. Graph، memory، semantic retrieval، architecture inference و summary برای فهم بهتر هستند؛ جای source truth را نمی‌گیرند.
+
+---
+
+## نقشه قابلیت‌های فعلی
+
+| لایه | چه کاری می‌کند | چرا مهم است |
+|---|---|---|
+| Repository map | ساختار و فایل‌ها را index می‌کند | به ایجنت نقشه محدود می‌دهد |
+| سیمبل چندزبانه | program unit زبان‌آگاه استخراج می‌کند | از filename search جلوتر می‌رود |
+| Tree-aware parsing | ساختار کد را حفظ می‌کند | context کدنویسی بهتر می‌شود |
+| Dependency + call graph | رابطه کد را ثبت می‌کند | navigation و impact ممکن می‌شود |
+| Cross-file resolution | target مبهم را rank می‌کند | uncertainty پنهان نمی‌شود |
+| Incremental graph | فقط state تغییرکرده را parse می‌کند | rebuild کور کم می‌شود |
+| Hybrid retrieval | lexical + semantic + structural | recall مربوط به تسک بهتر می‌شود |
+| Context pipeline | rank + dedup + slice + budget + compact | توکن صرف evidence مفید می‌شود |
+| Git intelligence | history + blame + churn + ownership | تغییرات queryable می‌شوند |
+| PR intelligence | diff را به symbol + test + impact + risk وصل می‌کند | review رفتاری می‌شود |
+| Impact analysis | reverse relationship را دنبال می‌کند | blast radius دیده می‌شود |
+| Architecture inference | ساختار را با confidence می‌فهمد | معماری inspectable می‌شود |
+| Architecture drift | current را با baseline مقایسه می‌کند | حرکت معماری دیده می‌شود |
+| Project memory | fact و تصمیم ماندگار | rationale حفظ می‌شود |
+| Shared team memory | revision + conflict-aware state | دانش تیم ماندگار می‌شود |
+| Multi-repo workspace | search و graph را federate می‌کند | سیستم چندریپویی قابل فهم می‌شود |
+| Task trace | execution evidence محدود | رفتار routing inspectable می‌شود |
+| Guarded semantic editing | edit با preflight | replace ناامن کمتر می‌شود |
+| Native MCP | یک سطح پایدار برای ایجنت | integration ساده‌تر می‌شود |
+| Remote MCP | عملیات authenticated ریموت | استفاده اشتراکی کنترل می‌شود |
+| Persistent vector providers | storage از contract retrieval جداست | deployment بزرگ‌تر scale می‌شود |
+| Distributed workers | capability + lease + retry | failure نود واقعی مدل می‌شود |
+| Observatory | health + trace + drift + graph + benchmark | خود engine observable می‌شود |
+| Precision code intelligence | تعریف و ارجاع را با هویت سیمبل resolve می‌کند | پکیج‌هایی که نام یکسان export می‌کنند از هم جدا می‌شوند |
+| Dependency intelligence | constraint اعلام‌شده را از نسخه resolve‌شده جدا می‌کند | مشخص می‌کند ریپو واقعاً کدام API را اجرا می‌کند |
+| Structural search و rewrite | بر اساس syntax تطبیق می‌دهد و migration کنترل‌شده preview می‌کند | فراخوانی واقعی را پیدا می‌کند، نه کامنتی که اسمش را آورده |
+| Platform API و کنسول | سطح HTTP، job، persistence و رویداد زنده | اجرای CodeCortex از بیرون CLI |
+| SDK پایتون و TypeScript | کلاینت تایپ‌دار برای Platform API | جاسازی CodeCortex در ابزارهای دیگر |
+| Release evidence | scan + SBOM + signature + provenance | claim به artifact وصل می‌شود |
+
+---
+
+# دکترین CodeCortex
+
+این‌ها slogan نیستند؛ قانون مهندسی‌اند.
+
+## دکترین ۰۱ — اول evidence، بعد confidence
+
+سیمبل resolveشده، semantic match، edge استنباطی، memory و Git observation کیفیت یکسان ندارند. CodeCortex نباید همه را با یک certainty تحویل دهد.
+
+<pre>
+شاهد دقیق          → دقیق نمایش بده
+استنباط قوی        → provenance را نگه دار
+استنباط مبهم       → گزینه‌های دیگر را نگه دار
+شاهد وجود ندارد    → missing گزارش کن
+شاهد قدیمی است     → stale گزارش کن
+</pre>
+
+## دکترین ۰۲ — کوچک‌ترین کانتکستِ کافی
+
+بهترین context package بزرگ‌ترین چیزی نیست که جا شود. بهترین package کم‌حجم‌ترین چیزی است که برای همان task سورس، رابطه، history و validation کافی داشته باشد.
+
+## دکترین ۰۳ — Source همچنان Source است
+
+Memory می‌تواند دلیل را توضیح دهد. Git تاریخچه را. Graph رابطه را. Retrieval ارتباط احتمالی را. اما رفتار اجرایی را سورس فعلی، کانفیگ، تست و artifact قابل بازتولید مشخص می‌کند.
+
+## دکترین ۰۴ — ابهام خودش اطلاعات است
+
+اگر دو سیمبل target محتمل‌اند، این ambiguity مهم است. اگر معماری inference است، missing signal مهم است. اگر integration اختیاری در دسترس نیست، unavailable بهتر از success ساختگی است.
+
+## دکترین ۰۵ — هر تغییر Blast Radius دارد
+
+diff کوچک می‌تواند پرریسک باشد و diff بزرگ می‌تواند مکانیکی باشد. سؤال درست این است: چه سیمبلی تغییر کرد، چه کسی به آن وابسته است، چه تستی مسیر را پوشش می‌دهد، مالک بخش کیست و risk بر چه evidenceای بنا شده.
+
+## دکترین ۰۶ — Local-first یک تصمیم اعتماد است
+
+Core intelligence local کار می‌کند. هر network boundary، credential، remote tool، quota، policy و data transfer باید صریح باشد.
+
+## دکترین ۰۷ — Reproducibility از عدد جذاب مهم‌تر است
+
+Benchmark بدون spec، revision، environment، measured output و artifact evidence قوی نیست.
+
+## دکترین ۰۸ — Scale با Coordination صریح ساخته می‌شود
+
+Worker هویت، capability، lease، failure، retry و state دارد. Shared memory sync و conflict دارد. ابزار remote auth و policy دارد.
+
+---
+
+# شروع سریع
+
+## نصب
+
+CodeCortex از Python 3.11، 3.12 و 3.13 پشتیبانی می‌کند.
+
+<pre>
+python -m pip install --upgrade codecortex-context-engine
+</pre>
+
+Parser اختیاری:
+
+<pre>
+python -m pip install "codecortex-context-engine[parsers]"
+</pre>
+
+Embedding معنایی local اختیاری:
+
+<pre>
+python -m pip install "codecortex-context-engine[semantic]"
+</pre>
+
+## داخل یک ریپو شروع کن
+
+<pre>
+cortex init .
+cortex index
+cortex doctor
+
+cortex architecture
+cortex semantic "authentication and session lifecycle"
+cortex impact AuthService
+cortex symbol-history src/auth.py 10 80
+
+cortex mcp --path .
+</pre>
+
+---
+
+# مدل ذهنی ۳۰ ثانیه‌ای
+
+<pre>
+          ┌────────────────────────────┐
+          │       Coding Agent         │
+          └─────────────┬──────────────┘
+                        │ task
+          ┌─────────────▼──────────────┐
+          │        CodeCortex          │
+          │ map · symbols · history    │
+          │ graph · retrieval · memory │
+          │ impact · architecture      │
+          │ validation · policy        │
+          └─────────────┬──────────────┘
+                        │ evidence محدود
+          ┌─────────────▼──────────────┐
+          │       Coding Agent         │
+          │  با نقشه بهتر reasoning می‌کند │
+          └────────────────────────────┘
+</pre>
+
+ایجنت هنوز خودش reasoning می‌کند. CodeCortex چیزی را بهتر می‌کند که ایجنت **با آن** reasoning می‌کند.
+
+---
+
+# استریم‌های Task
+
+## Bug Investigation
+
+```mermaid
+sequenceDiagram
+    participant A as Agent
+    participant C as CodeCortex
+    participant R as Repository
+    participant G as Graph
+    participant H as Git/History
+    participant V as Validation
+
+    A->>C: Trace a failing behavior
+    C->>R: locate source and symbols
+    C->>G: resolve callers and dependencies
+    C->>H: inspect recent change and ownership
+    C->>V: identify tests and validation signals
+    C-->>A: compact evidence package + impact
+```
+
+Investigation خوب باید جواب دهد:
+
+1. رفتار کجا پیاده شده؟
+2. چه caller و referenceهایی در مسیرند؟
+3. اخیراً چه چیزی تغییر کرده؟
+4. چه مسیر دیگری hypothesis را رد می‌کند؟
+5. کدام test باید fail شود اگر توضیح اشتباه است؟
+6. کوچک‌ترین تغییر امن چیست؟
+
+## Pull Request Review
+
+<pre>
+diff
+→ فایل تغییرکرده
+→ سیمبل تغییرکرده
+→ downstream impact
+→ affected tests
+→ churn / ownership
+→ حرکت معماری
+→ risk evidence
+→ review context
+</pre>
+
+اندازه PR فقط یکی از signalهاست.
+
+## Multi-Repository
+
+<pre>
+frontend repo ───────┐
+backend repo ────────┼── federated evidence ──→ task context
+contracts repo ──────┘
+</pre>
+
+هویت ریپوها حفظ می‌شود. Evidence federate می‌شود، نه اینکه وانمود کنیم همه یک codebase فیزیکی هستند.
+
+---
+
+# سطح‌های هوشمندی
+
+<details>
+<summary><b>Repository Intelligence</b> — قبل از حدس ساختار را ببین</summary>
+
+Incremental indexing فایل‌ها و program unitها را به state ماندگار تبدیل می‌کند. Retrieval، معماری، impact و MCP می‌توانند همان state را دوباره استفاده کنند.
+
+</details>
+
+<details>
+<summary><b>Symbol Intelligence</b> — اسم، container، signature و reference</summary>
+
+Parsing زبان‌آگاه program unit را استخراج می‌کند. Cross-file resolution ambiguity و دلیل candidateها را نگه می‌دارد و same-name symbol را بی‌صدا یکی فرض نمی‌کند.
+
+</details>
+
+<details>
+<summary><b>Hybrid Retrieval</b> — lexical + semantic + structural</summary>
+
+کد prose معمولی نیست. CodeCortex semantic similarity را با lexical evidence، metadata سیمبل و structural context ترکیب می‌کند و به‌جای file dump، slicing محدود می‌دهد.
+
+</details>
+
+<details>
+<summary><b>Git & PR Intelligence</b> — کد تاریخ دارد</summary>
+
+Source می‌گوید الان چه اتفاقی می‌افتد. Git می‌گوید چطور به اینجا رسیده. History، blame، ownership، churn و PR analysis شواهد تغییر را به مدل static اضافه می‌کنند.
+
+</details>
+
+<details>
+<summary><b>Memory</b> — rationale ماندگار، نه جایگزین Truth</summary>
+
+Project memory fact و decision را نگه می‌دارد. Team memory revision، actor/source metadata و conflict behavior دارد. Memory «چرا» را نگه می‌دارد ولی از source و test معتبرتر فرض نمی‌شود.
+
+</details>
+
+<details>
+<summary><b>Architecture Intelligence</b> — حرکت ساختاری را قابل دیدن کن</summary>
+
+Architecture inference evidence و confidence برمی‌گرداند. Fingerprint ذخیره‌شده با graph فعلی مقایسه می‌شود تا dependency direction و coupling drift دیده شود.
+
+</details>
+
+<details>
+<summary><b>Impact & Validation</b> — Blast Radius را بفهم</summary>
+
+Impact relationship معکوس و affected test را دنبال می‌کند. Validation تغییر پیشنهادی را مقابل evidence ریپو challenge می‌کند.
+
+</details>
+
+---
+
+# ویرایش کنترل‌شده
+
+عملیات semantic فعلی:
+
+<pre>
+cortex edit rename src/auth.py AuthService SessionService
+cortex edit replace src/auth.py AuthService/refresh --body-file ./replacement.txt
+cortex edit insert-before src/auth.py AuthService --body-file ./imports.txt
+cortex edit insert-after src/auth.py AuthService --body-file ./helper.txt
+</pre>
+
+دکترین تغییر:
+
+<pre>
+به‌اندازه کافی بخوان
+→ impact را بفهم
+→ محدود mutate کن
+→ validate کن
+</pre>
+
+نه:
+
+<pre>
+همه‌جا replace کن
+→ امیدوار باش testها بگیرند
+</pre>
+
+---
+
+# MCP: یک سطح واحد برای ایجنت
+
+<pre>
+cortex mcp --path /path/to/repository
+</pre>
+
+MCP نقشه ریپو، symbol search، reference، dependency graph، impact، hybrid retrieval، compact context، architecture، Git، PR، memory، workspace، trace، validation و stats را ارائه می‌دهد.
+
+| دسته | درخواست ایجنت |
+|---|---|
+| Repository | map، node، graph count |
+| Symbols | program unit و location |
+| References | رابطه اطراف target |
+| Dependencies | call/import محلی |
+| Impact | direct، indirect، affected test |
+| Retrieval | semantic/lexical/structural hit |
+| Context | evidence با budget صریح |
+| Architecture | structure + drift |
+| History | Git + blame + ownership |
+| Pull requests | symbol + impact + test + risk |
+| Memory | دانش پروژه و تیم |
+| Workspace | search چندریپویی |
+| Traces | execution summary |
+| Validation | validation evidence |
+| Stats | repo + graph + Git + runtime |
+
+---
+
+# عملیات توزیع‌شده
+
+```mermaid
+flowchart TB
+    AG[AI Agents] --> GW[Remote MCP Gateway]
+    GW --> AUTH[Authentication]
+    AUTH --> POL[Tool Policy + Quotas]
+    POL --> COORD[Coordinator]
+
+    COORD --> IDX[Index Workers]
+    COORD --> RET[Retrieval Workers]
+    COORD --> CTX[Context Workers]
+
+    IDX --> GRAPH[(Graph State)]
+    RET --> VEC[(Persistent Vector Store)]
+    CTX --> MEM[(Synchronized Team Memory)]
+
+    COORD --> AUDIT[(Audit + Performance History)]
+```
+
+Worker capability اعلام می‌کند، work lease می‌شود و expired work می‌تواند requeue شود. Remote operation می‌تواند auth، TLS، quota، tool policy، organization/workspace policy و audit evidence داشته باشد.
+
+Dashboard سطح observability است، نه authorization.
+
+---
+
+# Observatory
+
+<pre>
+cortex dashboard -p /path/to/repository
+</pre>
+
+Observatory می‌تواند این‌ها را نشان دهد:
+
+<pre>
+backend health
+routing distribution
+context use
+engine latency
+graph hotspots
+task traces
+architecture drift
+benchmark history
+pull-request risk
+</pre>
+
+موتور کانتکست باید بتواند routing، منبع evidence و failure state خودش را توضیح دهد.
+
+---
+
+# مدل امنیت
+
+| مرز | کنترل |
+|---|---|
+| Source path | محدود به project root |
+| Semantic edit | preflight + path boundary |
+| Task trace | bounded attribute + redaction |
+| Backend اختیاری | process isolation |
+| Remote MCP | auth قبل از dispatch |
+| Remote tools | policy + allow list + quota |
+| Organization | role + workspace policy + audit retention |
+| Dependency | audit + dependency review |
+| Source | static analysis + CodeQL |
+| Release | checksum + SBOM + signature + provenance |
+
+Badge امنیتی evidence است، نه تضمین امنیت همه deploymentها. Threat model مخصوص محیط همچنان لازم است.
+
+---
+
+# دکترین Quality، Release و Benchmark
+
+<pre>
+commit دقیق
+→ quality matrix
+→ security checks
+→ build
+→ smoke test
+→ checksum
+→ SBOM
+→ signature / attestation
+→ release
+</pre>
+
+Integrationای که credential ندارد باید skipped گزارش شود، نه success.
+
+Benchmark:
+
+<pre>
+python scripts/run_production_benchmark.py
+</pre>
+
+Claim performance باید به spec بازتولیدپذیر، revision پین‌شده، environment، measured result و artifact وصل باشد. CodeCortex نباید token saving، speedup، task success یا accuracy ساختگی منتشر کند.
+
+---
+
+# لایه Evidence Fusion
+
+> **وضعیت: منتشر شده.** implementation، test، benchmark، documentation و سوابق provenance همگی داخل ریپو هستند. هر سه لایه اختیاری‌اند: هسته CodeCortex بدون هیچ‌کدام از آن‌ها و بدون دسترسی شبکه کار می‌کند.
+
+CodeCortex چند نوع evidence را با هم ترکیب می‌کند و برای هر نتیجه می‌گوید **آن نتیجه چطور اثبات شده است**. هر رکورد یک trust tier مشخص دارد — `exact`، `near_exact`، `structural`، `inferred_high`، `inferred`، `weak` — به‌همراه برچسب provenance. دو قاعده در خودِ کد اجرا می‌شوند، نه فقط در مستندات: هیچ evidence‌ای تا وقتی تازه نباشد نمی‌تواند ادعای `exact` کند، و evidence قدیمی هرگز بالاتر از evidence ساختاری تازه رتبه نمی‌گیرد.
+
+مدل کامل، رفتار fallback و مرزهای امنیتی در `docs/EVIDENCE_FUSION.md` آمده است.
+
+## ۱ — Precision Code Intelligence
+
+سیستم فعلی symbol parse می‌کند، relationship می‌سازد و ambiguity cross-file را نگه می‌دارد.
+
+لایه precision بعدی قرار است در صورت وجود evidence دقیق compiler/indexer-grade فرق این‌ها را بداند:
+
+<pre>
+definition/reference دقیق
+        با
+relationship ساختاری
+        با
+candidate heuristic
+        با
+lexical coincidence
+</pre>
+
+قابلیت‌های هدف:
+
+- definition دقیق؛
+- reference دقیق؛
+- implementation relationship؛
+- occurrence سیمبل؛
+- stale-index detection؛
+- fusion گراف با provenance دقیق/استنباطی؛
+- fallback به intelligence فعلی.
+
+```mermaid
+flowchart TB
+    EX[Exact index/compiler evidence] --> F[Evidence Fusion]
+    SEM[Language-aware semantic evidence] --> F
+    AST[AST / structural evidence] --> F
+    GR[Graph inference] --> F
+    HEU[Heuristic resolution] --> F
+    LEX[Lexical match] --> F
+    F --> CTX[Task-ranked context]
+```
+
+سیستم باید فقط نداند چه پیدا کرده؛ باید بداند **چقدر دقیق می‌داند**.
+
+## ۲ — Dependency Intelligence با آگاهی از نسخه
+
+لایه بعدی dependency قرار است این‌ها را کنار هم بگذارد:
+
+<pre>
+manifest
++ lockfile
++ نسخه declared
++ نسخه resolved
++ usage داخل repository
++ documentation مربوط به همان نسخه
+</pre>
+
+سؤال‌های هدف:
+
+- نسخه واقعی resolveشده چیست؟
+- API پیشنهادی برای همین نسخه معتبر است؟
+- pattern فعلی قدیمی است؟
+- migration guidance مرتبط چیست؟
+- کدام file و symbol از dependency استفاده می‌کند؟
+
+Documentation بیرونی باید optional، minimal-data، credential-aware، cacheشده و explicit باشد. Core باید offline هم کار کند. سورس ریپو نباید برای جواب dependency question به‌صورت پیش‌فرض از سیستم خارج شود.
+
+## ۳ — Structural Search و Guarded Rewrite
+
+لایه structural برای patternهای syntax-aware:
+
+<pre>
+callهایی با شکل old_api($X)
+constructor با option قدیمی
+handler با exception pattern خاص
+همه usageهای ساختاری قبل از migration
+</pre>
+
+جریان mutation هدف:
+
+```mermaid
+flowchart LR
+    Q[Migration request] --> S[Structural search]
+    S --> M[Match set]
+    M --> I[Impact analysis]
+    I --> P[Rewrite preview]
+    P --> A{Mutation allowed?}
+    A -- No --> STOP[Preview only]
+    A -- Yes --> W[Bounded rewrite]
+    W --> R[Reindex]
+    R --> V[Validation]
+    V --> POST[Post-change impact]
+```
+
+Rewrite باید preview، bound، content-hash check، policy authorization، reindex و validation داشته باشد.
+
+## مقصد واقعی: Evidence Fusion
+
+مثال task آینده:
+
+> Middleware احراز هویت را به API درست برای نسخه‌ای که همین پروژه استفاده می‌کند migrate کن.
+
+استریم مطلوب:
+
+<pre>
+dependency manifest
+→ نسخه resolved
+→ middleware فعلی
+→ reference دقیق
+→ documentation مربوط به نسخه
+→ structural occurrence
+→ symbol و test متاثر
+→ guarded rewrite preview
+→ mutation policy
+→ validation
+→ impact بعد از تغییر
+</pre>
+
+ارزش اصلی سه ابزار جدا نیست. ارزش اصلی یک context engine است که **حقیقت محلی کد، رابطه دقیق، نسخه dependency، pattern ساختاری، history و validation** را برای یک task به یک package تبدیل کند.
+
+---
+
+# وضعیت فعلی و رفتار fallback
+
+| قابلیت | منتشر شده | fallback وقتی لایه اختیاری نصب نیست |
+|---|---|---|
+| Symbol | parsing زبان‌آگاه + exact occurrence fusion | resolution ساختاری و heuristic |
+| Reference | hierarchy دقیق/استنباطی | graph + semantic intelligence |
+| Dependency | resolved version + مستندات اختیاری | فقط اطلاعات manifest محلی + وضعیت صریح «مستندات در دسترس نیست» |
+| Search | lexical + semantic + structural + AST-pattern | جست‌وجوی lexical و symbol |
+| Editing | ویرایش کنترل‌شده + migration مبتنی بر preview | فقط ویرایش semantic کنترل‌شده |
+| Impact | impact آگاه از کیفیت evidence | graph walk + affected test |
+| Context | رتبه‌بندی یکپارچه بین provider‌ها | ranked + dedup + budget |
+| Confidence | provenance + trust tier | ambiguity صریح |
+| Offline | local-first | بدون تغییر؛ شبکه هرگز الزامی نیست |
+
+---
+
+# پروفایل‌های استفاده
+
+| پروفایل | شکل معمول |
+|---|---|
+| Solo | local repo → local index → local memory → MCP agent |
+| Team | convention مشترک → team memory → workspace → PR intelligence |
+| Large workspace | چند repo → federated evidence → remote authenticated surface |
+| Distributed | gateway → policy → coordinator → worker → persistent store |
+
+---
+
+# CodeCortex چه چیزی نیست؟
+
+| نیست | دلیل |
+|---|---|
+| چت عمومی | کارش repository context intelligence است |
+| model provider | evidence مدل را بهتر می‌کند |
+| لایه جادویی correctness | مدل و انسان هنوز اشتباه می‌کنند |
+| جای test | validation evidence اجرایی می‌خواهد |
+| جای Git | history را به context تبدیل می‌کند |
+| vector database product | storage قابل تعویض است |
+| جای source truth | source authoritative می‌ماند |
+| صفحه تبلیغ benchmark | claim artifact می‌خواهد |
+
+---
+
+# قوانین طراحی
+
+1. **Boundary typed.**
+2. **Intelligence قابل تعویض.**
+3. **Local-first.**
+4. **Context budget صریح.**
+5. **State پروژه‌ای به‌صورت پیش‌فرض.**
+6. **Provenance بعد از summary هم باقی می‌ماند.**
+7. **Mutation privilege جداست.**
+8. **Distributed state صریح است.**
+9. **Evidence گمشده ساخته نمی‌شود.**
+10. **Claim انتشار evidence می‌خواهد.**
+
+---
+
+# نقشه دستورات
+
+<pre>
+cortex init .
+cortex index
+cortex architecture
+cortex architecture-drift
+cortex semantic "authentication refresh"
+cortex impact AuthService
+cortex symbol-history src/auth.py 10 80
+cortex pr main --head HEAD
+cortex workspace-add backend ../backend
+cortex workspace-search "payment service"
+cortex definition src/auth.py 12 7
+cortex references src/auth.py 12 7
+cortex precision-status
+cortex dependency next
+cortex dependency-docs next "middleware authentication"
+cortex structural-search --lang python --pattern 'old_api($X)'
+cortex rewrite-preview --lang python --pattern 'old_api($X)' --replacement 'new_api($X)'
+cortex rewrite-apply &lt;preview-id&gt;
+cortex benchmark
+cortex evidence-benchmark
+cortex dashboard
+cortex doctor
+cortex mcp --path .
+</pre>
+
+---
+
+# Docker
+
+<pre>
+docker build --target core -t codecortex:core .
+docker build --target full -t codecortex:full .
+docker compose up dashboard
+</pre>
+
+Containerization جای auth، TLS، policy، secret management و threat model مناسب را نمی‌گیرد.
+
+---
+
+# وضعیت پروژه
+
+CodeCortex فعلاً **Alpha** است.
+
+interfaceهای عمومی هنوز تکامل پیدا می‌کنند و قبل از 1.0 breaking change ممکن است. پروژه را باید با چیزی سنجید که code، test، CI، documentation و artifact قابل بازتولید واقعاً نشان می‌دهند.
+
+---
+
+# سناریوهای مهندسی
+
+| مأموریت | شروع | Verify |
+|---|---|---|
+| Onboarding | architecture + repository map | source + execution path |
+| Bug investigation | semantic + symbol + history | targeted test |
+| Feature | pattern موجود + dependency | architecture + test |
+| Refactor | reference + impact | staged edit + contract test |
+| Dependency migration | import + usage + assumption | compatibility check |
+| Security review | trust boundary + call path | negative/adversarial test |
+| PR review | changed symbol + impact | affected test + drift |
+| Release readiness | CI + security + benchmark | artifact commit دقیق |
+
+---
+
+# مستندات
+
+- [Architecture](docs/ARCHITECTURE.md)
+- [Distributed](docs/DISTRIBUTED.md)
+- [Advanced Intelligence](docs/ADVANCED_INTELLIGENCE.md)
+- [Evidence Fusion](docs/EVIDENCE_FUSION.md)
+- [Provenance](docs/provenance/)
+- [Integrations](docs/INTEGRATIONS.md)
+- [Quality](docs/QUALITY.md)
+- [Testing](docs/TESTING.md)
+- [Release](docs/RELEASE.md)
+- [Licensing](docs/LICENSING.md)
+- [Security](SECURITY.md)
+- [Contributing](CONTRIBUTING.md)
+- [Governance](GOVERNANCE.md)
+- [Roadmap](ROADMAP.md)
+
+تعهدات legal و provenance اجزای ثالث در فایل‌های حقوقی ریپو باقی می‌مانند. متن product-facing قابلیت‌ها را با زبان خود CodeCortex توضیح می‌دهد.
+
+---
+
+# سؤال‌های پرتکرار
+
+<details><summary><b>آیا CodeCortex جای مدل را می‌گیرد؟</b></summary>
+نه. مدل reasoning و generation را انجام می‌دهد. CodeCortex محیط evidence را بهتر می‌کند.
+</details>
+
+<details><summary><b>Core به سرویس remote نیاز دارد؟</b></summary>
+نه. Core local-first است. provider اختیاری می‌تواند boundary ریموت صریح داشته باشد.
+</details>
+
+<details><summary><b>Context window خیلی بزرگ این پروژه را بی‌نیاز می‌کند؟</b></summary>
+نه. اندازه window و کیفیت evidence دو مسئله متفاوت‌اند.
+</details>
+
+<details><summary><b>همه relationshipها دقیق‌اند؟</b></summary>
+نه. رابطه‌های استنباطی ambiguity را نگه می‌دارند. لایه precision بعدی برای اضافه کردن evidence دقیق در صورت وجود طراحی شده.
+</details>
+
+<details><summary><b>چند ریپو را پشتیبانی می‌کند؟</b></summary>
+بله. Workspace evidence را federate می‌کند و هویت repository را نگه می‌دارد.
+</details>
+
+<details><summary><b>می‌تواند کد را edit کند؟</b></summary>
+Semantic editing کنترل‌شده از backend مناسب در دسترس است. Read intelligence و mutation privilege جدا هستند.
+</details>
+
+---
+
+# نگهداری، مشارکت و License
+
+CodeCortex توسط **Behnam Jalali** ساخته و نگهداری می‌شود.
+
+<pre>
+python -m pip install -e ".[dev]"
+ruff check .
+mypy src/codecortex
+pytest
+</pre>
+
+بخش‌های متعلق به CodeCortex تحت Apache License 2.0 منتشر می‌شوند. اجزای ثالث تابع license و attribution ثبت‌شده در خود ریپو هستند.
+
+فایل‌های [LICENSE](LICENSE)، [NOTICE](NOTICE)، [SECURITY.md](SECURITY.md) و [CONTRIBUTING.md](CONTRIBUTING.md) را ببینید.
+
+<div align="center">
+
+### CodeCortex Context Engine
+
+**قبل از اینکه از ایجنت بخواهی داخل کدبیس حرکت کند، به آن نقشه بده.**
+
+**نویز کمتر. Evidence بیشتر. تغییر قابل بررسی.**
+
+[⬆️ English](#english)
+
+</div>
 
 </div>

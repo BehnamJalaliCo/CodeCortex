@@ -76,7 +76,9 @@ class DistributedGraphStore:
                         repository,
                         revision,
                         node.id,
-                        json.dumps(node.model_dump(mode="json"), ensure_ascii=False, sort_keys=True),
+                        json.dumps(
+                            node.model_dump(mode="json"), ensure_ascii=False, sort_keys=True
+                        ),
                     )
                     for node in graph.nodes
                 ],
@@ -90,7 +92,9 @@ class DistributedGraphStore:
                         edge.source,
                         edge.target,
                         edge.kind,
-                        json.dumps(edge.model_dump(mode="json"), ensure_ascii=False, sort_keys=True),
+                        json.dumps(
+                            edge.model_dump(mode="json"), ensure_ascii=False, sort_keys=True
+                        ),
                     )
                     for edge in graph.edges
                 ],

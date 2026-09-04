@@ -1,0 +1,3 @@
+import {useEffect,useState} from 'react'
+type Integration={target:string;detected:boolean}
+export function IntegrationsCenter({repositoryId}:{repositoryId:string}){const[rows,setRows]=useState<Integration[]>([]);useEffect(()=>{if(!repositoryId){setRows([]);return}fetch(`/api/v1/repositories/${repositoryId}/integrations`).then(r=>r.ok?r.json():{integrations:[]}).then(x=>setRows(x.integrations))},[repositoryId]);return <section className="panel" id="integrations"><div className="panelTitle"><span>Integrations</span><small>AI coding agents</small></div><div className="list">{rows.map(x=><div className="row" key={x.target}><span>{x.target}</span><b className={x.detected?'ok':''}>{x.detected?'Detected':'Not detected'}</b></div>)}</div></section>}

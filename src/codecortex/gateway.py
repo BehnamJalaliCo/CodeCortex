@@ -11,7 +11,14 @@ from codecortex.router import AdaptiveRouter
 
 
 class CodeCortexGateway:
-    def __init__(self, router: AdaptiveRouter, orchestrator: Orchestrator, registry: EngineRegistry, memory: MemoryStore, feedback: AgentFeedbackStore | None = None) -> None:
+    def __init__(
+        self,
+        router: AdaptiveRouter,
+        orchestrator: Orchestrator,
+        registry: EngineRegistry,
+        memory: MemoryStore,
+        feedback: AgentFeedbackStore | None = None,
+    ) -> None:
         self.router = router
         self.orchestrator = orchestrator
         self.registry = registry
@@ -27,7 +34,9 @@ class CodeCortexGateway:
     async def remember(self, key: str, value: str, namespace: str = "project") -> None:
         await self.memory.put(namespace, key, value)
 
-    def feedback(self, query: str, capability: Capability, success: bool, latency_ms: float = 0.0) -> None:
+    def feedback(
+        self, query: str, capability: Capability, success: bool, latency_ms: float = 0.0
+    ) -> None:
         if self.feedback_store is None:
             raise RuntimeError("feedback storage is not configured")
         self.feedback_store.record(query, capability, success, latency_ms)

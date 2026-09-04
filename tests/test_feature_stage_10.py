@@ -39,9 +39,7 @@ def test_ast_context_slicer_returns_complete_symbol_not_neighbor(tmp_path) -> No
         "    return secret\n",
         encoding="utf-8",
     )
-    sliced = AstContextSlicer(tmp_path).slice_symbol(
-        path, "alpha", 1, max_tokens=100
-    )
+    sliced = AstContextSlicer(tmp_path).slice_symbol(path, "alpha", 1, max_tokens=100)
     assert "def alpha" in sliced
     assert "return value" in sliced
     assert "secret = 2" not in sliced
@@ -84,9 +82,7 @@ def test_cluster_coordinator_shards_work_and_publishes_graph(tmp_path) -> None:
     cluster = ClusterCoordinator(tmp_path / "cluster")
     cluster.workers.register_worker("indexer", ("index",))
     cluster.workers.register_worker("retriever", ("retrieve",))
-    tasks = cluster.schedule_index(
-        "repo", ["a", "b", "c"], "r1", shard_size=2
-    )
+    tasks = cluster.schedule_index("repo", ["a", "b", "c"], "r1", shard_size=2)
     assert len(tasks) == 2
     retrieval = cluster.schedule_retrieval("auth", "repo", "r1")
     assert retrieval.kind == "retrieve"

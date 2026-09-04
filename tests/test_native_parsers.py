@@ -10,12 +10,24 @@ from codecortex.languages import LanguageRegistry
 @pytest.mark.parametrize(
     ("name", "source", "symbol"),
     [
-        ("sample.ts", "export class AuthService { refresh(): string { return 'x' } }", "AuthService"),
-        ("sample.go", "package main\nfunc RefreshToken() string { return \"x\" }", "RefreshToken"),
+        (
+            "sample.ts",
+            "export class AuthService { refresh(): string { return 'x' } }",
+            "AuthService",
+        ),
+        ("sample.go", 'package main\nfunc RefreshToken() string { return "x" }', "RefreshToken"),
         ("sample.rs", "pub fn refresh_token() -> String { String::new() }", "refresh_token"),
-        ("Sample.java", "public class AuthService { public String refresh() { return \"x\"; } }", "AuthService"),
+        (
+            "Sample.java",
+            'public class AuthService { public String refresh() { return "x"; } }',
+            "AuthService",
+        ),
         ("sample.cpp", "class AuthService {};\nint refresh_token() { return 1; }", "AuthService"),
-        ("Sample.cs", "public class AuthService { public string Refresh() { return \"x\"; } }", "AuthService"),
+        (
+            "Sample.cs",
+            'public class AuthService { public string Refresh() { return "x"; } }',
+            "AuthService",
+        ),
     ],
 )
 def test_tree_sitter_provider_extracts_symbols(name, source, symbol):

@@ -55,9 +55,7 @@ def test_local_source_validation_and_requirement(
     source = tmp_path / "source"
     local = source / "vendor" / "demo"
     local.mkdir(parents=True)
-    (local / "pyproject.toml").write_text(
-        "[project]\nname='demo'\nversion='0'\n", encoding="utf-8"
-    )
+    (local / "pyproject.toml").write_text("[project]\nname='demo'\nversion='0'\n", encoding="utf-8")
     manager = BackendManager(cache_root=tmp_path / "cache", source_root=source)
 
     monkeypatch.setattr(manager, "_git_revision", lambda _path: REV)
@@ -121,9 +119,7 @@ def test_ensure_install_probe_remove_and_cache(
     assert not manager.probe(spec, provision=False, force=True)
 
 
-def test_run_error_and_probe_exception(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
-) -> None:
+def test_run_error_and_probe_exception(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
     manager = BackendManager(cache_root=tmp_path, source_root=tmp_path)
     spec = _spec()
     command = manager.command_path(spec)
@@ -133,9 +129,7 @@ def test_run_error_and_probe_exception(
     monkeypatch.setattr(
         subprocess,
         "run",
-        lambda *_args, **_kwargs: SimpleNamespace(
-            returncode=3, stdout="", stderr="boom"
-        ),
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=3, stdout="", stderr="boom"),
     )
     with pytest.raises(BackendProcessError, match="boom"):
         manager.run(spec, (), provision=False)
@@ -187,9 +181,7 @@ def test_environment_install_metadata_git_and_locks(
     monkeypatch.setattr(
         subprocess,
         "run",
-        lambda *_args, **_kwargs: SimpleNamespace(
-            returncode=0, stdout=REV + "\n", stderr=""
-        ),
+        lambda *_args, **_kwargs: SimpleNamespace(returncode=0, stdout=REV + "\n", stderr=""),
     )
     assert manager._git_revision(tmp_path) == REV
     monkeypatch.setattr(

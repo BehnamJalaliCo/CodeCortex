@@ -16,7 +16,9 @@ def test_pr_intelligence_maps_diff_to_symbols(tmp_path) -> None:
     source.write_text("def refresh_token():\n    return 1\n", encoding="utf-8")
     _git(tmp_path, "add", ".")
     _git(tmp_path, "commit", "-m", "base")
-    base = subprocess.check_output(["git", "-C", str(tmp_path), "rev-parse", "HEAD"], text=True).strip()
+    base = subprocess.check_output(
+        ["git", "-C", str(tmp_path), "rev-parse", "HEAD"], text=True
+    ).strip()
     source.write_text("def refresh_token():\n    return 2\n", encoding="utf-8")
     _git(tmp_path, "add", ".")
     _git(tmp_path, "commit", "-m", "change")

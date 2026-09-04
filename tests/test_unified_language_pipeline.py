@@ -26,7 +26,9 @@ def test_project_indexer_uses_language_registry_for_typescript(tmp_path) -> None
 
 
 def test_builtin_symbol_engine_matches_same_unified_symbols(tmp_path) -> None:
-    (tmp_path / "service.py").write_text("class Service:\n    def run(self):\n        return 1\n", encoding="utf-8")
+    (tmp_path / "service.py").write_text(
+        "class Service:\n    def run(self):\n        return 1\n", encoding="utf-8"
+    )
     engine = SymbolEngine(tmp_path)
     result = asyncio.run(engine.execute(AgentRequest(query="run")))
     assert "method run" in result.content

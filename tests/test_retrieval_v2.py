@@ -30,7 +30,9 @@ def test_context_cache_key_changes_with_graph_revision() -> None:
 def test_context_pipeline_rejects_budget_over_project_hard_limit(tmp_path) -> None:
     state = tmp_path / ".codecortex"
     state.mkdir()
-    (state / "config.json").write_text('{"context_budget": 10, "hard_context_limit": 20}', encoding="utf-8")
+    (state / "config.json").write_text(
+        '{"context_budget": 10, "hard_context_limit": 20}', encoding="utf-8"
+    )
     pipeline = ContextPipeline(tmp_path, ProjectGraph())
     with pytest.raises(ValueError):
         asyncio.run(pipeline.prepare("query", [], 21))

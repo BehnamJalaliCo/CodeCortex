@@ -26,7 +26,10 @@ class ValidationEngine(Engine):
         for path in self.project_root.rglob("*.py"):
             if checked >= self.max_files:
                 break
-            if any(part in {".git", ".codecortex", ".venv", "venv", "__pycache__"} for part in path.parts):
+            if any(
+                part in {".git", ".codecortex", ".venv", "venv", "__pycache__"}
+                for part in path.parts
+            ):
                 continue
             checked += 1
             try:

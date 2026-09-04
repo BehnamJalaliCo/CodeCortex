@@ -34,8 +34,7 @@ class FeatureHashEmbeddingProvider:
         vector = [0.0] * self.dimensions
         tokens = [token.lower() for token in _TOKEN.findall(text)]
         features = tokens + [
-            f"{left}::{right}"
-            for left, right in zip(tokens, tokens[1:], strict=False)
+            f"{left}::{right}" for left, right in zip(tokens, tokens[1:], strict=False)
         ]
         for feature in features:
             digest = hashlib.blake2b(feature.encode("utf-8"), digest_size=8).digest()

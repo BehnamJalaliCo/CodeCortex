@@ -53,7 +53,9 @@ async def test_native_mcp_tools_end_to_end(tmp_path: Path) -> None:
     semantic = await application.call("cortex_semantic_search", {"query": "helper", "limit": 5})
     assert "hits" in semantic
 
-    context = await application.call("cortex_context", {"query": "understand Service", "budget": 1024})
+    context = await application.call(
+        "cortex_context", {"query": "understand Service", "budget": 1024}
+    )
     assert "metrics" in context
     architecture = await application.call("cortex_architecture", {})
     assert architecture
@@ -68,12 +70,12 @@ async def test_native_mcp_tools_end_to_end(tmp_path: Path) -> None:
         "cortex_symbol_history", {"path": "service.py", "start": 1, "end": 3}
     )
     assert history
-    pr = await application.call(
-        "cortex_pr_intelligence", {"base_ref": "HEAD", "head_ref": "HEAD"}
-    )
+    pr = await application.call("cortex_pr_intelligence", {"base_ref": "HEAD", "head_ref": "HEAD"})
     assert pr["base_ref"] == "HEAD"
 
-    assert (await application.call("cortex_remember", {"key": "decision", "value": "stable"}))["saved"]
+    assert (await application.call("cortex_remember", {"key": "decision", "value": "stable"}))[
+        "saved"
+    ]
     memory = await application.call("cortex_memory_search", {"query": "stable"})
     assert "results" in memory
 
@@ -86,7 +88,9 @@ async def test_native_mcp_tools_end_to_end(tmp_path: Path) -> None:
 
     workspace = MultiRepositoryWorkspace(root / ".codecortex" / "workspace.json")
     workspace.add_repository("self", root)
-    workspace_hits = await application.call("cortex_workspace_search", {"query": "Service", "limit": 10})
+    workspace_hits = await application.call(
+        "cortex_workspace_search", {"query": "Service", "limit": 10}
+    )
     assert "hits" in workspace_hits
 
     validation = await application.call("cortex_validate", {"query": "validate Service"})

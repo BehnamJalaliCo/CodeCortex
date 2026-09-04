@@ -68,9 +68,7 @@ def test_specs_helpers_report_and_save(tmp_path: Path) -> None:
 
     metrics = ObservedMetrics(10, 20, 5, 2, 1, 3, cost_usd=0.25)
     ok = ScenarioResult("repo", REV, "x", "vanilla", "ok", True, 1.0, 1.0, metrics)
-    skipped = ScenarioResult(
-        "repo", REV, "y", "vanilla", "skipped", None, None, None, None
-    )
+    skipped = ScenarioResult("repo", REV, "y", "vanilla", "skipped", None, None, None, None)
     report = ProductionBenchmarkReport(
         repositories=[{"name": "repo", "url": "u", "revision": REV}],
         setup=[SetupMeasurement("repo", "graph", 2.0, "ok", "healthy")],
@@ -132,17 +130,14 @@ def test_lexical_measure_and_operations(tmp_path: Path) -> None:
 
     graph = SimpleNamespace(query=lambda query: f"src/service.py {query}")
     symbols = SimpleNamespace(
-        call=lambda _name, _args: {
-            "content": [{"type": "text", "text": "Service"}]
-        }
+        call=lambda _name, _args: {"content": [{"type": "text", "text": "Service"}]}
     )
     context = SimpleNamespace(
         compress=lambda text: {"content": [{"type": "text", "text": text[:50]}]}
     )
     baseline = RetrievalObservation("src/service.py Service", 1, 1)
     assert (
-        runner._operation("graph", case, root, graph, symbols, context, baseline)().tool_calls
-        == 1
+        runner._operation("graph", case, root, graph, symbols, context, baseline)().tool_calls == 1
     )
     assert (
         runner._operation("symbols", case, root, graph, symbols, context, baseline)().tool_calls
@@ -153,12 +148,17 @@ def test_lexical_measure_and_operations(tmp_path: Path) -> None:
         == 2
     )
     assert (
-        runner._operation("full", case, root, graph, symbols, context, baseline)().tool_calls
-        == 3
+        runner._operation("full", case, root, graph, symbols, context, baseline)().tool_calls == 3
     )
     with pytest.raises(ValueError):
         runner._operation(
-            "invalid", case, root, graph, symbols, context, baseline  # type: ignore[arg-type]
+            "invalid",
+            case,
+            root,
+            graph,
+            symbols,
+            context,
+            baseline,  # type: ignore[arg-type]
         )
 
 
@@ -192,7 +192,9 @@ def test_prepare_availability(tmp_path: Path) -> None:
 
     manager = Manager()
     runner = ProductionBenchmarkRunner(
-        (), workspace=tmp_path, backend_manager=manager  # type: ignore[arg-type]
+        (),
+        workspace=tmp_path,
+        backend_manager=manager,  # type: ignore[arg-type]
     )
     graph, symbols, context = Adapter("graph"), Adapter("symbols"), Adapter("context")
     report = ProductionBenchmarkReport()

@@ -1,0 +1,11 @@
+{
+  "version": 1,
+  "priorities": [
+    {"id":"P0","name":"Before UI","items":["application-service","repository-context","runtime-manager","incremental-engines","persistence","api-contracts"]},
+    {"id":"P1","name":"Platform Foundation","items":["rest-api","authentication","rbac","jobs","sse","audit"]},
+    {"id":"P2","name":"Console MVP","items":["web-foundation","workspace","repository","overview","graph","search","trace"]},
+    {"id":"P3","name":"Intelligence","items":["impact","context-lab","routing","architecture","git","pr","quality"]},
+    {"id":"P4","name":"Team and Distributed","items":["memory","members","policies","cluster","workers","notifications"]},
+    {"id":"P5","name":"Mutations","items":["code-actions","diff-preview","approval","validation"]}
+  ]
+}

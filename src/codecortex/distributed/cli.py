@@ -52,9 +52,7 @@ def serve(
     if not principal.strip():
         raise typer.BadParameter("--principal is required")
     if bool(organization) != bool(workspace):
-        raise typer.BadParameter(
-            "--organization and --workspace must be configured together"
-        )
+        raise typer.BadParameter("--organization and --workspace must be configured together")
 
     runtime = build_runtime(path.expanduser().resolve())
     application = DistributedMCPApplication(runtime, node_id=node_id)
@@ -71,10 +69,7 @@ def serve(
     authorizer = None
     if organization and workspace:
         store = OrganizationPolicyStore(
-            (
-                policy_db
-                or runtime.config.state_dir / "distributed" / "organization.db"
-            )
+            (policy_db or runtime.config.state_dir / "distributed" / "organization.db")
             .expanduser()
             .resolve()
         )
@@ -111,9 +106,7 @@ def serve(
         RemoteAccessPolicy(
             allowed_tools={principal: tools},
             mutating_tools=mutating,
-            mutation_principals=(
-                frozenset({principal}) if allow_mutations else frozenset()
-            ),
+            mutation_principals=(frozenset({principal}) if allow_mutations else frozenset()),
             authorizer=authorizer,
         ),
         settings,

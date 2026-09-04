@@ -28,7 +28,7 @@ class SymbolProvider(Protocol):
 
 class PythonProvider:
     language = "python"
-    suffixes = (".py",)
+    suffixes: tuple[str, ...] = (".py",)
 
     def extract(self, path: Path, source: str) -> list[SymbolRecord]:
         try:
@@ -106,7 +106,10 @@ _JS_PATTERNS = [
     _p("type", r"^\s*(?:export\s+)?type\s+([A-Za-z_$][\w$]*)\s*="),
     _p("enum", r"^\s*(?:export\s+)?enum\s+([A-Za-z_$][\w$]*)"),
     _p("function", r"^\s*(?:export\s+)?(?:async\s+)?function\s+([A-Za-z_$][\w$]*)"),
-    _p("function", r"^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\([^\n]*\)\s*=>"),
+    _p(
+        "function",
+        r"^\s*(?:export\s+)?(?:const|let|var)\s+([A-Za-z_$][\w$]*)\s*=\s*(?:async\s*)?\([^\n]*\)\s*=>",
+    ),
     _p("import", r"^\s*import\s+(?:[^\n]+?\s+from\s+)?[\"']([^\"']+)[\"']"),
     _p("export", r"^\s*export\s+\{\s*([^}\n]+)\s*\}"),
 ]
@@ -128,11 +131,17 @@ _RUST_PATTERNS = [
 ]
 
 _JVM_PATTERNS = [
-    _p("class", r"^\s*(?:public\s+|private\s+|protected\s+|abstract\s+|final\s+)*class\s+([A-Za-z_]\w*)"),
+    _p(
+        "class",
+        r"^\s*(?:public\s+|private\s+|protected\s+|abstract\s+|final\s+)*class\s+([A-Za-z_]\w*)",
+    ),
     _p("interface", r"^\s*(?:public\s+)?interface\s+([A-Za-z_]\w*)"),
     _p("enum", r"^\s*(?:public\s+)?enum\s+([A-Za-z_]\w*)"),
     _p("import", r"^\s*import\s+([A-Za-z_][\w.*]+)\s*;"),
-    _p("method", r"^\s*(?:public|private|protected|static|final|async|virtual|override|synchronized|native|abstract|\s)+\s+[\w<>,.?\[\]]+\s+([A-Za-z_]\w*)\s*\("),
+    _p(
+        "method",
+        r"^\s*(?:public|private|protected|static|final|async|virtual|override|synchronized|native|abstract|\s)+\s+[\w<>,.?\[\]]+\s+([A-Za-z_]\w*)\s*\(",
+    ),
 ]
 
 _C_PATTERNS = [
@@ -146,7 +155,9 @@ _PHP_PATTERNS = [
     _p("class", r"^\s*(?:final\s+|abstract\s+)?class\s+([A-Za-z_]\w*)"),
     _p("interface", r"^\s*interface\s+([A-Za-z_]\w*)"),
     _p("trait", r"^\s*trait\s+([A-Za-z_]\w*)"),
-    _p("function", r"^\s*(?:public\s+|private\s+|protected\s+|static\s+)*function\s+([A-Za-z_]\w*)"),
+    _p(
+        "function", r"^\s*(?:public\s+|private\s+|protected\s+|static\s+)*function\s+([A-Za-z_]\w*)"
+    ),
     _p("import", r"^\s*use\s+([^;]+);"),
 ]
 
@@ -173,9 +184,7 @@ class SymbolProviderRegistry:
             RegexProvider("ruby", (".rb",), _RUBY_PATTERNS),
         ]
         self._by_suffix = {
-            suffix: provider
-            for provider in providers
-            for suffix in provider.suffixes
+            suffix: provider for provider in providers for suffix in provider.suffixes
         }
 
     @property

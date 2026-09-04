@@ -31,9 +31,7 @@ def test_fencing_token_rejects_stale_completion(tmp_path) -> None:
     with pytest.raises(RuntimeError):
         coordinator.complete("t", "worker", {}, lease_token=first.lease_token)
     assert (
-        coordinator.complete(
-            "t", "worker", {"ok": True}, lease_token=second.lease_token
-        ).status
+        coordinator.complete("t", "worker", {"ok": True}, lease_token=second.lease_token).status
         == "completed"
     )
 
@@ -51,9 +49,7 @@ def test_remote_dispatch_receives_authenticated_principal() -> None:
         BearerTokenAuthenticator({"worker-a": "secret"}),
         RemoteAccessPolicy(allowed_tools={"worker-a": frozenset({"read"})}),
     )
-    status, _ = server.handle_call(
-        "Bearer secret", {"tool": "read", "arguments": {}}
-    )
+    status, _ = server.handle_call("Bearer secret", {"tool": "read", "arguments": {}})
     assert status == 200
     assert seen["principal"] == "worker-a"
 

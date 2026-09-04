@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from codecortex.core.models import AgentRequest, Capability, RequestKind, RoutePlan, RouteScore
 from codecortex.feedback import AgentFeedbackStore
+from codecortex.router.evidence_plan import plan_evidence
 
 
 class AdaptiveRouter:
@@ -36,9 +37,19 @@ class AdaptiveRouter:
         }
         if kind in {RequestKind.EXPLAIN, RequestKind.DEBUG, RequestKind.REVIEW}:
             scores[Capability.REPOSITORY] += 0.45
-        if kind in {RequestKind.LOCATE, RequestKind.DEBUG, RequestKind.REFACTOR, RequestKind.CHANGE}:
+        if kind in {
+            RequestKind.LOCATE,
+            RequestKind.DEBUG,
+            RequestKind.REFACTOR,
+            RequestKind.CHANGE,
+        }:
             scores[Capability.SYMBOLS] += 0.50
-        if kind in {RequestKind.DEBUG, RequestKind.REFACTOR, RequestKind.CHANGE, RequestKind.REVIEW}:
+        if kind in {
+            RequestKind.DEBUG,
+            RequestKind.REFACTOR,
+            RequestKind.CHANGE,
+            RequestKind.REVIEW,
+        }:
             scores[Capability.VALIDATION] += 0.55
         if any(term in text for term in ("history", "previous", "decision", "remember", "again")):
             scores[Capability.MEMORY] += 0.65
@@ -75,11 +86,14 @@ class AdaptiveRouter:
         selected = [item.capability for item in route_scores if item.score >= 0.50]
         if not selected:
             selected = [Capability.REPOSITORY]
+        evidence = plan_evidence(request, kind)
         return RoutePlan(
             request_kind=kind,
             scores=route_scores,
             selected=selected,
             context_budget=self.default_budget,
+            evidence_layers=[item.value for item in evidence.layers],
+            evidence_reasons=list(evidence.reasons),
         )
 
     def _classify(self, text: str) -> RequestKind:

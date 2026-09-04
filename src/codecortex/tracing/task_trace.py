@@ -194,8 +194,7 @@ class TaskTraceRecorder:
             duration_ms=sum(record.duration_ms for record in records),
             tool_calls=sum(record.name.startswith("tool.") for record in records),
             context_tokens=sum(
-                self._integer_metric(record.attributes.get("context_tokens"))
-                for record in records
+                self._integer_metric(record.attributes.get("context_tokens")) for record in records
             ),
             names=tuple(record.name for record in records),
         )

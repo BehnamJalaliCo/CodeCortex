@@ -39,9 +39,38 @@ def build_runtime(project_root: Path | None = None) -> CortexRuntime:
     memory = JsonMemoryStore(config.memory_dir)
     feedback = AgentFeedbackStore(config.state_dir / "runtime" / "feedback.db")
     stack = build_backend_stack(config, memory)
-    router = AdaptiveRouter(default_budget=config.validate_budget(config.default_context_budget), feedback=feedback)
-    telemetry = TelemetryCollector(enabled=config.telemetry_enabled, log_path=config.state_dir / "runtime" / "events.jsonl")
+    router = AdaptiveRouter(
+        default_budget=config.validate_budget(config.default_context_budget), feedback=feedback
+    )
+    telemetry = TelemetryCollector(
+        enabled=config.telemetry_enabled, log_path=config.state_dir / "runtime" / "events.jsonl"
+    )
     tracer = TaskTraceRecorder(config.state_dir / "runtime" / "traces.jsonl")
-    orchestrator = Orchestrator(registry=stack.registry, router=router, context_processor=stack.context_processor, telemetry=telemetry, tracer=tracer, feedback=feedback)
-    gateway = CodeCortexGateway(router=router, orchestrator=orchestrator, registry=stack.registry, memory=memory, feedback=feedback)
-    return CortexRuntime(config=config, memory=memory, registry=stack.registry, router=router, telemetry=telemetry, tracer=tracer, feedback=feedback, backend_manager=stack.manager, active_backends=stack.active, orchestrator=orchestrator, gateway=gateway)
+    orchestrator = Orchestrator(
+        registry=stack.registry,
+        router=router,
+        context_processor=stack.context_processor,
+        telemetry=telemetry,
+        tracer=tracer,
+        feedback=feedback,
+    )
+    gateway = CodeCortexGateway(
+        router=router,
+        orchestrator=orchestrator,
+        registry=stack.registry,
+        memory=memory,
+        feedback=feedback,
+    )
+    return CortexRuntime(
+        config=config,
+        memory=memory,
+        registry=stack.registry,
+        router=router,
+        telemetry=telemetry,
+        tracer=tracer,
+        feedback=feedback,
+        backend_manager=stack.manager,
+        active_backends=stack.active,
+        orchestrator=orchestrator,
+        gateway=gateway,
+    )
