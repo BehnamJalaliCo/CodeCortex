@@ -29,13 +29,6 @@ dependencies = [
 semantic = ["sentence-transformers>=3,<6"]
 parsers = ["tree-sitter-language-pack>=1.15.8,<2"]
 web = ["fastapi>=0.116,<1", "uvicorn>=0.35,<1"]
-# Pinned exactly, not as a range. CodeCortex parses this engine's JSON stream
-# records, so its output shape is part of the integration contract rather than
-# an implementation detail. 0.45.3 is the version the conformance tests in
-# tests/test_structural_conformance.py run against; a range would let an
-# untested release change the record shape silently. `cortex doctor` reports a
-# mismatch when a different version is installed anyway.
-structural = ["ast-grep-cli==0.45.3"]
 dev = [
   "pytest>=8.2",
   "pytest-asyncio>=1.4.0",
