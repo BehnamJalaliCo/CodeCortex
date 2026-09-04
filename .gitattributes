@@ -1,0 +1,21 @@
+# Conformance fixtures must reach every checkout byte-for-byte.
+#
+# Without this, Git's autocrlf translation rewrites LF to CRLF on a Windows
+# checkout. That silently breaks two guarantees these fixtures exist to make:
+#
+#   * `tests/fixtures/upstream/` is vendored byte-identical to a pinned
+#     upstream revision, and its SHA-256 is recorded in a provenance manifest.
+#     A rewritten line ending makes the committed file no longer the upstream
+#     file, and the digest check that proves it correctly fails.
+#
+#   * `tests/fixtures/real_index/` holds indexes produced by real indexers from
+#     the source files beside them. Those indexes encode byte offsets computed
+#     over LF text, so rewriting the sources would desynchronise the index from
+#     the code it describes.
+#
+# `-text` disables all end-of-line conversion in both directions.
+tests/fixtures/upstream/** -text
+tests/fixtures/real_index/** -text
+
+# A serialized index is protobuf, not text, in any location.
+*.scip binary
