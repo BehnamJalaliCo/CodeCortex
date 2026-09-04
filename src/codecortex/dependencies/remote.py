@@ -108,13 +108,30 @@ class RemoteDocumentationProvider(DependencyDocumentationProvider):
         return headers
 
     def _url(self, path: str, params: dict[str, str]) -> str:
-        base = self.config.base_url.rstrip("/")
-        scheme = urllib.parse.urlsplit(base).scheme
-        if scheme not in {"http", "https"}:
+        """Build a request URL from a validated base, rejecting anything else.
+
+        The base URL comes from project configuration, so it is treated as
+        untrusted: the scheme is restricted to http(s), a host must be present,
+        and embedded credentials are refused. The URL is then rebuilt from those
+        checked components rather than by concatenating the raw string.
+        """
+        parts = urllib.parse.urlsplit(self.config.base_url.rstrip("/"))
+        if parts.scheme not in {"http", "https"}:
             raise DocumentationUnavailable(
-                f"documentation provider base URL must be http(s): {base}"
+                f"documentation provider base URL must be http(s): {self.config.base_url}"
             )
-        return f"{base}/{path.lstrip('/')}?{urllib.parse.urlencode(params)}"
+        if not parts.hostname:
+            raise DocumentationUnavailable(
+                "documentation provider base URL must name a host"
+            )
+        if parts.username or parts.password:
+            raise DocumentationUnavailable(
+                "documentation provider base URL must not embed credentials"
+            )
+        route = f"{parts.path}/{path.lstrip('/')}"
+        return urllib.parse.urlunsplit(
+            (parts.scheme, parts.netloc, route, urllib.parse.urlencode(params), "")
+        )
 
     def _fetch(self, url: str) -> _Response:
         """Perform one bounded GET request.

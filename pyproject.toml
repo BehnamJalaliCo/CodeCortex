@@ -19,6 +19,7 @@ classifiers = [
   "Programming Language :: Python :: 3.13",
 ]
 dependencies = [
+  "defusedxml>=0.7,<1",
   "pydantic>=2.8,<3",
   "typer>=0.27.1,<1",
   "rich>=13.7,<15",
@@ -92,4 +93,9 @@ packages = ["codecortex"]
 # Optional extras without published type information, each imported behind a
 # guard and not installed in the type-check job.
 module = ["sentence_transformers.*", "tree_sitter_language_pack.*"]
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+# defusedxml mirrors the stdlib API but ships no type information.
+module = ["defusedxml.*"]
 ignore_missing_imports = true

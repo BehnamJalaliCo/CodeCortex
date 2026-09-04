@@ -310,6 +310,36 @@ def test_malformed_and_oversized_manifests_are_reported_not_raised(tmp_path: Pat
     assert all(not item.parsed and item.detail for item in reports)
 
 
+def test_xml_manifests_refuse_dtd_and_entity_declarations(tmp_path: Path) -> None:
+    """The refusal happens in the parser, not by inspecting the text."""
+    root = tmp_path / "xxe"
+    root.mkdir()
+    (root / "a.csproj").write_text(
+        '<!DOCTYPE lolz [<!ENTITY a "boom">]><Project><ItemGroup>'
+        '<PackageReference Include="X" Version="1" /></ItemGroup></Project>',
+        encoding="utf-8",
+    )
+    (root / "b.csproj").write_text(
+        '<!DOCTYPE foo SYSTEM "file:///etc/passwd"><Project/>', encoding="utf-8"
+    )
+    records, reports = ManifestScanner(root).scan()
+    assert records == ()
+    assert {item.path for item in reports} == {"a.csproj", "b.csproj"}
+    assert all(not item.parsed and "malformed manifest" in item.detail for item in reports)
+
+
+def test_xml_manifests_still_parse_namespaced_documents(tmp_path: Path) -> None:
+    root = tmp_path / "ns"
+    root.mkdir()
+    (root / "pom.xml").write_text(
+        '<project xmlns="http://maven.apache.org/POM/4.0.0"><dependencies>'
+        "<dependency><groupId>org.example</groupId><artifactId>lib</artifactId>"
+        "<version>1.2.3</version></dependency></dependencies></project>",
+        encoding="utf-8",
+    )
+    assert DependencyResolver(root).inventory().find("org.example:lib")[0].declared == "1.2.3"
+
+
 def test_scanner_skips_vendored_directories(tmp_path: Path) -> None:
     root = tmp_path / "skip"
     (root / "node_modules" / "dep").mkdir(parents=True)
@@ -534,6 +564,15 @@ async def test_remote_provider_reports_empty_documentation_and_unreachable_hosts
         await RemoteDocumentationProvider(
             _remote_config("ftp://example.invalid"), "key"
         ).resolve_library("next", "q", None)
+
+    for base, expected in (
+        ("https://user:secret@example.invalid/api", "credentials"),
+        ("https:///api", "must name a host"),
+    ):
+        with pytest.raises(DocumentationUnavailable, match=expected):
+            await RemoteDocumentationProvider(
+                _remote_config(base), "key"
+            ).resolve_library("next", "q", None)
 
     disabled = RemoteDocumentationProvider(DependencyDocsConfig(enabled=False), "key")
     with pytest.raises(DocumentationUnavailable, match="not enabled"):

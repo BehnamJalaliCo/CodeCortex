@@ -16,6 +16,9 @@ from dataclasses import dataclass
 from pathlib import Path
 from xml.etree import ElementTree
 
+from defusedxml.common import DefusedXmlException
+from defusedxml.ElementTree import fromstring as parse_xml
+
 from codecortex.dependencies.models import (
     DependencyRecord,
     DependencyScope,
@@ -171,7 +174,13 @@ class ManifestScanner:
             )
         try:
             records = tuple(parser(text, relative))  # type: ignore[operator]
-        except (ValueError, KeyError, TypeError, ElementTree.ParseError) as exc:
+        except (
+            ValueError,
+            KeyError,
+            TypeError,
+            ElementTree.ParseError,
+            DefusedXmlException,
+        ) as exc:
             return _ParsedManifest(
                 (), ManifestReport(relative, ecosystem, False, f"malformed manifest: {exc}")
             )
@@ -458,14 +467,15 @@ class ManifestScanner:
 
     @staticmethod
     def _safe_xml(text: str) -> ElementTree.Element:
-        """Parse XML after rejecting documents that declare entities.
+        """Parse XML with document type and entity declarations refused.
 
-        Entity declarations are the vector for expansion attacks, and no
-        supported build manifest needs them.
+        Entity declarations are the vector for expansion attacks and external
+        entity disclosure, and no supported build manifest needs them. The
+        refusal happens inside the parser rather than by inspecting the text,
+        so a declaration cannot be smuggled past a substring check.
         """
-        if "<!DOCTYPE" in text or "<!ENTITY" in text:
-            raise ValueError("XML manifests with entity declarations are not parsed")
-        return ElementTree.fromstring(text)  # nosec B314
+        element: ElementTree.Element = parse_xml(text, forbid_dtd=True)
+        return element
 
     def _pom(self, text: str, manifest: str) -> Iterable[DependencyRecord]:
         root = self._safe_xml(text)
