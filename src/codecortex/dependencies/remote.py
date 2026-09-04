@@ -125,7 +125,8 @@ class RemoteDocumentationProvider(DependencyDocumentationProvider):
         request = urllib.request.Request(url, headers=self._headers(), method="GET")
         timeout = self.config.connect_timeout_seconds + self.config.read_timeout_seconds
         try:
-            with urllib.request.urlopen(request, timeout=timeout) as response:  # noqa: S310 - scheme validated above
+            # The scheme is restricted to http/https by _url() above.
+            with urllib.request.urlopen(request, timeout=timeout) as response:  # nosec B310
                 body = response.read(self.config.max_response_bytes + 1)
                 if len(body) > self.config.max_response_bytes:
                     raise DocumentationUnavailable(

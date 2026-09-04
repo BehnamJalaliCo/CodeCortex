@@ -58,7 +58,7 @@ cortex-api = "codecortex.api.cli:app"
 packages = ["src/codecortex"]
 
 [tool.pytest.ini_options]
-pythonpath = ["src"]
+pythonpath = ["src", "."]
 asyncio_mode = "auto"
 testpaths = ["tests"]
 addopts = "--strict-markers"
@@ -89,6 +89,7 @@ strict = true
 packages = ["codecortex"]
 
 [[tool.mypy.overrides]]
-# Optional extra without published type information; imported behind a guard.
-module = ["sentence_transformers.*"]
+# Optional extras without published type information, each imported behind a
+# guard and not installed in the type-check job.
+module = ["sentence_transformers.*", "tree_sitter_language_pack.*"]
 ignore_missing_imports = true

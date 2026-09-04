@@ -465,7 +465,7 @@ class ManifestScanner:
         """
         if "<!DOCTYPE" in text or "<!ENTITY" in text:
             raise ValueError("XML manifests with entity declarations are not parsed")
-        return ElementTree.fromstring(text)
+        return ElementTree.fromstring(text)  # nosec B314
 
     def _pom(self, text: str, manifest: str) -> Iterable[DependencyRecord]:
         root = self._safe_xml(text)
