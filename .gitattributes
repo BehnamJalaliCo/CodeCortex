@@ -18,4 +18,4 @@ tests/fixtures/upstream/** -text
 tests/fixtures/real_index/** -text
 
 # A serialized index is protobuf, not text, in any location.
-*.scip binary
+*.cortexidx binary
