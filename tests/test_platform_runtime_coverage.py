@@ -51,7 +51,9 @@ def test_api_authenticator_covers_local_and_token_modes() -> None:
 
 
 def test_platform_database_full_local_lifecycle(tmp_path: Path) -> None:
-    database = PlatformDatabase(tmp_path / "state" / "platform.db")
+    database = PlatformDatabase(
+        tmp_path / "state" / "platform.db", repository_root=tmp_path
+    )
     assert database.schema_version == 2
     assert database.workspaces() == ()
 
@@ -75,6 +77,8 @@ def test_platform_database_full_local_lifecycle(tmp_path: Path) -> None:
         database.register_repository("", "bad", repo)
     with pytest.raises(ValueError):
         database.register_repository("alpha", "missing", tmp_path / "missing")
+    with pytest.raises(ValueError):
+        database.register_repository("alpha", "outside", tmp_path.parent)
     with pytest.raises(ValueError):
         database.remove_workspace("ws-alpha")
 
@@ -199,7 +203,7 @@ def test_repository_context_and_runtime_manager(tmp_path: Path, monkeypatch: pyt
 
 def test_platform_http_core_routes(tmp_path: Path) -> None:
     repo = _repo(tmp_path)
-    app = create_app(state_dir=tmp_path / "platform-state")
+    app = create_app(state_dir=tmp_path / "platform-state", repository_root=tmp_path)
     with TestClient(app) as client:
         assert client.get("/api/v1/health").json()["status"] == "ok"
         assert client.get("/api/v1/readiness").json()["status"] == "ready"

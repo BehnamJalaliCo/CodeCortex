@@ -40,7 +40,7 @@ def _repository(tmp_path: Path) -> Path:
 def platform(tmp_path: Path):
     root = _repository(tmp_path)
     state_root = tmp_path / "platform-state"
-    app = create_app(state_dir=state_root)
+    app = create_app(state_dir=state_root, repository_root=tmp_path)
     with TestClient(app) as client:
         assert client.post("/api/v1/workspaces", json={"name": "alpha"}).status_code == 201
         repository = client.post(
@@ -387,7 +387,7 @@ def test_code_action_routes_preserve_approval_boundary(
 
     monkeypatch.setattr(code_actions, "SafeEditService", FakeSafeEdits)
     root = _repository(tmp_path)
-    app = create_app(state_dir=tmp_path / "state")
+    app = create_app(state_dir=tmp_path / "state", repository_root=tmp_path)
     with TestClient(app) as client:
         client.post("/api/v1/workspaces", json={"name": "alpha"})
         created = client.post(

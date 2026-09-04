@@ -20,6 +20,7 @@ from codecortex.realtime import PlatformEventBus
 def create_app(
     *,
     state_dir: Path | None = None,
+    repository_root: Path | None = None,
     runtime_manager: CortexRuntimeManager | None = None,
     security: ApiSecuritySettings | None = None,
 ) -> Any:
@@ -41,7 +42,7 @@ def create_app(
     )
 
     root = (state_dir or Path.cwd() / ".codecortex" / "platform").expanduser().resolve()
-    database = PlatformDatabase(root / "platform.db")
+    database = PlatformDatabase(root / "platform.db", repository_root=repository_root)
     events = PlatformEventBus()
     jobs = JobManager(JobStore(root / "jobs.db"), event_sink=events.publish)
     runtimes = runtime_manager or CortexRuntimeManager()

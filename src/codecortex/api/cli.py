@@ -15,6 +15,7 @@ def serve(
     host: Annotated[str, typer.Option("--host")] = "127.0.0.1",
     port: Annotated[int, typer.Option("--port")] = 7340,
     state_dir: Annotated[Path | None, typer.Option("--state-dir")] = None,
+    repository_root: Annotated[Path | None, typer.Option("--repository-root")] = None,
 ) -> None:
     try:
         import uvicorn
@@ -24,4 +25,6 @@ def serve(
         ) from exc
     from codecortex.api.app import create_app
 
-    uvicorn.run(create_app(state_dir=state_dir), host=host, port=port)
+    uvicorn.run(
+        create_app(state_dir=state_dir, repository_root=repository_root), host=host, port=port
+    )

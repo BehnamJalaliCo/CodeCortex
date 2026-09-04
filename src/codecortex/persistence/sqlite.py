@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import os
 import sqlite3
 import uuid
 from dataclasses import dataclass
@@ -32,8 +33,9 @@ class RepositoryRecord:
 
 
 class PlatformDatabase:
-    def __init__(self, path: Path) -> None:
+    def __init__(self, path: Path, *, repository_root: Path | None = None) -> None:
         self.path = path.expanduser().resolve()
+        self.repository_root = (repository_root or Path.cwd()).expanduser().resolve()
         self.path.parent.mkdir(parents=True, exist_ok=True)
         self._migrate()
 
@@ -151,7 +153,12 @@ class PlatformDatabase:
         if not workspace.strip() or not name.strip():
             raise ValueError("workspace and repository name are required")
         self.create_workspace(workspace)
-        resolved = Path(root).expanduser().resolve()
+        safe_root = os.path.realpath(os.fspath(self.repository_root))
+        candidate = os.path.realpath(os.path.join(safe_root, os.fspath(root)))
+        safe_prefix = safe_root if safe_root.endswith(os.sep) else safe_root + os.sep
+        if candidate != safe_root and not candidate.startswith(safe_prefix):
+            raise ValueError(f"repository root must be within {safe_root}")
+        resolved = Path(candidate)
         if not resolved.is_dir():
             raise ValueError(f"repository root does not exist: {resolved}")
         identifier = repository_id or uuid.uuid4().hex
