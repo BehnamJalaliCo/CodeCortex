@@ -14,6 +14,7 @@ from codecortex.precision.schema import (
     MetadataField,
     MultiLineRangeField,
     OccurrenceField,
+    PositionEncoding,
     RelationshipField,
     SingleLineRangeField,
     SymbolInformationField,
@@ -119,6 +120,7 @@ class Document:
     occurrences: tuple[Occurrence, ...] = ()
     symbols: tuple[SymbolInfo, ...] = ()
     text: str = ""
+    position_encoding: PositionEncoding = PositionEncoding.UTF32_CODE_UNIT
 
     def encode(self) -> bytes:
         payload = encode_string_field(DocumentField.RELATIVE_PATH, self.relative_path)
@@ -129,7 +131,27 @@ class Document:
         payload += encode_string_field(DocumentField.LANGUAGE, self.language)
         if self.text:
             payload += encode_string_field(DocumentField.TEXT, self.text)
+        if self.position_encoding is not PositionEncoding.UNSPECIFIED:
+            payload += encode_varint_field(
+                DocumentField.POSITION_ENCODING, int(self.position_encoding)
+            )
         return payload
+
+
+def column_in(line_text: str, character_column: int, encoding: PositionEncoding) -> int:
+    """Return the column a real indexer would emit for a character position.
+
+    Fixtures describe positions the way a human reads them — "the identifier
+    starts at character 6" — while an indexer emits an offset in its own code
+    units. This does that translation so a fixture cannot accidentally encode
+    the very off-by-one the tests exist to catch.
+    """
+    prefix = line_text[:character_column]
+    if encoding is PositionEncoding.UTF8_CODE_UNIT:
+        return len(prefix.encode("utf-8"))
+    if encoding is PositionEncoding.UTF16_CODE_UNIT:
+        return sum(2 if ord(char) > 0xFFFF else 1 for char in prefix)
+    return len(prefix)
 
 
 @dataclass(slots=True)

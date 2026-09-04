@@ -298,10 +298,40 @@ def test_import_rejects_malformed_and_unsupported_indexes() -> None:
         import_index(bad_range)
 
 
-def test_path_normalization_handles_windows_and_relative_forms() -> None:
+def test_path_normalization_accepts_windows_separators() -> None:
+    """Windows separators are a spelling difference, not a schema violation."""
     assert normalize_index_path("src\\pkg\\mod.py") == "src/pkg/mod.py"
-    assert normalize_index_path("./src/a.py") == "src/a.py"
-    assert normalize_index_path("/src/a.py") == "src/a.py"
+    assert normalize_index_path("src/pkg/mod.py") == "src/pkg/mod.py"
+
+
+@pytest.mark.parametrize(
+    ("path", "reason"),
+    [
+        ("/etc/passwd", "must not begin with a separator"),
+        ("/src/a.py", "must not begin with a separator"),
+        ("C:\\outside\\file.py", "not absolute"),
+        ("c:/outside/file.py", "not absolute"),
+        ("../outside.py", "not canonical"),
+        ("a/../outside.py", "not canonical"),
+        ("./src/a.py", "not canonical"),
+        ("a/./b.py", "not canonical"),
+        ("a//b.py", "empty component"),
+        ("file:///etc/passwd", "not a URI"),
+        ("https://example.test/a.py", "not a URI"),
+        ("a\x00b.py", "NUL byte"),
+        ("", "missing its relative path"),
+        ("   ", "missing its relative path"),
+    ],
+)
+def test_invalid_document_paths_are_rejected_not_repaired(path: str, reason: str) -> None:
+    """A schema-violating path must fail, not be rewritten into a plausible one.
+
+    Stripping the leading separator off ``/etc/passwd`` yields ``etc/passwd``,
+    which looks like an ordinary repository path and would then be joined to
+    the project root and read.
+    """
+    with pytest.raises(PrecisionIndexError, match=reason):
+        normalize_index_path(path)
 
 
 def test_import_skips_documents_missing_a_path() -> None:

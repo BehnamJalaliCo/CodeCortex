@@ -3,12 +3,17 @@
 from __future__ import annotations
 
 import os
+import time
 from dataclasses import dataclass, field
 from pathlib import Path
 
 from codecortex.config import CortexConfig, PrecisionIndexConfig
 from codecortex.precision.importer import import_index
-from codecortex.precision.models import PrecisionIndex, PrecisionIndexError
+from codecortex.precision.models import (
+    PrecisionDocument,
+    PrecisionIndex,
+    PrecisionIndexError,
+)
 
 #: Locations searched when no explicit path is configured, in priority order.
 DEFAULT_INDEX_LOCATIONS: tuple[str, ...] = (
@@ -18,9 +23,10 @@ DEFAULT_INDEX_LOCATIONS: tuple[str, ...] = (
     "build/index.scip",
 )
 
-#: How many indexed documents are sampled for freshness checks. Full scans of a
-#: very large index would dominate the cost of an otherwise cheap MCP call.
-FRESHNESS_SAMPLE_SIZE = 400
+#: How many documents' lines are held for position conversion before the cache
+#: is dropped. Conversion only reads a file when a document declares a non
+#: code-point encoding, so this stays small in practice.
+_LINE_CACHE_DOCUMENTS = 64
 
 
 @dataclass(frozen=True, slots=True)
@@ -71,6 +77,30 @@ class _CacheEntry:
 
 
 @dataclass(slots=True)
+class _FreshnessEntry:
+    """A whole-index freshness verdict, reused for a short TTL."""
+
+    fingerprint: tuple[str, int, int]
+    checked_at: float
+    stale: bool
+    reason: str
+
+
+#: How many document names a staleness reason lists before summarising.
+_REASON_SAMPLE = 3
+
+
+def _describe(prefix: str, paths: list[str]) -> str:
+    """Summarise the affected documents without emitting an unbounded string."""
+    shown = sorted(paths)[:_REASON_SAMPLE]
+    remaining = len(paths) - len(shown)
+    listed = ", ".join(shown)
+    if remaining > 0:
+        return f"{prefix}: {listed} (and {remaining} more)"
+    return f"{prefix}: {listed}"
+
+
+@dataclass(slots=True)
 class PrecisionIndexStore:
     """Load a precision index at most once per (path, size, mtime) fingerprint."""
 
@@ -78,6 +108,8 @@ class PrecisionIndexStore:
     config: PrecisionIndexConfig = field(default_factory=PrecisionIndexConfig)
     _cache: dict[str, _CacheEntry] = field(default_factory=dict, repr=False)
     _last_error: str = field(default="", repr=False)
+    _line_cache: dict[str, list[str]] = field(default_factory=dict, repr=False)
+    _freshness: _FreshnessEntry | None = field(default=None, repr=False)
 
     @classmethod
     def from_config(cls, config: CortexConfig) -> PrecisionIndexStore:
@@ -145,31 +177,65 @@ class PrecisionIndexStore:
         """Return ``(stale, reason)`` by comparing the index against the worktree.
 
         An index that predates a source edit reports positions that no longer
-        exist, so it must never be presented as exact.
+        exist, so it must never be presented as exact. That makes partial
+        checking unsafe: a scheme that inspected only the first N documents
+        would report ``exact`` for an index whose document N+1 had been edited,
+        which is exactly the case where exactness is a lie.
+
+        So every indexed document is checked, on every check, by default. The
+        scan calls ``stat`` only: no file contents are read and nothing is
+        hashed, which keeps it proportional to the document count rather than
+        to repository size.
+
+        ``freshness_ttl_seconds`` may be raised to reuse a verdict across a
+        burst of queries on a very large index. That is a deliberate trade,
+        not a default: the cached verdict is keyed on the *index* file, which
+        does not change when a source file is edited, so an edit inside the
+        window is not seen until it expires. The default of zero always scans.
         """
         try:
-            index_mtime = index_path.stat().st_mtime_ns
+            index_stat = index_path.stat()
         except OSError:  # pragma: no cover - the file was just read successfully
             return True, "precision index disappeared while it was being used"
+
+        fingerprint = (str(index_path), index_stat.st_size, index_stat.st_mtime_ns)
+        now = time.monotonic()
+        cached = self._freshness
+        ttl = self.config.freshness_ttl_seconds
+        if (
+            ttl > 0
+            and cached is not None
+            and cached.fingerprint == fingerprint
+            and now - cached.checked_at < ttl
+        ):
+            return cached.stale, cached.reason
+
+        verdict = self._scan_freshness(index, index_stat.st_mtime_ns)
+        self._freshness = _FreshnessEntry(
+            fingerprint=fingerprint,
+            checked_at=now,
+            stale=verdict[0],
+            reason=verdict[1],
+        )
+        return verdict
+
+    def _scan_freshness(self, index: PrecisionIndex, index_mtime: int) -> tuple[bool, str]:
+        """Compare every indexed document against the worktree."""
         missing: list[str] = []
         newer: list[str] = []
-        for relative in index.paths()[:FRESHNESS_SAMPLE_SIZE]:
-            source = self.root / relative
+        for relative in index.paths():
+            source = self.root / Path(relative)
             try:
                 source_mtime = source.stat().st_mtime_ns
             except OSError:
                 missing.append(relative)
-                if len(missing) >= 3:
-                    break
                 continue
             if source_mtime > index_mtime:
                 newer.append(relative)
-                if len(newer) >= 3:
-                    break
         if newer:
-            return True, f"source changed after indexing: {', '.join(sorted(newer))}"
+            return True, _describe("source changed after indexing", newer)
         if missing:
-            return True, f"indexed files are missing: {', '.join(sorted(missing))}"
+            return True, _describe("indexed files are missing", missing)
         return False, ""
 
     def status(self) -> PrecisionStatus:
@@ -208,6 +274,37 @@ class PrecisionIndexStore:
             generator_configured=generator,
         )
 
+    def source_line(self, document: PrecisionDocument, line: int) -> str | None:
+        """Return the text of a zero-based line of an indexed document.
+
+        Position conversion needs the actual source line, because the width of
+        a column depends on the characters before it. Indexers are not expected
+        to embed document text, so the worktree is the normal source; an
+        embedded ``Document.text`` is preferred when present because it matches
+        the state the index was built from.
+
+        Returns None when the text cannot be read, which callers must treat as
+        "conversion not possible" rather than "no conversion needed".
+        """
+        if document.text:
+            lines = document.text.splitlines()
+            return lines[line] if 0 <= line < len(lines) else None
+        cached = self._line_cache.get(document.relative_path)
+        if cached is None:
+            source = self.root / Path(document.relative_path)
+            try:
+                if not source.is_file() or source.is_symlink():
+                    return None
+                if source.stat().st_size > self.config.max_source_bytes:
+                    return None
+                cached = source.read_text(encoding="utf-8", errors="replace").splitlines()
+            except (OSError, ValueError):
+                return None
+            if len(self._line_cache) >= _LINE_CACHE_DOCUMENTS:
+                self._line_cache.clear()
+            self._line_cache[document.relative_path] = cached
+        return cached[line] if 0 <= line < len(cached) else None
+
     def relative_path(self, value: str) -> str:
         """Normalize a caller-supplied path to a repository-relative POSIX path.
 
@@ -225,6 +322,8 @@ class PrecisionIndexStore:
     def invalidate(self) -> None:
         """Drop cached index state, forcing the next load to re-read from disk."""
         self._cache.clear()
+        self._line_cache.clear()
+        self._freshness = None
 
 
 def default_index_path(root: Path) -> Path:

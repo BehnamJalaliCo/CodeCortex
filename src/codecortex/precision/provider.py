@@ -20,6 +20,7 @@ from codecortex.evidence.models import (
 from codecortex.precision.identity import SymbolIdentity
 from codecortex.precision.index import PrecisionIndexStore, PrecisionStatus
 from codecortex.precision.models import PrecisionIndex, PrecisionOccurrence
+from codecortex.precision.positions import character_to_protocol, protocol_to_character
 
 PROVIDER_KEY = "precision_index"
 PROVENANCE = "precision-index"
@@ -31,6 +32,25 @@ EXACT_CONFIDENCE = 1.0
 #: Confidence retained by a stale index entry. It still points at the right
 #: symbol far more often than a name match, but positions may have moved.
 STALE_CONFIDENCE = 0.55
+
+#: Confidence for an entry whose columns could not be converted from the
+#: indexer's declared encoding into character columns. The symbol is right; the
+#: column may be off on a line containing non-ASCII text.
+AMBIGUOUS_CONFIDENCE = 0.8
+
+AMBIGUOUS_POSITION_DETAIL = (
+    "column could not be converted from the indexer's position encoding, so the "
+    "reported column may be inaccurate on lines containing non-ASCII text"
+)
+
+
+@dataclass(frozen=True, slots=True)
+class _ResolvedSymbol:
+    """A symbol resolved from a caret, with the document that scopes it."""
+
+    symbol: str
+    document: str
+    ambiguous: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -101,20 +121,39 @@ class PrecisionEvidenceProvider(EvidenceProvider):
         *,
         stale: bool,
         identity: SymbolIdentity,
+        index: PrecisionIndex,
+        ambiguous: bool = False,
         extra: dict[str, object] | None = None,
     ) -> EvidenceRecord:
-        location = occurrence.range.to_dict()
+        location, position_ambiguous = self._public_location(occurrence, index)
+        uncertain = ambiguous or position_ambiguous
         metadata: dict[str, object] = {
             "roles": list(occurrence.role_names()),
             "symbol_identity": identity.to_dict(),
         }
+        document = index.document(occurrence.path)
+        if document is not None:
+            metadata["position_encoding"] = document.position_encoding.name.lower()
+        if uncertain:
+            metadata["position_ambiguous"] = True
+            metadata["position_detail"] = AMBIGUOUS_POSITION_DETAIL
         if extra:
             metadata.update(extra)
+        # Exactness is a claim about the position, not only about freshness. A
+        # position that could not be converted from the indexer's encoding is
+        # not exact, so it must not carry the exact tier.
+        exact = not stale and not uncertain
+        if stale:
+            confidence = STALE_CONFIDENCE
+        elif uncertain:
+            confidence = AMBIGUOUS_CONFIDENCE
+        else:
+            confidence = EXACT_CONFIDENCE
         return EvidenceRecord(
             kind=kind,
             provider=self.key,
             provenance=PROVENANCE,
-            trust=TrustTier.EXACT if not stale else TrustTier.INFERRED_HIGH,
+            trust=TrustTier.EXACT if exact else TrustTier.INFERRED_HIGH,
             path=occurrence.path,
             start_line=location["start_line"],
             start_column=location["start_column"],
@@ -123,17 +162,79 @@ class PrecisionEvidenceProvider(EvidenceProvider):
             symbol=identity.qualified_name or occurrence.symbol,
             target_symbol=occurrence.symbol,
             content=f"{identity.qualified_name or occurrence.symbol} at {occurrence.path}",
-            confidence=STALE_CONFIDENCE if stale else EXACT_CONFIDENCE,
-            exact=not stale,
+            confidence=confidence,
+            exact=exact,
             stale=stale,
             metadata=metadata,
         )
 
-    def _resolve_symbol(self, index: PrecisionIndex, query: PrecisionQuery) -> str | None:
+    def _resolve_symbol(
+        self, index: PrecisionIndex, query: PrecisionQuery
+    ) -> _ResolvedSymbol | None:
+        """Resolve a caret to a symbol, converting the caret into index columns.
+
+        The caret arrives as a Python character column. The index stores
+        columns in whatever unit the indexer declared, so the caret is
+        converted into that unit before it is compared. Skipping this step
+        resolves the wrong symbol on any line containing non-ASCII text.
+        """
         relative = self.store.relative_path(query.path)
+        document = index.document(relative)
+        if document is None:
+            return None
         line, column = query.zero_based()
+        ambiguous = False
+        if document.needs_column_conversion:
+            line_text = self.store.source_line(document, line)
+            if line_text is None:
+                # Without the source line the caret cannot be converted. Fall
+                # back to the raw column, which is correct for ASCII lines, and
+                # mark the result so it is never presented as exact.
+                ambiguous = True
+            else:
+                converted = character_to_protocol(
+                    line_text, column, document.position_encoding
+                )
+                column = converted.column
+                ambiguous = converted.ambiguous
         occurrence = index.occurrence_at(relative, line, column)
-        return occurrence.symbol if occurrence else None
+        if occurrence is None:
+            return None
+        return _ResolvedSymbol(
+            symbol=occurrence.symbol, document=relative, ambiguous=ambiguous
+        )
+
+    def _public_location(
+        self, occurrence: PrecisionOccurrence, index: PrecisionIndex
+    ) -> tuple[dict[str, int], bool]:
+        """Return one-based character coordinates for an occurrence.
+
+        Returns ``(location, ambiguous)``. ``ambiguous`` is set when the
+        indexer's columns could not be converted to character columns, which
+        means the reported position may be off on a non-ASCII line.
+        """
+        document = index.document(occurrence.path)
+        if document is None or not document.needs_column_conversion:
+            return occurrence.range.to_dict(), False
+        source = occurrence.range
+        start_text = self.store.source_line(document, source.start_line)
+        end_text = (
+            start_text
+            if source.single_line
+            else self.store.source_line(document, source.end_line)
+        )
+        if start_text is None or end_text is None:
+            return occurrence.range.to_dict(), True
+        encoding = document.position_encoding
+        start = protocol_to_character(start_text, source.start_column, encoding)
+        end = protocol_to_character(end_text, source.end_column, encoding)
+        location = {
+            "start_line": source.start_line + 1,
+            "start_column": start.column + 1,
+            "end_line": source.end_line + 1,
+            "end_column": end.column + 1,
+        }
+        return location, start.ambiguous or end.ambiguous
 
     # -- public queries -----------------------------------------------------
 
@@ -147,13 +248,20 @@ class PrecisionEvidenceProvider(EvidenceProvider):
         }
         if index is None:
             return payload
-        symbol = self._resolve_symbol(index, query)
-        if symbol is None:
+        resolved = self._resolve_symbol(index, query)
+        if resolved is None:
             return payload
-        information = index.symbol_information(symbol)
-        payload["symbol"] = (
-            information.to_dict() if information is not None else {"symbol": symbol}
+        information = index.symbol_information(resolved.symbol, resolved.document)
+        details: dict[str, object] = (
+            information.to_dict()
+            if information is not None
+            else {"symbol": resolved.symbol}
         )
+        details["document"] = resolved.document
+        if resolved.ambiguous:
+            details["position_ambiguous"] = True
+            details["position_detail"] = AMBIGUOUS_POSITION_DETAIL
+        payload["symbol"] = details
         return payload
 
     def _navigate(
@@ -165,8 +273,8 @@ class PrecisionEvidenceProvider(EvidenceProvider):
         report = self._report(status)
         if index is None:
             return EvidenceBundle(records=[], providers=[report])
-        symbol = self._resolve_symbol(index, query)
-        if symbol is None:
+        resolved = self._resolve_symbol(index, query)
+        if resolved is None:
             return EvidenceBundle(
                 records=[],
                 providers=[
@@ -178,7 +286,14 @@ class PrecisionEvidenceProvider(EvidenceProvider):
                     )
                 ],
             )
-        return self.evidence_for_symbol(symbol, kind, index=index, status=status)
+        return self.evidence_for_symbol(
+            resolved.symbol,
+            kind,
+            index=index,
+            status=status,
+            document=resolved.document,
+            ambiguous=resolved.ambiguous,
+        )
 
     def evidence_for_symbol(
         self,
@@ -187,8 +302,16 @@ class PrecisionEvidenceProvider(EvidenceProvider):
         *,
         index: PrecisionIndex | None = None,
         status: PrecisionStatus | None = None,
+        document: str | None = None,
+        ambiguous: bool = False,
     ) -> EvidenceBundle:
-        """Return evidence of one kind for an already-resolved symbol identity."""
+        """Return evidence of one kind for an already-resolved symbol identity.
+
+        ``document`` scopes the lookup. It is required for a document-local
+        symbol, whose identifier is only unique within the document that
+        declares it; without it such a symbol resolves to nothing rather than
+        to every same-numbered local in the repository.
+        """
         if index is None or status is None:
             index, status = self._loaded()
         report = self._report(status)
@@ -196,19 +319,26 @@ class PrecisionEvidenceProvider(EvidenceProvider):
             return EvidenceBundle(records=[], providers=[report])
         stale = status.stale
         identity = SymbolIdentity(raw=symbol)
-        information = index.symbol_information(symbol)
+        information = index.symbol_information(symbol, document)
         if information is not None:
             identity = information.identity
         if kind is EvidenceKind.DEFINITION:
-            occurrences = index.definitions_for(symbol)
+            occurrences = index.definitions_for(symbol, document)
         elif kind is EvidenceKind.IMPLEMENTATION:
-            occurrences = index.implementations_for(symbol)
+            occurrences = index.implementations_for(symbol, document)
         elif kind is EvidenceKind.REFERENCE:
-            occurrences = index.references_for(symbol)
+            occurrences = index.references_for(symbol, document)
         else:
-            occurrences = index.occurrences_for(symbol)
+            occurrences = index.occurrences_for(symbol, document)
         records = [
-            self._record(occurrence, kind, stale=stale, identity=identity)
+            self._record(
+                occurrence,
+                kind,
+                stale=stale,
+                identity=identity,
+                index=index,
+                ambiguous=ambiguous,
+            )
             for occurrence in occurrences
         ]
         return EvidenceBundle(records=records, providers=[report])
@@ -222,12 +352,12 @@ class PrecisionEvidenceProvider(EvidenceProvider):
     def implementations(self, query: PrecisionQuery) -> EvidenceBundle:
         return self._navigate(query, EvidenceKind.IMPLEMENTATION)
 
-    def occurrences(self, symbol: str) -> EvidenceBundle:
+    def occurrences(self, symbol: str, document: str | None = None) -> EvidenceBundle:
         index, status = self._loaded()
         if index is None:
             return EvidenceBundle(records=[], providers=[self._report(status)])
         return self.evidence_for_symbol(
-            symbol, EvidenceKind.REFERENCE, index=index, status=status
+            symbol, EvidenceKind.REFERENCE, index=index, status=status, document=document
         )
 
     def search_symbols(self, term: str, limit: int = 25) -> list[dict[str, object]]:
@@ -238,13 +368,16 @@ class PrecisionEvidenceProvider(EvidenceProvider):
         needle = term.strip().lower()
         if not needle:
             return []
-        seen: dict[str, dict[str, object]] = {}
+        seen: dict[tuple[str, str], dict[str, object]] = {}
         for document in index.documents:
             for symbol in document.symbols:
                 identity = symbol.identity
                 haystack = (identity.qualified_name or symbol.symbol).lower()
-                if needle in haystack and symbol.symbol not in seen:
-                    seen[symbol.symbol] = symbol.to_dict()
+                # Two documents may declare the same local id, so results are
+                # keyed by document as well as symbol.
+                key = (document.relative_path if identity.is_local else "", symbol.symbol)
+                if needle in haystack and key not in seen:
+                    seen[key] = {**symbol.to_dict(), "document": document.relative_path}
                     if len(seen) >= limit:
                         return list(seen.values())
         return list(seen.values())
