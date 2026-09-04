@@ -2,6 +2,12 @@
 
 Thank you for improving CodeCortex. Focused, tested changes are easier to review and safer to release.
 
+## First contribution
+
+Start with the repository's [good first issues](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22). They are intentionally scoped to be reviewable without requiring knowledge of the entire engine.
+
+If an issue is unclear, ask a question on that issue before building a large change. Do not create speculative rewrites for unassigned work.
+
 ## Development
 
 ```bash
