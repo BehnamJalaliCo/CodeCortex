@@ -30,9 +30,9 @@ def test_generator_runs_a_configured_argument_vector(tmp_path: Path) -> None:
     script.write_text(
         "import sys\nsys.stdout.write('indexed ' + ' '.join(sys.argv[1:]))\n", encoding="utf-8"
     )
-    result = _generator(tmp_path, sys.executable, str(script), "--out", "index.scip").generate()
+    result = _generator(tmp_path, sys.executable, str(script), "--out", "index.cortexidx").generate()
     assert result.succeeded
-    assert result.stdout == "indexed --out index.scip"
+    assert result.stdout == "indexed --out index.cortexidx"
     assert result.command[0] == str(Path(sys.executable).resolve())
 
 
@@ -85,4 +85,4 @@ def test_generator_reports_a_launch_failure(tmp_path: Path) -> None:
 
 def test_default_index_path_is_project_local(tmp_path: Path) -> None:
     assert default_index_path(tmp_path).is_relative_to(tmp_path)
-    assert default_index_path(tmp_path).name == "index.scip"
+    assert default_index_path(tmp_path).name == "index.cortexidx"
