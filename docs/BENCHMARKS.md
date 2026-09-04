@@ -42,7 +42,7 @@ Production benchmark tooling uses revision-pinned public repositories:
 python scripts/run_production_benchmark.py --provision
 ```
 
-See [benchmarks/README.md](../benchmarks/README.md) and [benchmarks/production/README.md](../benchmarks/production/README.md) in the repository for the exact harness and output fields.
+See [benchmarks/README.md](https://github.com/BehnamJalaliCo/CodeCortex/blob/main/benchmarks/README.md) and [benchmarks/production/README.md](https://github.com/BehnamJalaliCo/CodeCortex/blob/main/benchmarks/production/README.md) in the repository for the exact harness and output fields.
 
 ## Real-agent measurements
 
@@ -62,7 +62,7 @@ The live dependency-documentation provider remains credential-gated. The hardeni
 
 For current evidence and caveats, read:
 
-- [HARDENING_REPORT.md](../HARDENING_REPORT.md)
+- [HARDENING_REPORT.md](https://github.com/BehnamJalaliCo/CodeCortex/blob/main/HARDENING_REPORT.md)
 - [Quality targets](QUALITY.md)
 - [Testing](TESTING.md)
 - [Release evidence](RELEASE.md)
