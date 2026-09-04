@@ -8,9 +8,10 @@ from dataclasses import asdict, dataclass
 from pathlib import Path
 from typing import Any
 
+from codecortex.indexing.discovery import EXCLUDED_PARTS, iter_repository_files
 from codecortex.state import AtomicJsonFile
 
-_EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build", "__pycache__"}
+_EXCLUDED = EXCLUDED_PARTS
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,19 +46,7 @@ class IncrementalIndex:
         self.max_file_bytes = max_file_bytes
 
     def _iter_files(self) -> list[Path]:
-        files: list[Path] = []
-        for path in self.root.rglob("*"):
-            if not path.is_file():
-                continue
-            relative = path.relative_to(self.root)
-            if any(part in _EXCLUDED for part in relative.parts):
-                continue
-            try:
-                if path.stat().st_size > self.max_file_bytes:
-                    continue
-            except OSError:
-                continue
-            files.append(path)
+        files = iter_repository_files(self.root, max_bytes=self.max_file_bytes)
         files.sort(key=lambda item: item.relative_to(self.root).as_posix())
         return files
 

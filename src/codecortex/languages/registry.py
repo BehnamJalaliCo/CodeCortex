@@ -7,7 +7,7 @@ import re
 from dataclasses import dataclass, field
 from pathlib import Path
 
-from codecortex.languages.native import TreeSitterParserProvider
+from codecortex.languages.sandbox import native_provider
 
 
 @dataclass(frozen=True, slots=True)
@@ -51,9 +51,10 @@ class LanguageRegistry:
     )
 
     def __init__(self, *, native: bool = True) -> None:
-        self.native = (
-            TreeSitterParserProvider() if native and TreeSitterParserProvider.available() else None
-        )
+        # Native grammars are third-party extension code and can fault the whole
+        # process, so they run behind a crash-isolating wrapper. See
+        # `codecortex.languages.sandbox`.
+        self.native = native_provider() if native else None
 
     @property
     def suffixes(self) -> frozenset[str]:
