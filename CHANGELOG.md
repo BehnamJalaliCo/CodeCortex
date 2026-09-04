@@ -2,6 +2,14 @@
 
 All notable changes to CodeCortex are documented here. The project follows semantic versioning while in alpha; breaking changes may occur before 1.0 and will be called out explicitly.
 
+## 0.1.0a6
+
+- Reworked GitHub discovery and first-run onboarding for CodeCortex Context Engine.
+- Added official MCP Registry manifest, PyPI ownership marker, manifest validation, and release publishing.
+- Surfaced Claude Code, Codex, Cursor, Gemini CLI, and OpenCode integration setup.
+- Expanded MkDocs navigation, Getting Started, benchmark evidence, launch materials, and discovery documentation.
+- Added contributor-friendly `good first issue` entry points and product/social discovery assets.
+
 ## Unreleased
 
 ### Added
