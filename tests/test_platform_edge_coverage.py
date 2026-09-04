@@ -695,7 +695,7 @@ def test_public_api_cli_contracts_and_feature_loading(monkeypatch: pytest.Monkey
 
     captured: dict[str, object] = {}
     service = object()
-    monkeypatch.setattr(api_app, "create_app", lambda *, state_dir: service)
+    monkeypatch.setattr(\n        api_app, "create_app", lambda *, state_dir, repository_root=None: service\n    )
     monkeypatch.setattr(
         uvicorn,
         "run",
