@@ -59,10 +59,27 @@ The complete Apache-2.0 terms are available in CodeCortex's `LICENSE` file and i
 - License at the recorded revision: Apache License 2.0
 - Integration mode: protocol consumption. CodeCortex implements an original
   reader for the published index schema and symbol-identity grammar. No
-  upstream source code is copied or vendored.
+  upstream implementation source code is copied into the shipped package.
 
-The complete Apache-2.0 terms are available in CodeCortex's `LICENSE` file and
-in the upstream repository. The recorded provenance is also stored in
+### Vendored schema fixture
+
+One upstream file is vendored, as a test fixture only:
+
+| Local path | Upstream path | Modifications |
+| --- | --- | --- |
+| `tests/fixtures/upstream/scip/scip.proto` | `scip.proto` | none — byte-identical |
+| `tests/fixtures/upstream/scip/LICENSE` | `LICENSE` | none — byte-identical |
+
+The schema is vendored so that `tests/test_precision_conformance.py` can verify
+CodeCortex's transcribed field numbers against the authoritative definition
+deterministically and offline. It is not imported by `src/codecortex`, is not
+included in the built wheel, and is not a runtime dependency. Exact digests and
+the upstream URLs are recorded in
+`tests/fixtures/upstream/scip/PROVENANCE.json`.
+
+The complete Apache-2.0 terms are available in CodeCortex's `LICENSE` file, in
+`tests/fixtures/upstream/scip/LICENSE`, and in the upstream repository. The
+recorded provenance is also stored in
 `docs/provenance/precision-intelligence.md`.
 
 ## Context7

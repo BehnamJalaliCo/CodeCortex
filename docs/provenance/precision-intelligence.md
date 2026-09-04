@@ -17,11 +17,22 @@ conforming indexer can feed CodeCortex.
 
 ## Integration mode
 
-**Protocol consumption.** No upstream source code is copied into CodeCortex.
+**Protocol consumption.** No upstream implementation source code is copied into
+the CodeCortex package. One upstream file — the `scip.proto` schema itself,
+plus its licence — is vendored byte-identical under
+`tests/fixtures/upstream/scip/` as a *test fixture*, so that schema-conformance
+tests run deterministically and offline instead of fetching a floating branch.
+That fixture is not imported by `src/codecortex`, not shipped in the wheel, and
+not a runtime dependency. Its exact digests and upstream URLs are recorded in
+`tests/fixtures/upstream/scip/PROVENANCE.json`, and
+`scripts/refresh_upstream_fixtures.py` re-verifies them against upstream.
 
 `src/codecortex/precision/schema.py` transcribes the field numbers, role bit
-flags, and range encodings published in the upstream `scip.proto` schema at the
-recorded revision. `src/codecortex/precision/wire.py` implements the subset of
+flags, position encodings, and range encodings published in the upstream
+`scip.proto` schema at the recorded revision;
+`tests/test_precision_conformance.py` asserts every one of those constants
+against the vendored schema, so the transcription is verified rather than
+trusted. `src/codecortex/precision/wire.py` implements the subset of
 the standard protocol-buffer binary encoding needed to decode those fields, and
 `src/codecortex/precision/identity.py` implements the published symbol-identity
 string grammar. These are original implementations written against the public

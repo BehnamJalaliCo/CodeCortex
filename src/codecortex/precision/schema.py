@@ -3,11 +3,15 @@
 Keeping the schema constants in one place makes the importer auditable against
 the upstream ``.proto`` definition recorded in ``docs/provenance/precision-intelligence.md``.
 Only the fields CodeCortex actually consumes are listed.
+
+``tests/test_precision_conformance.py`` parses the pinned upstream schema and
+asserts every constant below matches it, so these numbers are verified against
+the protocol rather than trusted as a manual transcription.
 """
 
 from __future__ import annotations
 
-from enum import IntFlag
+from enum import IntEnum, IntFlag
 
 
 class IndexField:
@@ -44,9 +48,12 @@ class OccurrenceField:
     SYMBOL_ROLES = 3
     OVERRIDE_DOCUMENTATION = 4
     SYNTAX_KIND = 5
+    DIAGNOSTICS = 6
     ENCLOSING_RANGE = 7
     SINGLE_LINE_RANGE = 8
     MULTI_LINE_RANGE = 9
+    SINGLE_LINE_ENCLOSING_RANGE = 10
+    MULTI_LINE_ENCLOSING_RANGE = 11
 
 
 class SingleLineRangeField:
@@ -68,6 +75,7 @@ class SymbolInformationField:
     RELATIONSHIPS = 4
     KIND = 5
     DISPLAY_NAME = 6
+    SIGNATURE_DOCUMENTATION = 7
     ENCLOSING_SYMBOL = 8
 
 
@@ -89,6 +97,29 @@ class SymbolRole(IntFlag):
     GENERATED = 0x10
     TEST = 0x20
     FORWARD_DEFINITION = 0x40
+
+
+class PositionEncoding(IntEnum):
+    """How an indexer expressed occurrence columns, per ``Document.position_encoding``.
+
+    Columns are *not* Python string indices. An indexer reports an offset from
+    the start of the line measured in code units of the declared encoding, so a
+    line containing any non-ASCII character needs conversion before the offset
+    can be used against a Python ``str``.
+    """
+
+    UNSPECIFIED = 0
+    UTF8_CODE_UNIT = 1
+    UTF16_CODE_UNIT = 2
+    UTF32_CODE_UNIT = 3
+
+
+class TextEncoding(IntEnum):
+    """How ``Document.text`` was encoded, per ``Metadata.text_document_encoding``."""
+
+    UNSPECIFIED = 0
+    UTF8 = 1
+    UTF16 = 2
 
 
 #: Schema protocol versions this importer has been validated against.
