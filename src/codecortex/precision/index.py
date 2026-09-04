@@ -17,10 +17,10 @@ from codecortex.precision.models import (
 
 #: Locations searched when no explicit path is configured, in priority order.
 DEFAULT_INDEX_LOCATIONS: tuple[str, ...] = (
-    ".codecortex/precision/index.scip",
-    "index.scip",
-    ".scip/index.scip",
-    "build/index.scip",
+    ".codecortex/precision/index.cortexidx",
+    "index.cortexidx",
+    ".codecortex/index.cortexidx",
+    "build/index.cortexidx",
 )
 
 #: How many documents' lines are held for position conversion before the cache
