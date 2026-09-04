@@ -2,9 +2,11 @@
 
 # 🧠 CodeCortex Context Engine
 
-### Context intelligence infrastructure for AI coding agents
+<!-- mcp-name: io.github.BehnamJalaliCo/codecortex-context-engine -->
 
-[![Typing SVG](https://readme-typing-svg.demolab.com?font=JetBrains+Mono&weight=700&size=24&duration=2500&pause=650&center=true&vCenter=true&repeat=true&width=1000&lines=Map+the+repository.;Resolve+the+relationships.;Retrieve+the+right+evidence.;Understand+the+blast+radius.;Change+with+guardrails.;Remember+what+the+team+learned.;Scale+without+hiding+failure.)](https://github.com/BehnamJalaliCo/CodeCortex)
+### Open-source context intelligence infrastructure for AI coding agents
+
+**Map the repository · resolve symbols · retrieve task-specific evidence · estimate impact · edit with guardrails**
 
 [![PyPI](https://img.shields.io/pypi/v/codecortex-context-engine?label=PyPI&logo=pypi)](https://pypi.org/project/codecortex-context-engine/)
 [![Python](https://img.shields.io/pypi/pyversions/codecortex-context-engine?logo=python)](https://pypi.org/project/codecortex-context-engine/)
@@ -14,9 +16,8 @@
 [![OpenSSF Best Practices](https://www.bestpractices.dev/projects/14379/badge)](https://www.bestpractices.dev/projects/14379)
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BehnamJalaliCo/CodeCortex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BehnamJalaliCo/CodeCortex)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
-[![Status](https://img.shields.io/badge/status-alpha-orange.svg)](#project-status)
 
-**Map · Understand · Retrieve · Explain · Impact · Guard · Validate · Remember · Scale**
+[**⭐ Star CodeCortex**](https://github.com/BehnamJalaliCo/CodeCortex) · [**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**Good First Issues**](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**Contribute**](CONTRIBUTING.md)
 
 [🇬🇧 English](#english) · [🇮🇷 فارسی](#فارسی)
 
@@ -24,11 +25,88 @@
 
 ---
 
+## Why CodeCortex?
+
+A coding agent can read code. The harder problem is deciding **what matters, what is connected, what can break, and how much context is actually worth sending to the model**.
+
+CodeCortex turns a repository into a query-specific evidence system for coding agents:
+
+- **Repository + symbol intelligence** — structure, definitions, references, dependencies, and call relationships.
+- **Evidence-aware retrieval** — lexical, semantic, structural, graph, Git, architecture, and memory signals are ranked together.
+- **Impact before edits** — reverse dependencies, affected tests, ownership, and change risk are inspectable before mutation.
+- **Guarded changes** — semantic edits and structural rewrite previews keep source boundaries and review steps explicit.
+- **Persistent project context** — architecture, history, project/team memory, traces, and multi-repo workspaces survive beyond one chat.
+
+> **Core rule: retrieve evidence before generating confidence.**
+
+![CodeCortex product overview](docs/assets/codecortex-overview.svg)
+
+## 60-second start
+
+Requires Python 3.11–3.13.
+
+```bash
+python -m pip install --upgrade codecortex-context-engine
+cortex init .
+cortex index
+cortex doctor
+```
+
+Then ask the repository useful questions:
+
+```bash
+cortex architecture
+cortex semantic "authentication and session lifecycle"
+cortex impact AuthService
+```
+
+Or expose the repository to an MCP-capable coding agent:
+
+```bash
+cortex mcp --path .
+```
+
+## Works with coding agents
+
+CodeCortex includes merge-safe project configuration for **Claude Code, Codex, Cursor, Gemini CLI, and OpenCode**.
+
+```bash
+cortex agents detect
+cortex agents configure --dry-run
+# or configure every supported target explicitly:
+cortex agents configure --all
+```
+
+The configurator only manages CodeCortex-owned MCP entries and keeps user-owned configuration intact.
+
+## See it work locally
+
+The repository ships a deterministic demo project and demo runner:
+
+```bash
+python scripts/demo.py
+```
+
+The demo indexes the fixture repository, analyzes the blast radius of `AuthService`, routes an evidence request, and reports measured context/trace data. It does not fabricate benchmark values.
+
+## Reproducible evidence snapshot
+
+These are committed hardening measurements, not generalized performance promises:
+
+| Evidence | Recorded result |
+|---|---:|
+| Hardening test suite | **711 passed, 28 skipped, 0 failed** |
+| Coverage in hardening report | **91.74%** |
+| Warm exact definition lookup | **0.19–0.23 ms median** |
+| Freshness scan across 600 documents | **4.25 ms median** |
+
+See [HARDENING_REPORT.md](HARDENING_REPORT.md) and [benchmarks/](benchmarks/) for scope, methodology, limitations, and reproducibility notes.
+
+---
 
 <a id="english"></a>
 
 # 🇬🇧 English
-
 <div align="center">
 
 ### Give the coding agent a map before asking it to navigate the codebase.

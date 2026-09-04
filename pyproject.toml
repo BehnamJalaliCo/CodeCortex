@@ -56,6 +56,7 @@ Security = "https://github.com/BehnamJalaliCo/CodeCortex/security"
 Documentation = "https://behnamjalalico.github.io/CodeCortex/"
 
 [project.scripts]
+codecortex-context-engine = "codecortex.entrypoint:app"
 codecortex = "codecortex.entrypoint:app"
 cortex = "codecortex.entrypoint:app"
 cortex-remote = "codecortex.distributed.cli:app"

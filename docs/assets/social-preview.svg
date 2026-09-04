@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="640" viewBox="0 0 1280 640" role="img" aria-labelledby="title desc">
+<title id="title">CodeCortex Context Engine social preview</title>
+<desc id="desc">CodeCortex Context Engine, open-source context intelligence infrastructure for AI coding agents.</desc>
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+    <stop offset="0" stop-color="#070b16"/>
+    <stop offset="1" stop-color="#16213d"/>
+  </linearGradient>
+  <linearGradient id="line" x1="0" y1="0" x2="1" y2="0">
+    <stop offset="0" stop-color="#38bdf8"/>
+    <stop offset="1" stop-color="#8b5cf6"/>
+  </linearGradient>
+</defs>
+<rect width="1280" height="640" fill="url(#bg)"/>
+<circle cx="1040" cy="155" r="210" fill="#2563eb" opacity=".09"/>
+<circle cx="1130" cy="480" r="260" fill="#7c3aed" opacity=".08"/>
+<rect x="72" y="78" width="1136" height="484" rx="30" fill="#0b1222" stroke="#273449"/>
+<rect x="72" y="78" width="1136" height="5" rx="3" fill="url(#line)"/>
+<text x="122" y="182" fill="#f8fafc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="58" font-weight="750">CodeCortex Context Engine</text>
+<text x="122" y="238" fill="#a5b4fc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="28">Open-source context intelligence for AI coding agents</text>
+<text x="122" y="322" fill="#cbd5e1" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22">Repository graph  •  precise code navigation  •  MCP</text>
+<text x="122" y="362" fill="#cbd5e1" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="22">impact analysis  •  memory  •  guarded edits</text>
+<rect x="122" y="425" width="660" height="72" rx="18" fill="#111b30" stroke="#334155"/>
+<text x="452" y="469" text-anchor="middle" fill="#f8fafc" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="24" font-weight="700">Retrieve evidence before generating confidence.</text>
+<text x="122" y="535" fill="#64748b" font-family="Inter,Segoe UI,Arial,sans-serif" font-size="18">github.com/BehnamJalaliCo/CodeCortex</text>
+</svg>
