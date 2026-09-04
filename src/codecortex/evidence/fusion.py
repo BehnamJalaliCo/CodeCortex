@@ -29,9 +29,32 @@ TRUST_WEIGHTS: dict[TrustTier, float] = {
     TrustTier.WEAK: 0.20,
 }
 
-#: Multiplier applied to stale evidence. Stale exact evidence must never
-#: outrank fresh structural evidence, so the penalty is deliberately steep.
-STALE_PENALTY = 0.55
+#: Floor of the confidence factor in :meth:`EvidenceFusionPolicy.score`. A
+#: record with zero confidence still scores this fraction of its tier weight,
+#: because the tier itself carries information.
+MIN_CONFIDENCE_FACTOR = 0.35
+
+#: Smallest score any fresh structural record can reach: its tier weight at
+#: zero confidence.
+_WEAKEST_FRESH_STRUCTURAL = TRUST_WEIGHTS[TrustTier.STRUCTURAL] * MIN_CONFIDENCE_FACTOR
+
+#: Multiplier applied to stale evidence.
+#:
+#: Derived, not chosen. The policy guarantees that stale exact evidence never
+#: outranks fresh structural evidence, and that guarantee has to hold at every
+#: confidence pairing - including the worst one, where the stale record is
+#: fully confident and the fresh one is not confident at all. Since a fresh
+#: score never exceeds 1.0, scaling stale scores by a factor strictly below the
+#: weakest possible fresh structural score makes the property true by
+#: construction rather than by arithmetic that happens to work out.
+#:
+#: A flat multiplier picked by eye does not do this: at 0.55, a stale exact
+#: record at confidence 0.25 scored 0.282 against a fresh structural record's
+#: 0.252, and led the ranking.
+#:
+#: Scaling rather than clamping keeps stale records ordered among themselves,
+#: so a stale exact result still outranks a stale guess.
+STALE_PENALTY = round(_WEAKEST_FRESH_STRUCTURAL * 0.99, 6)
 
 
 @dataclass(frozen=True, slots=True)
@@ -48,7 +71,9 @@ class EvidenceFusionPolicy:
     @staticmethod
     def score(record: EvidenceRecord) -> float:
         weight = TRUST_WEIGHTS.get(record.trust, TRUST_WEIGHTS[TrustTier.WEAK])
-        score = weight * (0.35 + 0.65 * record.confidence)
+        score = weight * (
+            MIN_CONFIDENCE_FACTOR + (1.0 - MIN_CONFIDENCE_FACTOR) * record.confidence
+        )
         if record.stale:
             score *= STALE_PENALTY
         return round(min(1.0, max(0.0, score)), 6)
