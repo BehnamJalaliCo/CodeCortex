@@ -139,7 +139,7 @@ class DependencyIntelligence:
     def provider(self) -> DependencyDocumentationProvider | None:
         if self._provider is not None:
             return self._provider
-        if not self.settings.enabled:
+        if not self.settings.enabled or not self.settings.base_url.strip():
             return None
         self._provider = RemoteDocumentationProvider(self.settings, self.api_key())
         return self._provider
@@ -151,6 +151,8 @@ class DependencyIntelligence:
         detail = ""
         if not self.settings.enabled:
             detail = "dependency documentation is disabled in configuration"
+        elif not self.settings.base_url.strip():
+            detail = "set dependency_docs.base_url to enable documentation lookups"
         elif not credentials:
             detail = f"set {self.settings.api_key_env} to enable documentation lookups"
         return DependencyDocsStatus(
