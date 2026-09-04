@@ -53,42 +53,49 @@ class CodeCortexClient:
         return decoded
 
     def health(self) -> dict[str, Any]:
-        return self._request("GET", "health")
+        payload: dict[str, Any] = self._request("GET", "health")
+        return payload
 
     def repositories(self) -> list[dict[str, Any]]:
-        return self._request("GET", "repositories")
+        payload: list[dict[str, Any]] = self._request("GET", "repositories")
+        return payload
 
     def repository_overview(self, repository_id: str) -> dict[str, Any]:
-        return self._request(
+        payload: dict[str, Any] = self._request(
             "GET", f"repositories/{urllib.parse.quote(repository_id, safe='')}/overview"
         )
+        return payload
 
     def search(self, repository_id: str, query: str, limit: int = 20) -> dict[str, Any]:
-        return self._request(
+        payload: dict[str, Any] = self._request(
             "POST",
             f"repositories/{urllib.parse.quote(repository_id, safe='')}/search",
             {"query": query, "limit": limit},
         )
+        return payload
 
     def context(self, repository_id: str, query: str, budget: int = 32000) -> dict[str, Any]:
-        return self._request(
+        payload: dict[str, Any] = self._request(
             "POST",
             f"repositories/{urllib.parse.quote(repository_id, safe='')}/context",
             {"query": query, "budget": budget},
         )
+        return payload
 
     def impact(self, repository_id: str, query: str) -> dict[str, Any]:
-        return self._request(
+        payload: dict[str, Any] = self._request(
             "POST",
             f"repositories/{urllib.parse.quote(repository_id, safe='')}/impact",
             {"query": query},
         )
+        return payload
 
     def pr_analysis(
         self, repository_id: str, base_ref: str, head_ref: str = "HEAD"
     ) -> dict[str, Any]:
-        return self._request(
+        payload: dict[str, Any] = self._request(
             "POST",
             f"repositories/{urllib.parse.quote(repository_id, safe='')}/pr-analysis",
             {"base_ref": base_ref, "head_ref": head_ref},
         )
+        return payload

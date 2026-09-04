@@ -8,9 +8,18 @@ import uuid
 from dataclasses import asdict, dataclass
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 Severity = Literal["info", "warning", "critical"]
+_SEVERITIES: frozenset[str] = frozenset({"info", "warning", "critical"})
+
+
+def _as_severity(value: object) -> Severity:
+    """Coerce a persisted severity column back to the documented literal set."""
+    text = str(value)
+    if text not in _SEVERITIES:
+        raise ValueError(f"unknown notification severity: {text!r}")
+    return cast(Severity, text)
 
 
 @dataclass(frozen=True, slots=True)
@@ -114,14 +123,14 @@ class NotificationStore:
         return Notification(
             str(row["notification_id"]),
             str(row["kind"]),
-            str(row["severity"]),
+            _as_severity(row["severity"]),
             str(row["title"]),
             str(row["detail"]),
             str(row["resource"]),
             dict(json.loads(row["metadata"])),
             str(row["created_at"]),
             None if row["acknowledged_at"] is None else str(row["acknowledged_at"]),
-        )  # type: ignore[arg-type]
+        )
 
     @staticmethod
     def payload(item: Notification) -> dict[str, Any]:

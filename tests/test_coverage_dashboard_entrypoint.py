@@ -14,9 +14,10 @@ from codecortex.backends.contracts import BackendStatus
 
 
 def _runtime(tmp_path: Path) -> SimpleNamespace:
-    state = tmp_path / ".codecortex"
+    from codecortex.config import CortexConfig
+
     return SimpleNamespace(
-        config=SimpleNamespace(state_dir=state, project_root=tmp_path),
+        config=CortexConfig(project_root=tmp_path),
         active_backends=("graph",),
         gateway=SimpleNamespace(health=lambda: None),
     )

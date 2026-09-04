@@ -2,13 +2,26 @@
 
 from __future__ import annotations
 
-from typing import Any
+from collections.abc import Awaitable, Callable
+from typing import TYPE_CHECKING, Any
 
 from codecortex.observability import PlatformMetrics, StructuredRequestLog, clock_ms, request_id
 
+if TYPE_CHECKING:
+    from starlette.requests import Request
+    from starlette.responses import Response
 
-def mount(app: Any, ctx: Any) -> None:
-    from fastapi import Depends, Request
+#: Signature of the next handler in a Starlette/FastAPI middleware chain.
+_CallNext = Callable[["Request"], Awaitable["Response"]]
+
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
+
+
+def mount(app: FastAPI, ctx: Any) -> None:
+    from fastapi import Depends
     from fastapi.responses import PlainTextResponse
 
     metrics = PlatformMetrics()
@@ -16,7 +29,7 @@ def mount(app: Any, ctx: Any) -> None:
     app.state.platform_metrics = metrics
 
     @app.middleware("http")
-    async def observe(request: Request, call_next):
+    async def observe(request: Request, call_next: _CallNext) -> Response:
         rid = request.headers.get("x-request-id") or request_id()
         trace_id = request.headers.get("x-trace-id")
         started = clock_ms()

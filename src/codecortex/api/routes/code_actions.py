@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, Field
 
 from codecortex.application.safe_edit import SafeEditService
 from codecortex.platform_audit import PlatformAudit
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
 
 
 class EditRequest(BaseModel):
@@ -20,7 +24,7 @@ class EditRequest(BaseModel):
     approved: bool = False
 
 
-def mount(app: Any, ctx: Any) -> None:
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     audit = PlatformAudit(ctx.state_root)

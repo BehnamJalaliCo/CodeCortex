@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
 from time import perf_counter
 
@@ -105,7 +106,7 @@ class Orchestrator:
         parent_span: str | None,
         attempt_number: int,
     ) -> EngineResult:
-        execute = engine.execute  # type: ignore[attr-defined]
+        execute: Callable[[AgentRequest], Awaitable[EngineResult]] = engine.execute  # type: ignore[attr-defined]
         if self.tracer and trace_id:
             attrs: dict[str, object] = {
                 "capability": capability.value,

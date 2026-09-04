@@ -127,9 +127,9 @@ class PerformanceHistoryStore:
     def trend(self, suite: str, metric: str, limit: int = 100) -> MetricTrend:
         snapshots = list(reversed(self.history(suite, limit)))
         values = [
-            float(snapshot.metrics[metric])
+            float(value)
             for snapshot in snapshots
-            if snapshot.metrics.get(metric) is not None
+            if (value := snapshot.metrics.get(metric)) is not None
         ]
         if not values:
             return MetricTrend(metric, 0, None, None, None, None, None, None)
@@ -175,7 +175,7 @@ class PerformanceHistoryStore:
             self.record(
                 str(raw["commit"]),
                 str(raw["suite"]),
-                {str(key): value for key, value in metrics.items()},  # type: ignore[misc]
+                {str(key): value for key, value in metrics.items()},
                 metadata={str(key): value for key, value in metadata.items()},
                 recorded_at=str(raw["recorded_at"]),
                 snapshot_id=str(raw["snapshot_id"]),

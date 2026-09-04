@@ -50,7 +50,7 @@ class MCPStdioClient:
         self.start()
         return self
 
-    def __exit__(self, exc_type, exc, tb) -> None:  # noqa: ANN001
+    def __exit__(self, exc_type: object, exc: object, tb: object) -> None:
         self.close()
 
     def start(self) -> None:

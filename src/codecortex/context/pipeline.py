@@ -10,8 +10,14 @@ from pathlib import Path
 from codecortex.config import CortexConfig
 from codecortex.context.budget import BudgetContextProcessor
 from codecortex.core.models import ContextChunk
+from codecortex.evidence.fusion import EvidenceFusionPolicy
+from codecortex.evidence.models import EvidenceRecord
 from codecortex.indexing.graph import ProjectGraph
 from codecortex.state import AtomicJsonFile
+
+#: Relevance floor applied to evidence chunks so exact navigation evidence is
+#: not out-ranked by a long, lexically similar source excerpt.
+EVIDENCE_RELEVANCE_FLOOR = 0.62
 
 
 @dataclass(frozen=True, slots=True)
@@ -59,7 +65,8 @@ class ContextCache:
         item = entries.get(key)
         if not isinstance(item, dict):
             return None
-        created = float(item.get("created", 0))
+        raw_created = item.get("created", 0)
+        created = float(raw_created) if isinstance(raw_created, (int, float)) else 0.0
         if time.time() - created > self.ttl_seconds:
             return None
         chunks = item.get("chunks")
@@ -72,15 +79,14 @@ class ContextCache:
 
     def put(self, key: str, chunks: list[ContextChunk]) -> None:
         def update(payload: object) -> dict[str, object]:
-            current = (
+            current: dict[str, object] = (
                 payload
                 if isinstance(payload, dict) and payload.get("version") == self.VERSION
                 else {"version": self.VERSION, "entries": {}}
             )
-            entries = (
-                dict(current.get("entries", {}))
-                if isinstance(current.get("entries", {}), dict)
-                else {}
+            raw_entries = current.get("entries", {})
+            entries: dict[str, object] = (
+                dict(raw_entries) if isinstance(raw_entries, dict) else {}
             )
             entries[key] = {
                 "created": time.time(),
@@ -209,9 +215,35 @@ class ContextPipeline:
                 term_sets.append((terms, provenance))
         return selected
 
-    async def prepare(self, query: str, chunks: list[ContextChunk], budget: int) -> ContextResult:
+    @staticmethod
+    def _evidence_chunks(evidence: list[EvidenceRecord]) -> list[ContextChunk]:
+        """Convert ranked evidence to chunks, keeping trust above lexical overlap.
+
+        Evidence already carries a calibrated ranking score, so a floor keeps a
+        strong exact match from being demoted by the lexical re-rank below.
+        """
+        chunks = EvidenceFusionPolicy.to_chunks(evidence)
+        return [
+            chunk.model_copy(
+                update={"relevance": max(chunk.relevance, EVIDENCE_RELEVANCE_FLOOR)}
+            )
+            for chunk in chunks
+        ]
+
+    async def prepare(
+        self,
+        query: str,
+        chunks: list[ContextChunk],
+        budget: int,
+        *,
+        evidence: list[EvidenceRecord] | None = None,
+    ) -> ContextResult:
         CortexConfig.load(self.root).validate_budget(budget)
-        candidates = [*chunks, *self._graph_chunks(query)]
+        candidates = [
+            *chunks,
+            *self._evidence_chunks(evidence or []),
+            *self._graph_chunks(query),
+        ]
         normalized = [
             chunk.model_copy(update={"tokens": self.budget.token_counter.count(chunk.content)})
             for chunk in candidates

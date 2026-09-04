@@ -3,11 +3,15 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any, Literal
+from typing import TYPE_CHECKING, Any, Literal
 
 from pydantic import BaseModel, Field
 
 from codecortex.distributed.organization import OrganizationPolicyStore
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
 
 
 class OrganizationCreate(BaseModel):
@@ -27,7 +31,7 @@ class PolicyWrite(BaseModel):
     metadata: dict[str, object] = Field(default_factory=dict)
 
 
-def mount(app: Any, ctx: Any) -> None:
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     store = OrganizationPolicyStore(ctx.state_root / "distributed" / "organization.db")

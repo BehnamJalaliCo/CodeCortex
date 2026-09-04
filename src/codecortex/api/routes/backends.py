@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from codecortex.backends.spec import BACKENDS
 
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
-def mount(app: Any, ctx: Any) -> None:
+
+
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
-    def manager(repository_id: str):
+    def manager(repository_id: str) -> Any:
         item = ctx.database.repository(repository_id)
         if item is None:
             raise HTTPException(status_code=404, detail="repository not found")

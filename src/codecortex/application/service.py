@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from pydantic import BaseModel, ConfigDict
 
 from codecortex.git_intelligence import GitIntelligence
+from codecortex.indexing.graph import ProjectGraph
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 from codecortex.memory.knowledge import ProjectKnowledgeExtractor
 
@@ -29,7 +30,7 @@ class CortexApplicationService:
     def project_root(self) -> str:
         return str(self.runtime.config.project_root)
 
-    def _graph(self):
+    def _graph(self) -> ProjectGraph:
         return IncrementalGraphIndex(self.runtime.config.project_root).refresh()[0]
 
     async def overview(self) -> ProjectOverview:

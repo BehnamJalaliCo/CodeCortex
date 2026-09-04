@@ -11,6 +11,7 @@ from codecortex.architecture import (
     ArchitectureFingerprint,
     ArchitectureInferenceEngine,
 )
+from codecortex.indexing.graph import ProjectGraph
 from codecortex.indexing.incremental_graph import IncrementalGraphIndex
 
 
@@ -19,7 +20,7 @@ class ArchitectureService:
         self.root = root.expanduser().resolve()
         self.baseline_path = self.root / ".codecortex" / "architecture" / "baseline.json"
 
-    def _graph(self):
+    def _graph(self) -> ProjectGraph:
         return IncrementalGraphIndex(self.root).refresh()[0]
 
     def analyze(self) -> dict[str, Any]:

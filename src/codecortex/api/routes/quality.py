@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from codecortex.evaluation.regression import BenchmarkHistory, RegressionGate
 
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
-def mount(app: Any, ctx: Any) -> None:
+
+
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     def history(repository_id: str) -> BenchmarkHistory:

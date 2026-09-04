@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Any
+from pathlib import Path
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
@@ -12,6 +13,9 @@ from codecortex.application.impact import ImpactService
 from codecortex.application.search import RepositorySearchService
 from codecortex.application.service import CortexApplicationService
 from codecortex.application.traces import TraceExplorerService
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
 
 class QueryRequest(BaseModel):
@@ -27,21 +31,22 @@ class ContextRequest(QueryRequest):
 
 
 def mount_repository_routes(
-    app: Any, prefix: str, database: Any, runtimes: Any, principal: Any
+    app: FastAPI, prefix: str, database: Any, runtimes: Any, principal: Any
 ) -> None:
     from fastapi import Depends, HTTPException
 
-    def record(repository_id: str):
+    def record(repository_id: str) -> Any:
         item = database.repository(repository_id)
         if item is None:
             raise HTTPException(status_code=404, detail="repository not found")
         return item
 
-    def runtime(repository_id: str):
+    def runtime(repository_id: str) -> Any:
         return runtimes.get(record(repository_id).root)
 
-    def root(repository_id: str):
-        return runtime(repository_id).config.project_root
+    def root(repository_id: str) -> Path:
+        project_root: Path = runtime(repository_id).config.project_root
+        return project_root
 
     def service(repository_id: str) -> CortexApplicationService:
         return CortexApplicationService(runtime(repository_id))

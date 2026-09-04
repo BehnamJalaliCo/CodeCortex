@@ -28,7 +28,7 @@ class SymbolProvider(Protocol):
 
 class PythonProvider:
     language = "python"
-    suffixes = (".py",)
+    suffixes: tuple[str, ...] = (".py",)
 
     def extract(self, path: Path, source: str) -> list[SymbolRecord]:
         try:

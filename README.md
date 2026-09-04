@@ -155,6 +155,37 @@ Project memory stores durable facts and decisions. Shared team memory adds revis
 
 Architecture inference summarizes observable structure with confidence and evidence. Drift compares current structure with a baseline so teams can detect architectural movement before it becomes invisible convention. The goal is not to enforce a single architecture style. The goal is to make architectural change inspectable.
 
+### Precise navigation
+
+When a compiler- or indexer-grade index of the repository is available, CodeCortex resolves definitions, references, and implementations by symbol identity rather than by name, so two packages that export the same class name are never confused. Exact relationships are fused into the project graph, where impact analysis weighs them above inferred ones. When no index is present, or when the index no longer matches the working tree, results are marked accordingly and CodeCortex falls back to structural and heuristic resolution — it never presents stale evidence as exact.
+
+```bash
+cortex definition src/auth.ts 87 14
+cortex references src/auth.ts 87 14
+cortex precision-status
+```
+
+### Version-aware dependency context
+
+CodeCortex reads dependency manifests and lockfiles across Python, Node, Rust, Go, JVM, and .NET, and keeps the declared constraint separate from the resolved version — `^15.0.0` does not tell an agent which API the repository actually runs. An optional documentation provider can then supply documentation for that exact version. The provider is disabled by default, sends only the library name, resolved version, and question, and reports an explicit docs-unavailable state rather than inventing documentation when it cannot answer.
+
+```bash
+cortex dependency next
+cortex dependency-docs next "middleware authentication"
+```
+
+### Structural transformations
+
+Structural search finds code by syntax rather than text, so `old_api($X)` matches the calls and not the comment that mentions them. A migration is always previewed before it is applied: the preview records each file's content hash, expires, and reports affected symbols, affected tests, and a risk score. Applying it re-verifies every hash, enforces file/match/byte limits, writes atomically, rolls back on failure, reindexes, and runs validation.
+
+```bash
+cortex structural-search --lang python --pattern 'old_api($X)'
+cortex rewrite-preview --lang python --pattern 'old_api($X)' --replacement 'new_api($X)'
+cortex rewrite-apply <preview-id>
+```
+
+Every result from these layers carries a trust tier and a provenance label, so an agent can tell compiler-resolved evidence from a name coincidence. See `docs/EVIDENCE_FUSION.md`.
+
 ### Distributed scale
 
 Version 0.5 of the roadmap adds remote shared-memory synchronization, persistent vector database providers, hosted remote MCP with authentication/TLS/quotas/access policy, multi-node indexing and retrieval workers, scheduled longitudinal performance history, and organization-level workspace policy with retained audit evidence.
@@ -230,7 +261,17 @@ cortex symbol-history src/auth.py 10 80
 cortex pr main --head HEAD
 cortex workspace-add backend ../backend
 cortex workspace-search "payment service"
+cortex definition src/auth.py 12 7
+cortex references src/auth.py 12 7
+cortex implementations src/auth.py 12 7
+cortex precision-status
+cortex dependency next
+cortex dependency-docs next "middleware authentication"
+cortex structural-search --lang python --pattern 'old_api($X)'
+cortex rewrite-preview --lang python --pattern 'old_api($X)' --replacement 'new_api($X)'
+cortex rewrite-apply <preview-id>
 cortex benchmark
+cortex evidence-benchmark
 cortex dashboard
 cortex doctor
 ```
@@ -250,6 +291,8 @@ cortex doctor
 - `docs/ARCHITECTURE.md` — architectural overview.
 - `docs/DISTRIBUTED.md` — distributed-scale design and operation.
 - `docs/ADVANCED_INTELLIGENCE.md` — advanced intelligence surfaces.
+- `docs/EVIDENCE_FUSION.md` — evidence model, trust tiers, optional layers, fallback, and security.
+- `docs/provenance/` — recorded upstream provenance for integrated protocols and optional dependencies.
 - `docs/INTEGRATIONS.md` — agent integrations.
 - `docs/QUALITY.md` — measurable quality policy.
 - `docs/TESTING.md` — test strategy.

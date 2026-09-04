@@ -7,7 +7,7 @@ from pathlib import Path
 
 from codecortex.context.tokenizer import AutoTokenCounter, TokenCounter
 from codecortex.core.models import ContextChunk
-from codecortex.languages import LanguageRegistry
+from codecortex.languages import LanguageRegistry, ParsedUnit
 
 
 class AstContextSlicer:
@@ -75,7 +75,7 @@ class AstContextSlicer:
             return []
         query_terms = {term.lower() for term in re.findall(r"[A-Za-z_][A-Za-z0-9_]{2,}", query)}
         units = self.languages.parse(path, source)
-        scored: list[tuple[int, object]] = []
+        scored: list[tuple[int, ParsedUnit]] = []
         for unit in units:
             haystack = {unit.name.lower(), *(ref.lower() for ref in unit.references)}
             score = sum(
@@ -83,28 +83,28 @@ class AstContextSlicer:
             )
             if score:
                 scored.append((score, unit))
-        scored.sort(key=lambda item: (-item[0], item[1].line, item[1].name))  # type: ignore[attr-defined]
+        scored.sort(key=lambda item: (-item[0], item[1].line, item[1].name))
         if not scored:
             return []
         per_chunk = max(64, max_tokens // max(1, min(limit, len(scored))))
         result: list[ContextChunk] = []
         for _, unit in scored[: max(1, limit)]:
-            content = self.slice_symbol(path, unit.name, unit.line, max_tokens=per_chunk)  # type: ignore[attr-defined]
+            content = self.slice_symbol(path, unit.name, unit.line, max_tokens=per_chunk)
             if not content:
                 continue
             relative = path.resolve().relative_to(self.root).as_posix()
             result.append(
                 ContextChunk(
-                    source=f"ast:{relative}:{unit.name}",  # type: ignore[attr-defined]
+                    source=f"ast:{relative}:{unit.name}",
                     content=content,
                     tokens=self.token_counter.count(content),
                     relevance=0.96,
                     metadata={
                         "path": relative,
-                        "symbol": unit.name,  # type: ignore[attr-defined]
-                        "line": unit.line,  # type: ignore[attr-defined]
-                        "end_line": unit.end_line,  # type: ignore[attr-defined]
-                        "container": unit.container,  # type: ignore[attr-defined]
+                        "symbol": unit.name,
+                        "line": unit.line,
+                        "end_line": unit.end_line,
+                        "container": unit.container,
                         "ast_slice": True,
                     },
                 )

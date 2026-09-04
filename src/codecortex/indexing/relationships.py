@@ -86,7 +86,10 @@ class RelationshipExtractor:
                 self.generic_visit(node)
                 containers.pop()
 
-            visit_AsyncFunctionDef = visit_FunctionDef
+            def visit_AsyncFunctionDef(self, node: ast.AsyncFunctionDef) -> None:
+                containers.append(node.name)
+                self.generic_visit(node)
+                containers.pop()
 
             def visit_Import(self, node: ast.Import) -> None:
                 for alias in node.names:

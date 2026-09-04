@@ -28,6 +28,7 @@ dependencies = [
 semantic = ["sentence-transformers>=3,<6"]
 parsers = ["tree-sitter-language-pack>=1.15.8,<2"]
 web = ["fastapi>=0.116,<1", "uvicorn>=0.35,<1"]
+structural = ["ast-grep-cli>=0.45.3,<1"]
 dev = [
   "pytest>=8.2",
   "pytest-asyncio>=1.4.0",
@@ -86,3 +87,8 @@ ignore = ["E501"]
 python_version = "3.11"
 strict = true
 packages = ["codecortex"]
+
+[[tool.mypy.overrides]]
+# Optional extra without published type information; imported behind a guard.
+module = ["sentence_transformers.*"]
+ignore_missing_imports = true

@@ -36,6 +36,11 @@ _TEXT_SUFFIXES = {
 _EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build"}
 
 
+def _as_strings(value: object) -> tuple[str, ...]:
+    """Coerce a JSON list to a tuple of strings, tolerating a missing key."""
+    return tuple(str(item) for item in value) if isinstance(value, list) else ()
+
+
 @dataclass(frozen=True, slots=True)
 class BenchmarkCase:
     id: str
@@ -48,8 +53,8 @@ class BenchmarkCase:
         return cls(
             id=str(value["id"]),
             query=str(value["query"]),
-            expected_paths=tuple(str(item) for item in value.get("expected_paths", [])),
-            expected_symbols=tuple(str(item) for item in value.get("expected_symbols", [])),
+            expected_paths=_as_strings(value.get("expected_paths")),
+            expected_symbols=_as_strings(value.get("expected_symbols")),
         )
 
 

@@ -8,9 +8,18 @@ import uuid
 from dataclasses import dataclass
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
-from typing import Literal
+from typing import Literal, cast
 
 TaskStatus = Literal["queued", "leased", "completed", "failed"]
+_TASK_STATUSES: frozenset[str] = frozenset({"queued", "leased", "completed", "failed"})
+
+
+def _as_status(value: object) -> TaskStatus:
+    """Coerce a persisted status column back to the documented literal set."""
+    text = str(value)
+    if text not in _TASK_STATUSES:
+        raise ValueError(f"unknown task status: {text!r}")
+    return cast(TaskStatus, text)
 
 
 def _now_dt() -> datetime:
@@ -333,7 +342,7 @@ class WorkerCoordinator:
             required_capabilities=tuple(
                 str(item) for item in json.loads(row["required_capabilities"])
             ),
-            status=str(row["status"]),
+            status=_as_status(row["status"]),
             assigned_to=None if row["assigned_to"] is None else str(row["assigned_to"]),
             lease_expires_at=None
             if row["lease_expires_at"] is None

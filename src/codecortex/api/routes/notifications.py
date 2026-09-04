@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from codecortex.notifications import NotificationStore
 
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
-def mount(app: Any, ctx: Any) -> None:
+
+
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     store = NotificationStore(ctx.state_root / "notifications.db")

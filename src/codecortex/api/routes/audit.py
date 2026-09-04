@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from codecortex.distributed.organization import AuditLog
 
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
-def mount(app: Any, ctx: Any) -> None:
+
+
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends
 
     log = AuditLog(ctx.state_root / "distributed" / "organization.db")

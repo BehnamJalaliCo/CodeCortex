@@ -4,11 +4,15 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
 from codecortex.memory.team_store import RevisionConflict, TeamMemoryStore
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
 
 
 class MemoryWrite(BaseModel):
@@ -20,7 +24,7 @@ class MemoryWrite(BaseModel):
     expected_revision: int | None = Field(default=None, ge=0)
 
 
-def mount(app: Any, ctx: Any) -> None:
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     def store(repository_id: str) -> TeamMemoryStore:

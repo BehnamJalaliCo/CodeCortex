@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel
 
 from codecortex.integrations.agents import AgentConfigurator, AgentTarget
 from codecortex.platform_audit import PlatformAudit
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
 
 
 class ConfigureRequest(BaseModel):
@@ -17,7 +21,7 @@ class ConfigureRequest(BaseModel):
     approved: bool = False
 
 
-def mount(app: Any, ctx: Any) -> None:
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     audit = PlatformAudit(ctx.state_root)

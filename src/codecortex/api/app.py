@@ -3,6 +3,7 @@
 import asyncio
 import json
 import queue
+from collections.abc import AsyncIterator
 from dataclasses import asdict
 from pathlib import Path
 from typing import Any
@@ -71,7 +72,7 @@ def create_app(
         payload["status"] = job.status.value
         return JobResponse(**payload)
 
-    def registered_repository(repository_id: str):
+    def registered_repository(repository_id: str) -> Any:
         item = database.repository(repository_id)
         if item is None:
             raise HTTPException(status_code=404, detail="repository not found")
@@ -98,7 +99,7 @@ def create_app(
     async def event_stream(_actor: str = Depends(principal)) -> StreamingResponse:
         subscriber = events.subscribe()
 
-        async def stream():
+        async def stream() -> AsyncIterator[str]:
             try:
                 while True:
                     try:

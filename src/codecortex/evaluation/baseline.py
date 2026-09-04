@@ -68,6 +68,6 @@ class PlatformBaselineStore:
         return PlatformBaseline(
             recorded_at=str(raw["recorded_at"]),
             revision=None if raw.get("revision") is None else str(raw["revision"]),
-            metrics={str(key): value for key, value in metrics.items()},  # type: ignore[misc]
+            metrics={str(key): value for key, value in metrics.items()},
             metadata={str(key): str(value) for key, value in metadata.items()},
         )

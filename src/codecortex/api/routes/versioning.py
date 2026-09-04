@@ -2,12 +2,16 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from codecortex.api.versioning import version_manifest
 
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
-def mount(app: Any, ctx: Any) -> None:
+
+
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends
 
     @app.get(f"{ctx.prefix}/api-versions")

@@ -3,12 +3,18 @@
 from __future__ import annotations
 
 from dataclasses import asdict
-from typing import Any
+from typing import TYPE_CHECKING, Any, cast
 
 from codecortex.distributed.cluster import ClusterCoordinator
 
+if TYPE_CHECKING:
+    from fastapi import FastAPI
 
-def mount(app: Any, ctx: Any) -> None:
+    from codecortex.distributed.workers import TaskStatus
+
+
+
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     cluster = ClusterCoordinator(ctx.state_root / "distributed")
@@ -30,7 +36,8 @@ def mount(app: Any, ctx: Any) -> None:
     ) -> dict[str, Any]:
         if status is not None and status not in {"queued", "leased", "completed", "failed"}:
             raise HTTPException(status_code=400, detail="invalid task status")
-        items = cluster.workers.list_tasks(status, max(1, min(limit, 2000)))
+        selected = cast("TaskStatus | None", status)
+        items = cluster.workers.list_tasks(selected, max(1, min(limit, 2000)))
         payload = []
         for item in items:
             row = asdict(item)

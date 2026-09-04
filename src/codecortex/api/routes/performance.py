@@ -4,12 +4,16 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, Field
 
 from codecortex.evaluation.scale import RepositoryScaleBenchmark
 from codecortex.performance import PerformanceBudgets
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+
 
 
 class ScaleRequest(BaseModel):
@@ -18,7 +22,7 @@ class ScaleRequest(BaseModel):
     )
 
 
-def mount(app: Any, ctx: Any) -> None:
+def mount(app: FastAPI, ctx: Any) -> None:
     from fastapi import Depends, HTTPException
 
     @app.get(f"{ctx.prefix}/performance/budgets")

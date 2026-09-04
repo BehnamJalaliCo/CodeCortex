@@ -6,8 +6,18 @@ import os
 import threading
 import time
 from collections import defaultdict, deque
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
-from typing import Any
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from fastapi import FastAPI
+    from starlette.requests import Request
+    from starlette.responses import Response
+
+#: Signature of the next handler in a Starlette/FastAPI middleware chain.
+_CallNext = Callable[["Request"], Awaitable["Response"]]
+
 
 
 @dataclass(frozen=True, slots=True)
@@ -45,15 +55,14 @@ class SlidingWindowLimiter:
             return True
 
 
-def install_api_hardening(app: Any, settings: ApiHardeningSettings | None = None) -> None:
-    from fastapi import Request
+def install_api_hardening(app: FastAPI, settings: ApiHardeningSettings | None = None) -> None:
     from fastapi.responses import JSONResponse
 
     config = settings or ApiHardeningSettings.from_env()
     limiter = SlidingWindowLimiter(config.requests_per_minute)
 
     @app.middleware("http")
-    async def harden(request: Request, call_next):
+    async def harden(request: Request, call_next: _CallNext) -> Response:
         content_length = request.headers.get("content-length")
         if content_length:
             try:
