@@ -25,6 +25,17 @@ authentication. It is one implementation of the
 `DependencyDocumentationProvider` contract; any other provider can be supplied
 instead, and the deterministic fake used in CodeCortex's tests is one.
 
+The status handling, parameter names, and response shapes were validated
+against the upstream OpenAPI document and the published error-handling table at
+the recorded revision, rather than from memory. Statuses handled explicitly:
+`200`, `202` (accepted, documentation not finalized — reported as pending, and
+its explanatory body never returned as documentation), `301` (a *library*
+redirection carrying its target in the body rather than a `Location` header,
+validated and bounded), `400`, `401`, `402`, `403`, `404`, `409`, `422`, `429`
+(honouring `Retry-After` in both documented forms, up to a bound), and
+`500`/`502`/`503`/`504`. `tests/test_dependency_contract.py` asserts each
+against a real local HTTP server.
+
 ## Self-hosting: an explicit limitation
 
 The upstream public repository contains the client, MCP, SDK, and CLI packages.
@@ -43,6 +54,9 @@ Consequences enforced in the code:
   explicit docs-unavailable state, and never fabricates documentation;
 - CodeCortex's own tests never contact the service. They use deterministic
   fakes and a local HTTP stub, so CI requires no account and no credentials.
+  A credential-gated smoke test (`tests/test_dependency_live_smoke.py`) exists
+  for the live path; it reports SKIPPED with its reason when no key is present,
+  and a skip means the live path was not exercised — never that it passed.
 
 ## Privacy boundary
 

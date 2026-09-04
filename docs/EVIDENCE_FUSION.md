@@ -63,11 +63,24 @@ probability.
 | `inferred` | a heuristic cross-file relationship |
 | `weak` | a lexical coincidence |
 
-Two properties are enforced rather than documented-and-hoped-for:
+Four properties are enforced in code rather than documented-and-hoped-for, and
+each is checked exhaustively across the tier and confidence space:
 
-- **Stale exact evidence never outranks fresh structural evidence.** A stale
-  record is downweighted steeply, because an index that predates an edit
-  reports positions that no longer exist.
+- **Stale exact evidence never outranks fresh structural evidence.** The stale
+  multiplier is derived from that bound rather than chosen: stale scores are
+  scaled by a factor strictly below the weakest score any fresh structural
+  record can reach, so the property holds at every confidence pairing instead
+  of at most of them. Scaling rather than clamping keeps stale records ordered
+  among themselves, so a stale exact result still beats a stale guess.
+- **Exact and stale cannot both be set.** Exactness is a claim about the
+  present. A record that is out of date cannot also be exact, and the model
+  rejects any attempt to declare both.
+- **A provider cannot elevate its own trust tier.** A tier describes *how* a
+  result was obtained, so the ceiling belongs to the method: only an index
+  produced by a compiler or language analyser may claim `exact`; an AST match
+  is `structural` however confident the engine is; retrieved documentation is
+  evidence about a dependency's API rather than an exact resolution of a
+  repository symbol.
 - **Weaker evidence is superseded, never erased.** When two providers point at
   the same location, the stronger record is kept and the weaker one is recorded
   under `metadata.superseded`, so conflicts stay visible for debugging.
@@ -85,11 +98,30 @@ case where name matching is a coin flip.
 Exact edges are also fused into the project graph, where impact analysis weighs
 them more heavily than inferred ones and reports the mix.
 
-**Fallback:** no index, an unreadable index, or an unsupported schema version
-all produce an `unavailable` provider report naming the reason, and CodeCortex
-continues with structural and heuristic resolution. A **stale** index is not
-discarded: its results are returned marked `stale`, ranked below fresh
-evidence, with reindex guidance.
+**Fallback:** no index, an unreadable index, an unsupported schema version, or
+a document path that violates the protocol all produce an `unavailable`
+provider report naming the reason, and CodeCortex continues with structural and
+heuristic resolution. A **stale** index is not discarded: its results are
+returned marked `stale`, ranked below fresh evidence, with reindex guidance.
+
+**Positions.** Occurrence columns are not character offsets. An index stores
+them in whatever code unit the indexer declared — bytes, UTF-16 code units, or
+code points — and the same position is a different number in each. CodeCortex
+converts at the boundary and reports code points throughout. Every real indexer
+tested omits the declaration and emits UTF-16, so an undeclared encoding is
+resolved from a table of *measured* tool behaviour; an unrecognised tool falls
+back to code points and its positions are reported as an assumption rather than
+as exact. Ranges are half-open, matching the protocol: a caret at a range's end
+column belongs to the next token.
+
+**Staleness** is deterministic. Every indexed document is checked, not a
+sample, because a sampled scheme reports `exact` for exactly the files it did
+not look at. The check calls `stat` only — nothing is hashed — and costs about
+4 ms across 600 documents.
+
+**Local symbols** are scoped to the document that declares them, as the
+protocol requires. Real indexers restart these identifiers per file, so a
+globally-keyed lookup would return one file's local variable as another's.
 
 ### Dependency Intelligence
 
@@ -101,16 +133,37 @@ separate. `^15.0.0` is not an answer to "which API does this repository run";
 Given a resolved version, an optional documentation provider can return
 version-aware documentation for it.
 
+**Version matching** distinguishes an exact answer from a fallback. A
+lockfile's `15.1.8` and a provider label of `v15.1.8` are the same release and
+are matched; `2.0.0-rc.1` and `2.0.0` are not, and are never folded together.
+Only a version the provider actually publishes is pinned in the request, and
+whether the result is version-exact is recorded on the resolution — and kept in
+the cache, so a cached fallback answer is not mistaken later for a cached exact
+one.
+
 **Fallback:** the documentation provider is disabled by default. When it is
 disabled, uncredentialed, offline, rate-limited, or returns something
 unexpected, CodeCortex returns the local manifest facts plus an explicit
-docs-unavailable state. It never fabricates documentation. Cached documentation
-may be served while offline, always marked `stale`.
+docs-unavailable state. It never fabricates documentation. A library the
+provider has accepted but not finished preparing is reported as pending rather
+than as missing, and its explanatory response body is never returned as that
+library's documentation. Cached documentation may be served while offline,
+always marked `stale`.
 
 ### Structural Search and Structural Rewrite
 
 Finds code by syntax rather than by text — `old_api($X)` matches the calls and
 not the comment that mentions them — and turns that into guarded migrations.
+
+The engine is pinned to an exact version rather than a range, because
+CodeCortex parses its structured output and that output shape is part of the
+integration contract. `cortex doctor` reports an installed build that is not
+the verified one instead of showing it as plainly available.
+
+A pattern the engine cannot parse exits successfully with a warning and no
+matches. CodeCortex surfaces that warning as an error, so an invalid pattern is
+distinguishable from a pattern that legitimately found nothing — and so a
+malformed pattern can never silently drive a rewrite.
 
 **Fallback:** when the engine is not installed, structural capabilities report
 `unavailable` and CodeCortex falls back to lexical and symbol search. It does
