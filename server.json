@@ -24,14 +24,12 @@
           "value": "mcp"
         },
         {
-          "type": "positional",
-          "value": "--path"
-        },
-        {
-          "type": "positional",
+          "type": "named",
+          "name": "--path",
           "value": "."
         }
-      ]
+      ],
+      "runtimeHint": "uvx"
     }
   ]
 }
