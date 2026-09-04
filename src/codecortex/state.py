@@ -6,6 +6,7 @@ import json
 import os
 import shutil
 import tempfile
+import threading
 import time
 from collections.abc import Callable
 from pathlib import Path
@@ -25,26 +26,53 @@ class FileMutex:
         self.path = path
         self.timeout_seconds = timeout_seconds
         self.stale_seconds = stale_seconds
+        # Serialize callers that share this FileMutex instance before touching
+        # the cross-process lock directory. Without this local guard, a thread
+        # can observe another thread's release/recreate window on Windows and
+        # receive WinError 5 while mkdir races with rmtree.
+        self._thread_lock = threading.Lock()
         self._held = False
 
     def acquire(self) -> None:
-        self.path.parent.mkdir(parents=True, exist_ok=True)
         deadline = time.monotonic() + self.timeout_seconds
-        while True:
-            try:
-                self.path.mkdir()
+        remaining = max(0.0, deadline - time.monotonic())
+        if not self._thread_lock.acquire(timeout=remaining):
+            raise TimeoutError(f"timed out waiting for state lock: {self.path}") from None
+
+        try:
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            while True:
+                try:
+                    self.path.mkdir()
+                except (FileExistsError, PermissionError):
+                    # On Windows, mkdir may briefly report access denied while
+                    # another owner is removing the lock directory. Treat that
+                    # transient state as contention and retry within the same
+                    # bounded timeout instead of leaking a platform-specific
+                    # PermissionError to callers.
+                    self._break_stale_lock()
+                    if time.monotonic() >= deadline:
+                        raise TimeoutError(
+                            f"timed out waiting for state lock: {self.path}"
+                        ) from None
+                    time.sleep(0.05)
+                    continue
+
                 marker = self.path / "owner.json"
-                marker.write_text(
-                    json.dumps({"pid": os.getpid(), "created": time.time()}),
-                    encoding="utf-8",
-                )
+                try:
+                    marker.write_text(
+                        json.dumps({"pid": os.getpid(), "created": time.time()}),
+                        encoding="utf-8",
+                    )
+                except BaseException:
+                    shutil.rmtree(self.path, ignore_errors=True)
+                    raise
+
                 self._held = True
                 return
-            except FileExistsError:
-                self._break_stale_lock()
-                if time.monotonic() >= deadline:
-                    raise TimeoutError(f"timed out waiting for state lock: {self.path}") from None
-                time.sleep(0.05)
+        except BaseException:
+            self._thread_lock.release()
+            raise
 
     def _break_stale_lock(self) -> None:
         try:
@@ -58,8 +86,11 @@ class FileMutex:
     def release(self) -> None:
         if not self._held:
             return
-        shutil.rmtree(self.path, ignore_errors=True)
-        self._held = False
+        try:
+            shutil.rmtree(self.path, ignore_errors=True)
+        finally:
+            self._held = False
+            self._thread_lock.release()
 
     def __enter__(self) -> FileMutex:
         self.acquire()
