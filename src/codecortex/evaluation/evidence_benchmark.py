@@ -8,7 +8,6 @@ metric that cannot be measured is reported as ``None`` rather than filled in.
 from __future__ import annotations
 
 import json
-import shutil
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from time import perf_counter
@@ -184,7 +183,7 @@ class EvidenceBenchmark:
             )
             return
 
-        index_path = root / ".codecortex" / "precision" / "index.scip"
+        index_path = root / ".codecortex" / "precision" / "index.cortexidx"
         index_path.parent.mkdir(parents=True, exist_ok=True)
         index_path.write_bytes(self.precision_index)
         started = perf_counter()
@@ -277,7 +276,7 @@ class EvidenceBenchmark:
             duration_ms=(perf_counter() - started) * 1000,
         )
 
-        command = self.structural_command or shutil.which("ast-grep")
+        command = self.structural_command
         if command is None:
             self._skipped.append("mechanical-migration: structural engine is not installed")
             self._cases.append(
