@@ -29,6 +29,15 @@ class PrecisionIndexConfig(BaseModel):
     generator_command: tuple[str, ...] = ()
     generator_timeout_seconds: float = Field(default=900.0, gt=0)
     max_index_bytes: int = Field(default=256 * 1024 * 1024, gt=0)
+    #: Largest source file read back for column conversion. Files above this
+    #: are not converted rather than being loaded into memory.
+    max_source_bytes: int = Field(default=8 * 1024 * 1024, gt=0)
+    #: How long a computed freshness verdict may be reused before the indexed
+    #: documents are checked again. Zero, the default, means every check scans
+    #: the whole index, so an edit is never missed. A positive value trades
+    #: that guarantee for fewer stat calls on a very large index: an edit made
+    #: within the window is not seen until it expires. Raise it deliberately.
+    freshness_ttl_seconds: float = Field(default=0.0, ge=0)
 
 
 class DependencyDocsConfig(BaseModel):

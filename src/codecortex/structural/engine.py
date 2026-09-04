@@ -11,6 +11,7 @@ Security properties
 from __future__ import annotations
 
 import json
+import re
 import shutil
 import subprocess
 from collections.abc import Iterator
@@ -35,6 +36,25 @@ SUCCESS_EXIT_CODES = frozenset({0, 1})
 #: Cap on captured stderr kept for diagnostics.
 MAX_ERROR_CHARS = 4_000
 
+#: The engine's own wording when a pattern failed to parse cleanly. It reports
+#: this on stderr and still exits successfully with zero matches, so the marker
+#: is the only signal that a pattern was malformed rather than unmatched.
+PATTERN_ERROR_MARKER = "Pattern contains an ERROR node"
+
+#: Engine release the JSON-stream parsing is tested against, and the version
+#: the ``structural`` extra pins. CodeCortex parses this engine's structured
+#: records, so its output shape is part of the integration contract; a
+#: different build may be fine, but it is unverified and says so.
+TESTED_ENGINE_VERSION = "0.45.3"
+
+_VERSION_TOKEN = re.compile(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.\-]+)?)")
+
+
+def parse_engine_version(text: str) -> str:
+    """Extract a version from the engine's ``--version`` output."""
+    found = _VERSION_TOKEN.search(text)
+    return found.group(1) if found else ""
+
 
 @dataclass(frozen=True, slots=True)
 class EngineStatus:
@@ -49,12 +69,43 @@ class EngineStatus:
     def label(self) -> str:
         return "available" if self.available else "unavailable"
 
+    @property
+    def engine_version(self) -> str:
+        """The engine's own version number, extracted from its banner."""
+        return parse_engine_version(self.version)
+
+    @property
+    def verified_version(self) -> bool:
+        """Whether the installed engine is the release CodeCortex tests against."""
+        return self.engine_version == TESTED_ENGINE_VERSION
+
+    @property
+    def version_warning(self) -> str:
+        """A warning when the installed engine is not the tested release.
+
+        Not an error: another build will usually work. But CodeCortex parses
+        this engine's structured output, so an untested version is exactly
+        where a silent shape change would show up, and saying nothing would
+        present an unverified combination as a verified one.
+        """
+        if not self.available or self.verified_version:
+            return ""
+        found = self.engine_version or "an unrecognised version"
+        return (
+            f"structural engine {found} is installed; CodeCortex verifies its "
+            f"output against {TESTED_ENGINE_VERSION}"
+        )
+
     def to_dict(self) -> dict[str, object]:
         return {
             "status": self.label,
             "available": self.available,
             "executable": self.executable,
             "version": self.version,
+            "engine_version": self.engine_version,
+            "tested_version": TESTED_ENGINE_VERSION,
+            "verified_version": self.verified_version,
+            "version_warning": self.version_warning,
             "detail": self.detail,
         }
 
@@ -211,6 +262,15 @@ class StructuralEngine:
             raise StructuralError(
                 f"structural engine failed (exit {run.exit_code}): "
                 f"{run.stderr.strip() or 'no diagnostic output'}"
+            )
+        # A pattern the engine could not parse cleanly exits 0 with a warning
+        # and matches nothing. Dropping that warning makes a broken pattern
+        # indistinguishable from a pattern that legitimately found nothing -
+        # and its matches, if any, are not safe to drive a rewrite from.
+        if PATTERN_ERROR_MARKER in run.stderr:
+            raise StructuralError(
+                "structural pattern is not valid for this language: "
+                f"{run.stderr.strip().splitlines()[0]}"
             )
         yielded = 0
         for line in run.stdout.splitlines():

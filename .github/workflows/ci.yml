@@ -69,10 +69,17 @@ jobs:
           tests/test_unified_language_pipeline.py
           tests/test_retrieval_v2.py
           tests/test_evidence_fusion.py
+          tests/test_evidence_invariants.py
+          tests/test_evidence_acceptance.py
+          tests/test_evidence_security.py
           tests/test_evidence_surfaces.py
           tests/test_precision_intelligence.py
+          tests/test_precision_semantics.py
+          tests/test_precision_conformance.py
+          tests/test_real_index_conformance.py
           tests/test_precision_generator.py
           tests/test_dependency_intelligence.py
+          tests/test_dependency_contract.py
           tests/test_structural_intelligence.py
 
   platform-contracts:

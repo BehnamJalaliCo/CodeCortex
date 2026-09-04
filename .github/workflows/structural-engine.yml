@@ -42,10 +42,14 @@ jobs:
           cache: pip
       - run: python -m pip install --upgrade pip
       - run: pip install -e ".[dev,structural]"
-      - name: Confirm the engine is installed
-        run: ast-grep --version
+      - name: Confirm the pinned engine is installed
+        run: |
+          ast-grep --version
+          ast-grep --version | grep -qF "$(python -c 'from codecortex.structural.engine import TESTED_ENGINE_VERSION as v; print(v)')"
       - name: Structural search, preview, and guarded apply
         run: pytest -q tests/test_structural_intelligence.py tests/test_evidence_benchmark.py
+      - name: Real-binary conformance
+        run: pytest -q tests/test_structural_conformance.py
       - name: Measured evidence benchmark
         run: |
           cortex evidence-benchmark --output benchmarks/evidence.json

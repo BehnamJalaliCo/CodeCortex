@@ -11,7 +11,11 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 
 from codecortex.indexing.graph import GraphEdge, GraphNode, ProjectGraph
-from codecortex.precision.models import PrecisionIndex, PrecisionOccurrence
+from codecortex.precision.models import (
+    PrecisionIndex,
+    PrecisionOccurrence,
+    scoped_symbol_key,
+)
 
 #: Edge kind emitted for an exact reference resolved by the precision index.
 PRECISE_REFERENCE_KIND = "references"
@@ -107,7 +111,9 @@ class PrecisionGraphFusion:
             for occurrence in document.occurrences:
                 if occurrence.is_definition:
                     continue
-                target = definitions.get(occurrence.symbol)
+                target = definitions.get(
+                    scoped_symbol_key(occurrence.path, occurrence.symbol)
+                )
                 if target is None:
                     unresolved += 1
                     continue
@@ -170,16 +176,23 @@ class PrecisionGraphFusion:
     def _definition_nodes(
         index: PrecisionIndex, locator: _NodeLocator
     ) -> dict[str, GraphNode]:
+        """Map each defined symbol to its graph node.
+
+        Keys are document-scoped, so a ``local`` id declared in two files does
+        not resolve every file's references onto whichever definition happened
+        to be indexed first.
+        """
         definitions: dict[str, GraphNode] = {}
         for document in index.documents:
             for occurrence in document.occurrences:
-                if not occurrence.is_definition or occurrence.symbol in definitions:
+                key = scoped_symbol_key(occurrence.path, occurrence.symbol)
+                if not occurrence.is_definition or key in definitions:
                     continue
                 node = locator.definition_node(
                     occurrence.path, occurrence.range.start_line + 1
                 )
                 if node is not None:
-                    definitions[occurrence.symbol] = node
+                    definitions[key] = node
         return definitions
 
     @staticmethod

@@ -53,6 +53,37 @@ class ProviderState(StrEnum):
     ERROR = "error"
 
 
+#: Tier ordering, strongest first. Used only to compare two tiers.
+_TIER_RANK: dict[TrustTier, int] = {
+    TrustTier.EXACT: 0,
+    TrustTier.NEAR_EXACT: 1,
+    TrustTier.STRUCTURAL: 2,
+    TrustTier.INFERRED_HIGH: 3,
+    TrustTier.INFERRED: 4,
+    TrustTier.WEAK: 5,
+}
+
+#: The strongest tier each known provenance may claim.
+#:
+#: A trust tier is a claim about *how* a result was obtained, so the ceiling
+#: belongs to the method rather than to the provider that happens to use it.
+#: Only an index produced by a compiler or language analyser can assert an
+#: exact resolution; an AST match is structural however confident the engine
+#: is; documentation retrieved for a version is evidence about a dependency's
+#: API, not about this repository's symbols. Without a ceiling, a provider that
+#: labelled itself ``exact`` would sort above genuinely exact evidence, and
+#: nothing in the pipeline would notice.
+#:
+#: A provenance not listed here is unconstrained: this is a guard against a
+#: known layer over-claiming, not a registry every caller must be added to.
+MAX_TRUST_BY_PROVENANCE: dict[str, TrustTier] = {
+    "precision-index": TrustTier.EXACT,
+    "structural-match": TrustTier.STRUCTURAL,
+    "dependency-documentation": TrustTier.NEAR_EXACT,
+    "cross-file-heuristic": TrustTier.INFERRED_HIGH,
+}
+
+
 class EvidenceRecord(BaseModel):
     """One ranked, attributable observation about the repository or its dependencies."""
 
@@ -84,6 +115,19 @@ class EvidenceRecord(BaseModel):
     def _fill_identity(self) -> EvidenceRecord:
         if self.exact and self.trust is not TrustTier.EXACT:
             raise ValueError("exact evidence must use the exact trust tier")
+        if self.exact and self.stale:
+            # Exactness is a claim about right now. Evidence known to be out of
+            # date cannot also be exact, and letting the two coexist would put
+            # a stale answer at the top of every ranking.
+            raise ValueError("stale evidence cannot be exact")
+        ceiling = MAX_TRUST_BY_PROVENANCE.get(self.provenance)
+        if ceiling is not None and _TIER_RANK[self.trust] < _TIER_RANK[ceiling]:
+            # A provider declaring a stronger tier than its method can support
+            # would outrank better evidence on its own say-so.
+            raise ValueError(
+                f"provenance {self.provenance!r} may not claim trust "
+                f"{self.trust.value!r}; its ceiling is {ceiling.value!r}"
+            )
         if not self.evidence_id:
             payload = "␟".join(
                 [

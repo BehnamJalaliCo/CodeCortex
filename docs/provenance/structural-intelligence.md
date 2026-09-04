@@ -27,17 +27,39 @@ newline-delimited JSON match records and normalizes them into its own
 one-based convention of the CodeCortex public surface.
 
 The engine is declared as the optional `structural` extra in `pyproject.toml`
-and pinned to `>=0.45.3,<1`. CodeCortex Core does not depend on it: when it is
-absent, structural capabilities report `unavailable` and CodeCortex falls back
-to lexical and symbol search.
+and pinned exactly to `==0.45.3` — not to a range. CodeCortex parses this
+engine's structured output, so the record shape is part of the integration
+contract, and a range would allow an untested release to change it silently.
+`cortex doctor` reports an installed build that is not the verified version
+rather than showing it as plainly available. CodeCortex Core does not depend on
+the engine at all: when it is absent, structural capabilities report
+`unavailable` and CodeCortex falls back to lexical and symbol search.
+
+The Python binding published by the same project (`ast-grep-py`) was evaluated
+and not adopted. The subprocess adapter meets the requirements, and the prompt
+for migrating was a measured material win that this work did not find.
+
+## Observed engine behaviour
+
+Recorded from the pinned release, and asserted by
+`tests/test_structural_conformance.py`:
+
+- A search that matches nothing exits `1`. That is not a failure.
+- A pattern the engine cannot parse cleanly exits `0` with a warning on stderr
+  and no matches, so the warning is the only signal that a pattern was
+  malformed rather than unmatched. CodeCortex surfaces it as an error.
+- Match columns count characters; byte offsets are reported separately.
+- An unsupported language exits `2`.
 
 ## Test independence
 
 CodeCortex's structural tests do not require the engine to be installed. They
 drive the same subprocess code path against a deterministic in-repository stub
 (`tests/fixtures/structural_engine.py`) invoked through `sys.executable`, so CI
-is reproducible on every platform. Tests that exercise the real engine are
-skipped automatically when it is not installed.
+is reproducible on every platform. Tests that exercise the real engine
+(`tests/test_structural_conformance.py`) are skipped automatically when it is
+not installed, and run in the dedicated structural-engine workflow, which
+verifies the installed version against the pin before running them.
 
 ## What this record does not claim
 

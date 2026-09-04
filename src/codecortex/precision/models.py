@@ -5,12 +5,41 @@ from __future__ import annotations
 from collections import defaultdict
 from dataclasses import dataclass, field
 
+from codecortex.precision.compatibility import EncodingSource
 from codecortex.precision.identity import SymbolIdentity, parse_symbol
-from codecortex.precision.schema import SymbolRole
+from codecortex.precision.schema import PositionEncoding, SymbolRole
+
+#: Prefix marking a symbol whose identity is scoped to one document.
+LOCAL_SYMBOL_PREFIX = "local "
+
+#: Separator for document-scoped symbol keys. A NUL cannot appear in a document
+#: path or a symbol string, so a scoped key can never collide with a real one.
+_SCOPE_SEPARATOR = "\x00"
 
 
 class PrecisionIndexError(ValueError):
     """Raised when a precision index cannot be imported."""
+
+
+def is_local_symbol(symbol: str) -> bool:
+    """Return whether ``symbol`` is local to a single document.
+
+    The schema reserves the ``local <id>`` form for entities that cannot be
+    accessed from outside their document, and the ids restart per document. A
+    ``local 1`` in one file is a different entity from ``local 1`` in another.
+    """
+    return symbol.startswith(LOCAL_SYMBOL_PREFIX)
+
+
+def scoped_symbol_key(document_path: str, symbol: str) -> str:
+    """Return the lookup key that keeps document-local symbols from colliding.
+
+    Global symbols keep their protocol string, so cross-file navigation is
+    unaffected. Local symbols are namespaced by the document that owns them.
+    """
+    if not is_local_symbol(symbol):
+        return symbol
+    return f"{document_path}{_SCOPE_SEPARATOR}{symbol}"
 
 
 @dataclass(frozen=True, slots=True)
@@ -27,13 +56,21 @@ class SourceRange:
         return self.start_line == self.end_line
 
     def contains(self, line: int, column: int) -> bool:
+        """Return whether a position falls in this range, per ``[start, end)``.
+
+        The schema defines occurrence ranges as half-open, so a caret at
+        ``end_column`` is *outside* the range. That matters wherever two
+        identifiers touch: with an inclusive end, ``a`` in ``a.b`` would claim
+        the position that belongs to ``.``, and the tightest-range tie-break
+        would then be resolving a caret to whichever symbol happened to sort
+        first. The caret on the last character of an identifier is
+        ``end_column - 1`` and still matches.
+        """
         if line < self.start_line or line > self.end_line:
             return False
         if line == self.start_line and column < self.start_column:
             return False
-        # Ranges are half-open, but a caret sitting on the last character of an
-        # identifier must still resolve, so the end column is treated inclusively.
-        if line == self.end_line and column > self.end_column:
+        if line == self.end_line and column >= self.end_column:
             return False
         return True
 
@@ -139,6 +176,34 @@ class PrecisionDocument:
     occurrences: tuple[PrecisionOccurrence, ...] = ()
     symbols: tuple[PrecisionSymbol, ...] = ()
     text_digest: str = ""
+    #: What the index declared, verbatim. Often ``UNSPECIFIED`` in practice.
+    declared_encoding: PositionEncoding = PositionEncoding.UNSPECIFIED
+    #: Where the effective encoding came from: the index itself, a measured
+    #: record of the producing tool, or an assumption.
+    encoding_source: EncodingSource = EncodingSource.ASSUMED
+    #: Why, when the encoding was not declared.
+    encoding_detail: str = ""
+    #: Whether a column read in the effective encoding may be called exact.
+    encoding_authoritative: bool = False
+    #: Unit occurrence columns are read in. Columns are not Python string
+    #: indices unless this is ``UTF32_CODE_UNIT``.
+    position_encoding: PositionEncoding = PositionEncoding.UTF32_CODE_UNIT
+    #: Document text, retained only when the indexer embedded it. Indexers are
+    #: not expected to, so position conversion reads the worktree by default.
+    text: str = ""
+
+    @property
+    def needs_column_conversion(self) -> bool:
+        """Whether occurrence columns may differ from Python character columns.
+
+        Code-point columns need no conversion, but an unverified assumption
+        that they *are* code points still has to consult the source line, to
+        find out whether the line is ASCII and the assumption therefore moot.
+        """
+        return (
+            self.position_encoding is not PositionEncoding.UTF32_CODE_UNIT
+            or not self.encoding_authoritative
+        )
 
 
 @dataclass(slots=True)
@@ -163,14 +228,30 @@ class PrecisionIndex:
         for document in self.documents:
             by_path[document.relative_path] = document
             for occurrence in document.occurrences:
-                by_symbol[occurrence.symbol].append(occurrence)
+                key = scoped_symbol_key(occurrence.path, occurrence.symbol)
+                by_symbol[key].append(occurrence)
             for symbol in document.symbols:
-                symbol_info.setdefault(symbol.symbol, symbol)
+                key = scoped_symbol_key(document.relative_path, symbol.symbol)
+                symbol_info.setdefault(key, symbol)
         for symbol in self.external_symbols:
+            # External symbols are by definition not document-local.
             symbol_info.setdefault(symbol.symbol, symbol)
         self._by_path = by_path
         self._by_symbol = dict(by_symbol)
         self._symbol_info = symbol_info
+
+    def _key(self, symbol: str, document: str | None) -> str | None:
+        """Return the lookup key for ``symbol``, or None when it cannot be scoped.
+
+        A local symbol is meaningless without the document that owns it, so a
+        caller that omits the document gets nothing rather than the union of
+        every same-named local across the repository.
+        """
+        if not is_local_symbol(symbol):
+            return symbol
+        if document is None:
+            return None
+        return scoped_symbol_key(document, symbol)
 
     @property
     def document_count(self) -> int:
@@ -190,14 +271,30 @@ class PrecisionIndex:
     def paths(self) -> tuple[str, ...]:
         return tuple(self._by_path)
 
-    def symbol_information(self, symbol: str) -> PrecisionSymbol | None:
-        return self._symbol_info.get(symbol)
+    def symbol_information(
+        self, symbol: str, document: str | None = None
+    ) -> PrecisionSymbol | None:
+        key = self._key(symbol, document)
+        return self._symbol_info.get(key) if key is not None else None
 
-    def occurrences_for(self, symbol: str) -> tuple[PrecisionOccurrence, ...]:
-        return tuple(self._by_symbol.get(symbol, ()))
+    def occurrences_for(
+        self, symbol: str, document: str | None = None
+    ) -> tuple[PrecisionOccurrence, ...]:
+        """Return every occurrence of ``symbol``.
+
+        ``document`` scopes the lookup and is required for a document-local
+        symbol; for a global symbol it is ignored, since a global symbol's
+        occurrences legitimately span files.
+        """
+        key = self._key(symbol, document)
+        return tuple(self._by_symbol.get(key, ())) if key is not None else ()
 
     def occurrence_at(self, path: str, line: int, column: int) -> PrecisionOccurrence | None:
-        """Return the tightest occurrence covering a zero-based position."""
+        """Return the tightest occurrence covering a zero-based position.
+
+        ``column`` must already be expressed in the document's own position
+        encoding; see :mod:`codecortex.precision.positions`.
+        """
         document = self._by_path.get(path)
         if document is None:
             return None
@@ -210,21 +307,37 @@ class PrecisionIndex:
             return None
         return min(covering, key=lambda item: (item.range.span, item.range.start_column))
 
-    def definitions_for(self, symbol: str) -> tuple[PrecisionOccurrence, ...]:
-        return tuple(item for item in self.occurrences_for(symbol) if item.is_definition)
+    def definitions_for(
+        self, symbol: str, document: str | None = None
+    ) -> tuple[PrecisionOccurrence, ...]:
+        return tuple(
+            item for item in self.occurrences_for(symbol, document) if item.is_definition
+        )
 
-    def references_for(self, symbol: str) -> tuple[PrecisionOccurrence, ...]:
-        return tuple(item for item in self.occurrences_for(symbol) if not item.is_definition)
+    def references_for(
+        self, symbol: str, document: str | None = None
+    ) -> tuple[PrecisionOccurrence, ...]:
+        return tuple(
+            item for item in self.occurrences_for(symbol, document) if not item.is_definition
+        )
 
-    def implementations_for(self, symbol: str) -> tuple[PrecisionOccurrence, ...]:
-        """Return definitions of every symbol that declares it implements ``symbol``."""
-        implementers = {
-            candidate.symbol
-            for candidate in self._symbol_info.values()
-            for relationship in candidate.relationships
-            if relationship.is_implementation and relationship.symbol == symbol
-        }
+    def implementations_for(
+        self, symbol: str, document: str | None = None
+    ) -> tuple[PrecisionOccurrence, ...]:
+        """Return definitions of every symbol that declares it implements ``symbol``.
+
+        A document-local symbol cannot be implemented from outside its
+        document, so only global symbols yield cross-file implementers.
+        """
+        if is_local_symbol(symbol):
+            return ()
+        implementers: set[tuple[str, str]] = set()
+        for key, candidate in self._symbol_info.items():
+            for relationship in candidate.relationships:
+                if relationship.is_implementation and relationship.symbol == symbol:
+                    owner = key.split(_SCOPE_SEPARATOR)[0] if _SCOPE_SEPARATOR in key else ""
+                    implementers.add((candidate.symbol, owner))
         results: list[PrecisionOccurrence] = []
-        for candidate in sorted(implementers):
-            results.extend(self.definitions_for(candidate))
+        for candidate_symbol, owner in sorted(implementers):
+            results.extend(self.definitions_for(candidate_symbol, owner or document))
         return tuple(results)

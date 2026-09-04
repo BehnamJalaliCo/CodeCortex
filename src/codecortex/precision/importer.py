@@ -3,7 +3,11 @@
 from __future__ import annotations
 
 import hashlib
+import re
+from collections.abc import Callable
+from urllib.parse import unquote, urlparse
 
+from codecortex.precision.compatibility import ResolvedEncoding, resolve_encoding
 from codecortex.precision.models import (
     PrecisionDocument,
     PrecisionIndex,
@@ -20,12 +24,16 @@ from codecortex.precision.schema import (
     MetadataField,
     MultiLineRangeField,
     OccurrenceField,
+    PositionEncoding,
     RelationshipField,
     SingleLineRangeField,
     SymbolInformationField,
     ToolInfoField,
 )
 from codecortex.precision.wire import Message, WireFormatError, decode_message
+
+#: Maps a document's declared encoding onto the one its columns are read in.
+_EncodingResolver = Callable[[PositionEncoding], ResolvedEncoding]
 
 
 def _range(occurrence: Message) -> SourceRange | None:
@@ -84,10 +92,10 @@ def _symbol(message: Message) -> PrecisionSymbol:
     )
 
 
-def _document(message: Message) -> PrecisionDocument:
+def _document(message: Message, resolver: _EncodingResolver) -> PrecisionDocument:
     relative_path = normalize_index_path(message.text(DocumentField.RELATIVE_PATH))
-    if not relative_path:
-        raise PrecisionIndexError("indexed document is missing its relative path")
+    declared = _position_encoding(message.scalar(DocumentField.POSITION_ENCODING))
+    encoding = resolver(declared)
     occurrences: list[PrecisionOccurrence] = []
     for item in message.messages(DocumentField.OCCURRENCES):
         symbol = item.text(OccurrenceField.SYMBOL)
@@ -113,19 +121,104 @@ def _document(message: Message) -> PrecisionDocument:
             if item.text(SymbolInformationField.SYMBOL)
         ),
         text_digest=hashlib.blake2b(text, digest_size=16).hexdigest() if text else "",
+        declared_encoding=declared,
+        encoding_source=encoding.source,
+        encoding_detail=encoding.detail,
+        encoding_authoritative=encoding.authoritative,
+        position_encoding=encoding.encoding,
+        text=message.text(DocumentField.TEXT),
     )
 
 
-def normalize_index_path(value: str) -> str:
-    """Normalize an indexed document path to a repository-relative POSIX path.
+def _position_encoding(value: int) -> PositionEncoding:
+    """Map the declared encoding, treating an unknown future value as unspecified."""
+    try:
+        return PositionEncoding(value)
+    except ValueError:
+        return PositionEncoding.UNSPECIFIED
 
-    Indexers running on Windows emit backslash separators, and some emit a
-    leading ``./``. Both must collapse to the same key the CodeCortex graph uses.
+
+#: Windows drive-letter prefix, e.g. ``C:\\`` or ``c:/``.
+_WINDOWS_DRIVE = re.compile(r"^[A-Za-z]:[\\/]")
+
+#: A scheme-qualified path such as ``file://`` or ``https://``.
+_URI_SCHEME = re.compile(r"^[A-Za-z][A-Za-z0-9+.\-]*://")
+
+
+def normalize_index_path(value: str) -> str:
+    """Return an indexed document path as a repository-relative POSIX path.
+
+    The schema requires ``Document.relative_path`` to be repository-relative,
+    canonical, ``/``-separated, free of ``.`` and ``..`` components and empty
+    components, and to point at a regular file rather than a symlink. Anything
+    else is rejected.
+
+    Rejecting rather than sanitising is deliberate. Stripping the leading
+    separator off ``/etc/passwd`` yields ``etc/passwd``, which looks like a
+    legitimate repository path and would be joined against the project root and
+    read. A path that violates the schema is a malformed or hostile index, and
+    the honest response is to refuse it, not to invent a plausible path.
+
+    Raises:
+        PrecisionIndexError: when the path does not conform to the schema.
     """
     normalized = value.replace("\\", "/").strip()
-    while normalized.startswith("./"):
-        normalized = normalized[2:]
-    return normalized.lstrip("/")
+    if not normalized:
+        raise PrecisionIndexError("indexed document is missing its relative path")
+    if "\x00" in normalized:
+        raise PrecisionIndexError("indexed document path contains a NUL byte")
+    if _URI_SCHEME.match(normalized):
+        raise PrecisionIndexError(
+            f"indexed document path must be repository-relative, not a URI: {normalized!r}"
+        )
+    if _WINDOWS_DRIVE.match(value.strip()):
+        raise PrecisionIndexError(
+            f"indexed document path must be repository-relative, not absolute: {normalized!r}"
+        )
+    if normalized.startswith("/"):
+        raise PrecisionIndexError(
+            f"indexed document path must not begin with a separator: {normalized!r}"
+        )
+    segments = normalized.split("/")
+    if any(segment == "" for segment in segments):
+        raise PrecisionIndexError(
+            f"indexed document path has an empty component: {normalized!r}"
+        )
+    if any(segment in {".", ".."} for segment in segments):
+        raise PrecisionIndexError(
+            f"indexed document path is not canonical: {normalized!r}"
+        )
+    return normalized
+
+
+def decode_project_root(value: str) -> str:
+    """Decode ``Metadata.project_root``, which the schema defines as a URI.
+
+    Real indexers emit ``file:///abs/path`` (percent-encoded), and some emit a
+    bare filesystem path. Both are decoded to a plain absolute path so the
+    value can be *reported*.
+
+    This value is never a trust boundary. CodeCortex resolves indexed documents
+    against its own configured project root, so an index claiming a root of
+    ``/`` or someone else's home directory cannot redirect a file read. The
+    decoded root is kept only for diagnostics and for reporting a mismatch.
+    """
+    text = value.strip()
+    if not text:
+        return ""
+    parsed = urlparse(text)
+    if parsed.scheme != "file":
+        # A bare path, a Windows drive letter (parsed as a one-letter scheme),
+        # or an unexpected scheme: report it verbatim rather than guessing.
+        return text
+    path = unquote(parsed.path)
+    if parsed.netloc and parsed.netloc not in {"", "localhost"}:
+        # file://host/share/... - a UNC path. Preserve it recognisably.
+        return f"//{parsed.netloc}{path}"
+    # file:///C:/x on Windows decodes to "/C:/x"; drop the leading separator.
+    if _WINDOWS_DRIVE.match(path.lstrip("/")):
+        return path.lstrip("/")
+    return path
 
 
 def import_index(payload: bytes) -> PrecisionIndex:
@@ -145,7 +238,15 @@ def import_index(payload: bytes) -> PrecisionIndex:
                 f"unsupported precision index schema version: {protocol_version}"
             )
         tool = metadata.message(MetadataField.TOOL_INFO) if metadata else None
-        documents = tuple(_document(item) for item in root.messages(IndexField.DOCUMENTS))
+        tool_name = tool.text(ToolInfoField.NAME) if tool else ""
+        tool_version = tool.text(ToolInfoField.VERSION) if tool else ""
+
+        def resolver(declared: PositionEncoding) -> ResolvedEncoding:
+            return resolve_encoding(declared, tool_name, tool_version)
+
+        documents = tuple(
+            _document(item, resolver) for item in root.messages(IndexField.DOCUMENTS)
+        )
         external = tuple(
             _symbol(item)
             for item in root.messages(IndexField.EXTERNAL_SYMBOLS)
@@ -157,9 +258,11 @@ def import_index(payload: bytes) -> PrecisionIndex:
     if not documents:
         raise PrecisionIndexError("precision index contains no documents")
     return PrecisionIndex(
-        project_root=metadata.text(MetadataField.PROJECT_ROOT) if metadata else "",
-        tool_name=tool.text(ToolInfoField.NAME) if tool else "",
-        tool_version=tool.text(ToolInfoField.VERSION) if tool else "",
+        project_root=decode_project_root(
+            metadata.text(MetadataField.PROJECT_ROOT) if metadata else ""
+        ),
+        tool_name=tool_name,
+        tool_version=tool_version,
         protocol_version=protocol_version,
         documents=documents,
         external_symbols=external,

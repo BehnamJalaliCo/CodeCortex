@@ -1,0 +1,21 @@
+{
+  "generator_repository": "https://github.com/sourcegraph/scip-typescript",
+  "generator_commit": "891eb4293709a6a587bf4468dfa1b45a85182fd9",
+  "generator_tool": "scip-typescript",
+  "generator_version": "0.4.0",
+  "command": "scip-typescript index --no-progress-bar",
+  "generated_from": "/tmp/codecortex-fixture",
+  "source_fixture_hash": "503ec1e239533f4ad4740df07a6b4db719d2197c39d5e20458eb00485f4e76a8",
+  "index_hash": "abeb22ee28a6fa71179ea380c6e0bd0d76490597460798e0463dd3792c705661",
+  "index_bytes": 10690,
+  "expected_json_hash": "947fde2c68ce2f58aabe8d22eb65f0999ccf002099f729cc530023e0c8f00227",
+  "oracle": {
+    "tool": "scip",
+    "repository": "https://github.com/scip-code/scip",
+    "commit": "1c2b6db7e560d5233c944f36e4ac1377cc6963fc",
+    "lint": "clean",
+    "expected_json_command": "scip print --json index.scip"
+  },
+  "regeneration": "scripts/regenerate_real_index_fixtures.sh",
+  "note": "Generated index and oracle output are committed; the indexer source is not vendored."
+}

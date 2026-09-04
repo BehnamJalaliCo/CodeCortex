@@ -116,6 +116,17 @@ class LibraryResolution:
     matched_version: str | None = None
     provider: str = ""
     score: float = 0.0
+    #: The provider's own document state for this library.
+    state: str = ""
+    #: How the repository's version relates to the one documentation came from.
+    #: See :class:`codecortex.dependencies.versions.VersionMatch`.
+    version_match: str = "unversioned"
+    version_detail: str = ""
+
+    @property
+    def exact_version(self) -> bool:
+        """Whether documentation for this library is version-exact evidence."""
+        return self.version_match in {"exact", "normalized"}
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -126,6 +137,10 @@ class LibraryResolution:
             "matched_version": self.matched_version,
             "provider": self.provider,
             "score": self.score,
+            "state": self.state,
+            "version_match": self.version_match,
+            "version_detail": self.version_detail,
+            "exact_version": self.exact_version,
         }
 
 
@@ -162,7 +177,19 @@ class DocumentationUnavailable(RuntimeError):
     docs-unavailable state instead of inventing documentation.
     """
 
-    def __init__(self, reason: str, *, retryable: bool = False) -> None:
+    def __init__(
+        self,
+        reason: str,
+        *,
+        retryable: bool = False,
+        retry_after: float | None = None,
+        pending: bool = False,
+    ) -> None:
         super().__init__(reason)
         self.reason = reason
         self.retryable = retryable
+        #: Seconds the provider asked the caller to wait, when it said so.
+        self.retry_after = retry_after
+        #: The provider has the library but its documentation is not finalized.
+        #: Distinct from "not found": retrying later may succeed.
+        self.pending = pending

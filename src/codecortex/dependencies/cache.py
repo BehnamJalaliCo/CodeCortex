@@ -7,11 +7,17 @@ import time
 from dataclasses import dataclass
 from pathlib import Path
 
-from codecortex.dependencies.models import DocumentationEvidence
+from codecortex.dependencies.models import DocumentationEvidence, LibraryResolution
 from codecortex.state import AtomicJsonFile
 
-#: Bumped whenever the cached payload shape changes.
-CACHE_VERSION = 1
+#: Bumped whenever the cached payload shape changes, or whenever the provider
+#: contract changes in a way that makes previously cached answers wrong. It is
+#: part of the key as well as the file, so a stale entry from an older contract
+#: cannot be read back at all.
+#:
+#: 2: entries carry the library resolution, so a cache hit keeps its
+#:    version-match provenance instead of silently losing it.
+CACHE_VERSION = 2
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +27,10 @@ class CacheLookup:
     evidence: tuple[DocumentationEvidence, ...] | None
     stale: bool
     age_seconds: float = 0.0
+    #: The resolution the entry was stored with. A cache hit must not lose the
+    #: record of whether the documentation was version-exact: served without it,
+    #: fallback documentation is indistinguishable from an exact-version match.
+    resolution: LibraryResolution | None = None
 
     @property
     def hit(self) -> bool:
@@ -38,6 +48,14 @@ class DocumentationCache:
 
     @staticmethod
     def key(provider: str, library_id: str, version: str | None, query: str) -> str:
+        """Build a cache key.
+
+        The key covers the provider, the library identity, the version target,
+        the normalised question, and the cache/contract version. Dropping any
+        of them lets one question's answer be served for another: two versions
+        of a library document different APIs, and a contract change can make a
+        stored answer wrong rather than merely old.
+        """
         payload = "\n".join(
             [
                 str(CACHE_VERSION),
@@ -84,9 +102,14 @@ class DocumentationCache:
             for item in raw
             if isinstance(item, dict)
         )
-        return CacheLookup(evidence, stale, age)
+        return CacheLookup(evidence, stale, age, _resolution(entry.get("resolution")))
 
-    def put(self, key: str, evidence: list[DocumentationEvidence]) -> None:
+    def put(
+        self,
+        key: str,
+        evidence: list[DocumentationEvidence],
+        resolution: LibraryResolution | None = None,
+    ) -> None:
         def update(payload: object) -> dict[str, object]:
             current = (
                 payload
@@ -98,6 +121,7 @@ class DocumentationCache:
             entries[key] = {
                 "created": time.time(),
                 "evidence": [item.to_dict() for item in evidence],
+                "resolution": resolution.to_dict() if resolution else None,
             }
             ordered = sorted(
                 entries.items(),
@@ -120,3 +144,26 @@ class DocumentationCache:
         except OSError:
             return False
         return True
+
+
+def _resolution(payload: object) -> LibraryResolution | None:
+    """Rebuild a stored resolution, tolerating an entry written without one."""
+    if not isinstance(payload, dict):
+        return None
+    library_id = payload.get("library_id")
+    if not isinstance(library_id, str) or not library_id:
+        return None
+    versions = payload.get("versions")
+    matched = payload.get("matched_version")
+    return LibraryResolution(
+        library_id=library_id,
+        title=str(payload.get("title", "")),
+        description=str(payload.get("description", "")),
+        versions=tuple(str(item) for item in versions) if isinstance(versions, list) else (),
+        matched_version=matched if isinstance(matched, str) else None,
+        provider=str(payload.get("provider", "")),
+        score=float(payload.get("score") or 0.0),
+        state=str(payload.get("state", "")),
+        version_match=str(payload.get("version_match", "unversioned")),
+        version_detail=str(payload.get("version_detail", "")),
+    )

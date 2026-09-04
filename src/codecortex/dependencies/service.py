@@ -195,7 +195,10 @@ class DependencyIntelligence:
             return DocumentationResult(
                 library=library,
                 dependency=dependency,
-                resolution=None,
+                # The stored resolution carries the version-match provenance.
+                # Without it a cached fallback answer would be reported the
+                # same way as a cached exact-version one.
+                resolution=fresh.resolution,
                 evidence=fresh.evidence,
                 cache_state="hit",
                 provider_state=ProviderState.AVAILABLE,
@@ -203,17 +206,24 @@ class DependencyIntelligence:
 
         try:
             resolution = await provider.resolve_library(library, query, version)
-            evidence = await provider.query_docs(resolution.library_id, query, version)
+            # Pin only a version the provider actually publishes. Appending the
+            # repository's version regardless would ask for documentation that
+            # does not exist, and read the provider's fallback as if it were an
+            # exact-version answer.
+            evidence = await provider.query_docs(
+                resolution.library_id, query, resolution.matched_version
+            )
         except DocumentationUnavailable as exc:
             return self._offline_result(
-                library, dependency, cache_key, redact_secrets(exc.reason)
+                library, dependency, cache_key, redact_secrets(exc.reason), pending=exc.pending
             )
 
         if not evidence:
             return self._offline_result(
                 library, dependency, cache_key, "provider returned no documentation"
             )
-        self.cache.put(cache_key, evidence)
+        self.cache.put(cache_key, evidence, resolution)
+        detail = "" if resolution.exact_version else resolution.version_detail
         return DocumentationResult(
             library=library,
             dependency=dependency,
@@ -221,6 +231,7 @@ class DependencyIntelligence:
             evidence=tuple(evidence),
             cache_state="miss",
             provider_state=ProviderState.AVAILABLE,
+            detail=detail,
         )
 
     def _offline_result(
@@ -229,15 +240,22 @@ class DependencyIntelligence:
         dependency: DependencyRecord | None,
         cache_key: str,
         detail: str,
+        *,
+        pending: bool = False,
     ) -> DocumentationResult:
-        """Fall back to local facts, optionally serving clearly-marked stale docs."""
+        """Fall back to local facts, optionally serving clearly-marked stale docs.
+
+        A stale entry is served during an outage but never as fresh evidence:
+        every record keeps ``stale=True`` and the result reports the
+        ``stale`` cache state, so ranking cannot mistake it for a live answer.
+        """
         if self.settings.serve_stale_when_offline:
             stale = self.cache.get(cache_key, allow_stale=True)
             if stale.hit and stale.evidence is not None:
                 return DocumentationResult(
                     library=library,
                     dependency=dependency,
-                    resolution=None,
+                    resolution=stale.resolution,
                     evidence=stale.evidence,
                     cache_state="stale",
                     provider_state=ProviderState.OFFLINE,
@@ -249,7 +267,10 @@ class DependencyIntelligence:
             resolution=None,
             evidence=(),
             cache_state="miss",
-            provider_state=ProviderState.OFFLINE,
+            # A library the provider has but has not finished preparing is not
+            # the same as a provider that cannot be reached: retrying later may
+            # succeed, and the report should say which case this is.
+            provider_state=ProviderState.STALE if pending else ProviderState.OFFLINE,
             detail=detail,
         )
 
