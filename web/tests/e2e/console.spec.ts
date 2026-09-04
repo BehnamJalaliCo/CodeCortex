@@ -16,7 +16,7 @@ test.beforeEach(async({page})=>{
 test('renders the control plane and selected repository',async({page})=>{
   await page.goto('/')
   await expect(page.getByRole('heading',{name:'Console'})).toBeVisible()
-  await expect(page.getByLabel('Repository')).toHaveValue('repo-1')
+  await expect(page.getByLabel('Repository',{exact:true})).toHaveValue('repo-1')
   await expect(page.getByText('Indexed files')).toBeVisible()
   await expect(page.getByText('CodeCortex',{exact:true}).first()).toBeVisible()
 })
