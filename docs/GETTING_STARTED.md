@@ -111,6 +111,6 @@ The demo uses `examples/demo_project`, indexes it, analyzes `AuthService` impact
 - [Distributed operation](DISTRIBUTED.md)
 - [Platform and API](platform/README.md)
 - [Quality and benchmarks](QUALITY.md)
-- [Security policy](../SECURITY.md)
+- [Security policy](https://github.com/BehnamJalaliCo/CodeCortex/blob/main/SECURITY.md)
 - [Licensing](LICENSING.md)
 - [Release process](RELEASE.md)
