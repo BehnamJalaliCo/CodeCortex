@@ -29,7 +29,8 @@ nav:
       - Administration: platform/admin.md
       - API Compatibility: platform/api-compatibility.md
       - Development: platform/development.md
-  - Quality & Benchmarks: QUALITY.md
+  - Quality: QUALITY.md
+  - Benchmarks: BENCHMARKS.md
   - Testing: TESTING.md
   - Packaging: PACKAGING.md
   - Licensing: LICENSING.md
