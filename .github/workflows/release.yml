@@ -35,7 +35,7 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ".[dev]"
+      - run: pip install -e ".[dev,web]"
       - run: python scripts/release_check.py --tag "${{ env.RELEASE_TAG }}"
       - run: ruff check .
       - run: pytest -q
