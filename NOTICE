@@ -2,39 +2,3 @@ CodeCortex Context Engine
 Copyright 2026 Behnam Jalali
 
 CodeCortex is distributed under the Apache License, Version 2.0. See LICENSE.
-
-Third-party and historical upstream notices
-===========================================
-
-Graphify
-Copyright 2026 Safi Shamsi and the Graphify contributors.
-Licensed under the Apache License, Version 2.0. Portions of Graphify were
-contributed under the MIT License prior to its relicensing; see the upstream
-project and THIRD_PARTY_NOTICES.md for the recorded source lineage.
-
-Serena
-Copyright (c) 2025 Oraios AI.
-Licensed under the MIT License. See THIRD_PARTY_NOTICES.md.
-
-Headroom
-Copyright 2025 Headroom Contributors.
-Licensed under the Apache License, Version 2.0. See THIRD_PARTY_NOTICES.md.
-
-SCIP Code Intelligence Protocol
-Licensed under the Apache License, Version 2.0. CodeCortex implements an
-original reader for the published index schema; no upstream source is vendored.
-See THIRD_PARTY_NOTICES.md.
-
-Context7
-Copyright (c) 2021 Upstash, Inc.
-Licensed under the MIT License. Integrated as an optional, disabled-by-default
-remote documentation provider; no upstream source is vendored.
-See THIRD_PARTY_NOTICES.md.
-
-ast-grep
-Copyright (c) 2022 Herrington Darkholme.
-Licensed under the MIT License. Invoked as an optional external subprocess;
-no upstream source is vendored. See THIRD_PARTY_NOTICES.md.
-
-The presence of an attribution in this NOTICE does not imply endorsement by,
-affiliation with, or transfer of copyright from any upstream project.
