@@ -2,7 +2,7 @@
 
 ## Community support
 
-Use GitHub Issues for reproducible bugs and feature requests. Include the CodeCortex version or commit, operating system, Python version, relevant command, expected behavior, and a minimal reproduction when possible.
+Use GitHub Issues for reproducible bugs and feature requests. Include the CodeCortex version or commit, operating system, Python version, relevant command, expected behavior, and a minimal reproduction when possible. New contributors can start from [Good First Issues](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22).
 
 Do not post credentials, private source code, access tokens, or vulnerability details in public issues.
 
