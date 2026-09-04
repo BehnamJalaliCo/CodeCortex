@@ -37,7 +37,7 @@ All notable changes to CodeCortex are documented here. The project follows seman
 - New MCP tools: `cortex_precise_definition`, `cortex_precise_references`, `cortex_precise_implementations`, `cortex_symbol_occurrences`, `cortex_precision_status`, `cortex_dependency_info`, `cortex_dependency_docs`, `cortex_dependency_context`, `cortex_structural_search`, `cortex_rewrite_preview`, and `cortex_rewrite_apply` (mutating surface only).
 - New CLI commands: `definition`, `references`, `implementations`, `precision-status`, `dependency`, `dependency-docs`, `structural-search`, `rewrite-preview`, `rewrite-apply`, and `evidence-benchmark`.
 - Measured heuristic-versus-evidence benchmark cases for duplicate symbol names, resolved dependency versions, and mechanical migrations; unmeasurable strategies are reported as skipped.
-- `docs/EVIDENCE_FUSION.md`, plus provenance records for the integrated protocol and optional dependencies under `docs/provenance/`.
+- `docs/EVIDENCE_FUSION.md` documents the shipped evidence-fusion surfaces and fallback behavior.
 
 ### Changed
 
