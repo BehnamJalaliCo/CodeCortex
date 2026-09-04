@@ -536,7 +536,16 @@ def doctor(path: Annotated[Path, typer.Option("--path", "-p")] = Path(".")) -> N
     table.add_row("dependency docs", dependencies.label, dependencies.detail)
 
     structural = StructuralSearch(root, runtime.config).status()
-    table.add_row("structural engine", structural.label, structural.version or structural.detail)
+    # An engine build CodeCortex has not verified its output against is
+    # reported as such, rather than shown as plainly available.
+    structural_detail = structural.version or structural.detail
+    if structural.version_warning:
+        structural_detail = f"{structural_detail} — {structural.version_warning}"
+    table.add_row(
+        "structural engine",
+        "unverified version" if structural.version_warning else structural.label,
+        structural_detail,
+    )
     console.print(table)
 
 
