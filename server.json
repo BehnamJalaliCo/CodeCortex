@@ -8,13 +8,13 @@
     "source": "github"
   },
   "websiteUrl": "https://behnamjalalico.github.io/CodeCortex/",
-  "version": "0.1.0a5",
+  "version": "0.1.0a6",
   "packages": [
     {
       "registryType": "pypi",
       "registryBaseUrl": "https://pypi.org",
       "identifier": "codecortex-context-engine",
-      "version": "0.1.0a5",
+      "version": "0.1.0a6",
       "transport": {
         "type": "stdio"
       },
