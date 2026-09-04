@@ -213,7 +213,7 @@ INTRO = r"""<div align="center">
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BehnamJalaliCo/CodeCortex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BehnamJalaliCo/CodeCortex)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-[**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**PyPI**](https://pypi.org/project/codecortex-context-engine/) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**Contribute**](CONTRIBUTING.md)
+[**⭐ Star CodeCortex**](https://github.com/BehnamJalaliCo/CodeCortex) · [**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**Good First Issues**](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**Contribute**](CONTRIBUTING.md)
 
 [🇬🇧 English](#english) · [🇮🇷 فارسی](#فارسی)
 
@@ -234,6 +234,8 @@ CodeCortex turns a repository into a query-specific evidence system for coding a
 - **Persistent project context** — architecture, history, project/team memory, traces, and multi-repo workspaces survive beyond one chat.
 
 > **Core rule: retrieve evidence before generating confidence.**
+
+![CodeCortex product overview](docs/assets/codecortex-overview.svg)
 
 ## 60-second start
 
