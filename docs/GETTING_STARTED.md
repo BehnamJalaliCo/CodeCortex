@@ -11,8 +11,19 @@ Core repository intelligence is local-first. Optional network-backed integration
 
 ## Install
 
+Linux, macOS, and Windows PowerShell can use the same PyPI-first path when
+`python` resolves to Python 3.11 or newer:
+
 ```bash
 python -m pip install --upgrade codecortex-context-engine
+cortex version
+```
+
+On Windows systems where the Python launcher is available but `python` is not on
+`PATH`, use:
+
+```powershell
+py -m pip install --upgrade codecortex-context-engine
 cortex version
 ```
 
@@ -22,10 +33,18 @@ Optional language parser support:
 python -m pip install "codecortex-context-engine[parsers]"
 ```
 
+```powershell
+py -m pip install "codecortex-context-engine[parsers]"
+```
+
 Optional local neural semantic embeddings:
 
 ```bash
 python -m pip install "codecortex-context-engine[semantic]"
+```
+
+```powershell
+py -m pip install "codecortex-context-engine[semantic]"
 ```
 
 ## First repository
@@ -99,6 +118,13 @@ From a source checkout:
 ```bash
 python -m pip install -e ".[dev]"
 python scripts/demo.py
+```
+
+PowerShell equivalent when using the Windows Python launcher:
+
+```powershell
+py -m pip install -e ".[dev]"
+py scripts/demo.py
 ```
 
 The demo uses `examples/demo_project`, indexes it, analyzes `AuthService` impact, routes an evidence request, and prints measured context/trace output. It is designed to avoid fabricated performance claims.
