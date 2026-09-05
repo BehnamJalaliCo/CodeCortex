@@ -28,6 +28,7 @@ class DependencyDocsStatus:
     """Capability report for the documentation provider."""
 
     enabled: bool
+    endpoint_configured: bool
     provider: str
     credentials_present: bool
     cache_writable: bool
@@ -37,6 +38,8 @@ class DependencyDocsStatus:
     def label(self) -> str:
         if not self.enabled:
             return "disabled"
+        if not self.endpoint_configured:
+            return "not configured"
         if not self.credentials_present:
             return "credentials missing"
         return "available"
@@ -45,6 +48,7 @@ class DependencyDocsStatus:
         return {
             "status": self.label,
             "enabled": self.enabled,
+            "endpoint_configured": self.endpoint_configured,
             "provider": self.provider,
             "credentials_present": self.credentials_present,
             "cache_writable": self.cache_writable,
@@ -157,6 +161,7 @@ class DependencyIntelligence:
             detail = f"set {self.settings.api_key_env} to enable documentation lookups"
         return DependencyDocsStatus(
             enabled=self.settings.enabled,
+            endpoint_configured=bool(self.settings.base_url.strip()),
             provider=self.settings.provider,
             credentials_present=credentials,
             cache_writable=self.cache.writable(),
