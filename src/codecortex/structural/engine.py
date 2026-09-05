@@ -49,12 +49,11 @@ _VERSION_TOKEN = re.compile(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.\-]+)?)")
 def _interpreter_executable(name: str) -> str | None:
     """Look for the engine beside the running interpreter.
 
-    ``pip install codecortex-context-engine[structural]`` drops ``ast-grep`` in
-    the environment's script directory. When CodeCortex is installed as an
-    isolated tool (``uv tool install``, ``pipx``) that directory is deliberately
-    not on PATH, so the engine shipped by the extra the user just installed was
-    reported as "not installed". Probing the interpreter's own bin directory
-    finds it without widening what is searched.
+    An optional structural engine may be installed into the running
+    interpreter's script directory even when that directory is not on PATH,
+    especially for isolated tool installations. Probing the interpreter's own
+    bin directory finds an explicitly supported engine without widening the
+    search to unrelated locations.
     """
     bindir = Path(sys.executable).parent
     for candidate in (bindir / name, bindir / "Scripts" / name, bindir / f"{name}.exe"):
