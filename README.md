@@ -17,7 +17,7 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BehnamJalaliCo/CodeCortex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BehnamJalaliCo/CodeCortex)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-[**⭐ Star CodeCortex**](https://github.com/BehnamJalaliCo/CodeCortex) · [**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**Good First Issues**](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**❤️ Support CodeCortex**](docs/SUPPORT.md) · [**Contribute**](CONTRIBUTING.md)
+[**⭐ Star CodeCortex**](https://github.com/BehnamJalaliCo/CodeCortex) · [**❤️ Support Project**](docs/SUPPORT.md) · [**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**Contribute**](CONTRIBUTING.md)
 
 [🇬🇧 English](#english) · [🇮🇷 فارسی](#فارسی)
 
@@ -101,6 +101,8 @@ These are committed hardening measurements, not generalized performance promises
 | Freshness scan across 600 documents | **4.25 ms median** |
 
 See [HARDENING_REPORT.md](HARDENING_REPORT.md) and [benchmarks/](benchmarks/) for scope, methodology, limitations, and reproducibility notes.
+
+> ❤️ **Support CodeCortex** — If CodeCortex saves you time, consider supporting its continued open-source development. [**Crypto support →**](docs/SUPPORT.md)
 
 ---
 
@@ -864,13 +866,9 @@ Public interfaces are still evolving. Breaking changes can occur before 1.0. Eva
 ---
 
 
-# Support the open-source project
+# Community
 
-If CodeCortex is useful to your work, you can support continued development with a voluntary crypto contribution.
-
-[**❤️ View crypto support addresses**](docs/SUPPORT.md)
-
-Support contributions are separate from Cloud, Team, and Enterprise commercial plans.
+[**Good First Issues**](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**Contributing Guide**](CONTRIBUTING.md)
 
 # Documentation
 
@@ -1705,13 +1703,9 @@ interfaceهای عمومی هنوز تکامل پیدا می‌کنند و قب�
 ---
 
 
-# حمایت از پروژه متن‌باز
+# مشارکت در پروژه
 
-اگر CodeCortex برای کار شما مفید است، می‌توانید با کمک داوطلبانه کریپتویی از ادامه توسعه آن حمایت کنید.
-
-[**❤️ مشاهده آدرس‌های حمایت کریپتویی**](docs/SUPPORT.md)
-
-این حمایت‌ها از پلن‌های تجاری Cloud، Team و Enterprise جدا هستند.
+[**Good First Issues**](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [**گزارش باگ**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**راهنمای مشارکت**](CONTRIBUTING.md)
 
 # مستندات
 
