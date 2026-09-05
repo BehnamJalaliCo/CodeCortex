@@ -869,7 +869,6 @@ Public interfaces are still evolving. Breaking changes can occur before 1.0. Eva
 - [Distributed operation](docs/DISTRIBUTED.md)
 - [Advanced intelligence](docs/ADVANCED_INTELLIGENCE.md)
 - [Evidence fusion](docs/EVIDENCE_FUSION.md)
-- [Provenance records](docs/provenance/)
 - [Integrations](docs/INTEGRATIONS.md)
 - [Quality](docs/QUALITY.md)
 - [Testing](docs/TESTING.md)
@@ -880,7 +879,6 @@ Public interfaces are still evolving. Breaking changes can occur before 1.0. Eva
 - [Governance](GOVERNANCE.md)
 - [Roadmap](ROADMAP.md)
 
-Third-party license and provenance obligations remain in the repository's legal/provenance files. Product-facing documentation uses CodeCortex-native capability names.
 
 ---
 
@@ -1702,7 +1700,6 @@ interfaceهای عمومی هنوز تکامل پیدا می‌کنند و قب�
 - [Distributed](docs/DISTRIBUTED.md)
 - [Advanced Intelligence](docs/ADVANCED_INTELLIGENCE.md)
 - [Evidence Fusion](docs/EVIDENCE_FUSION.md)
-- [Provenance](docs/provenance/)
 - [Integrations](docs/INTEGRATIONS.md)
 - [Quality](docs/QUALITY.md)
 - [Testing](docs/TESTING.md)
@@ -1713,7 +1710,6 @@ interfaceهای عمومی هنوز تکامل پیدا می‌کنند و قب�
 - [Governance](GOVERNANCE.md)
 - [Roadmap](ROADMAP.md)
 
-تعهدات legal و provenance اجزای ثالث در فایل‌های حقوقی ریپو باقی می‌مانند. متن product-facing قابلیت‌ها را با زبان خود CodeCortex توضیح می‌دهد.
 
 ---
 

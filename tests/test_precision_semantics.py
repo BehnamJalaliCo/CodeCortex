@@ -182,29 +182,29 @@ def test_an_undeclared_encoding_only_matters_after_non_ascii() -> None:
 @pytest.mark.parametrize(
     ("tool", "version", "expected", "authoritative"),
     [
-        # Measured from the committed real indexes, not assumed.
-        ("scip-python", "0.6.6", PositionEncoding.UTF16_CODE_UNIT, True),
-        ("scip-typescript", "0.4.0", PositionEncoding.UTF16_CODE_UNIT, True),
+        # Compatibility profiles cover only explicitly verified versions.
+        ("vendor-python", "0.6.6", PositionEncoding.UTF16_CODE_UNIT, True),
+        ("vendor-typescript", "0.4.0", PositionEncoding.UTF16_CODE_UNIT, True),
         # A version the measurement does not cover must not inherit its verdict.
-        ("scip-python", "9.9.9", PositionEncoding.UTF32_CODE_UNIT, False),
+        ("vendor-python", "9.9.9", PositionEncoding.UTF32_CODE_UNIT, False),
         ("some-unknown-indexer", "1.0", PositionEncoding.UTF32_CODE_UNIT, False),
         ("", "", PositionEncoding.UTF32_CODE_UNIT, False),
     ],
 )
-def test_an_undeclared_encoding_falls_back_to_measured_tool_behaviour(
+def test_an_undeclared_encoding_falls_back_to_compatibility_profile(
     tool: str, version: str, expected: PositionEncoding, authoritative: bool
 ) -> None:
     resolved = resolve_encoding(PositionEncoding.UNSPECIFIED, tool, version)
     assert resolved.encoding is expected
     assert resolved.authoritative is authoritative
     assert resolved.source is (
-        EncodingSource.MEASURED if authoritative else EncodingSource.ASSUMED
+        EncodingSource.COMPATIBILITY if authoritative else EncodingSource.ASSUMED
     )
 
 
 def test_a_declared_encoding_always_wins_over_the_compatibility_table() -> None:
     resolved = resolve_encoding(
-        PositionEncoding.UTF8_CODE_UNIT, "scip-python", "0.6.6"
+        PositionEncoding.UTF8_CODE_UNIT, "vendor-python", "0.6.6"
     )
     assert resolved.encoding is PositionEncoding.UTF8_CODE_UNIT
     assert resolved.source is EncodingSource.DECLARED
@@ -263,7 +263,7 @@ def test_caret_resolves_through_every_encoding(
     root = tmp_path / "project"
     root.mkdir()
     (root / "mod.py").write_text(line_text + "\n", encoding="utf-8")
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(_unicode_index(encoding, line_text))
     _freshen(root, index_path)
 
@@ -287,7 +287,7 @@ def test_a_caret_before_the_symbol_does_not_resolve(tmp_path: Path) -> None:
     root = tmp_path / "project"
     root.mkdir()
     (root / "mod.py").write_text(line_text + "\n", encoding="utf-8")
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(_unicode_index(PositionEncoding.UTF16_CODE_UNIT, line_text))
     _freshen(root, index_path)
     provider = _provider(root)
@@ -305,7 +305,7 @@ def test_an_unconvertible_position_is_never_reported_as_exact(tmp_path: Path) ->
     root = tmp_path / "project"
     root.mkdir()
     (root / "mod.py").write_text(line_text + "\n", encoding="utf-8")
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(_unicode_index(PositionEncoding.UTF16_CODE_UNIT, line_text))
     _freshen(root, index_path)
 
@@ -410,7 +410,7 @@ def test_navigation_from_a_caret_stays_inside_its_document(tmp_path: Path) -> No
     root.mkdir()
     (root / "a.py").write_text("    total = 1\n    use(total)\n\ndef run(): ...\n", encoding="utf-8")
     (root / "b.py").write_text("    count = 2\n\n" + "\n" * 5 + "def run(): ...\n", encoding="utf-8")
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(_local_collision_index())
     _freshen(root, index_path)
     provider = _provider(root)
@@ -462,7 +462,7 @@ def test_an_index_project_root_never_redirects_file_access(tmp_path: Path) -> No
             occurrences=(Occurrence(UNICODE_SYMBOL, 0, 4, 11, roles=DEFINITION),),
         )
     )
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(builder.encode())
     _freshen(root, index_path)
 
@@ -501,7 +501,7 @@ def _large_project(tmp_path: Path, count: int) -> tuple[Path, Path]:
     (root / "src").mkdir(parents=True)
     for number in range(count):
         (root / "src" / f"mod_{number:04d}.py").write_text("def run(): ...\n", encoding="utf-8")
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(_large_index(count))
     _freshen(root, index_path)
     return root, index_path

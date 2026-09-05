@@ -61,7 +61,7 @@ def test_a_symlinked_document_is_never_followed_out_of_the_project(
     root.mkdir()
     (root / "mod.py").symlink_to(secret)
 
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(
         IndexBuilder()
         .add(
@@ -160,7 +160,7 @@ def test_invalid_utf8_in_a_text_field_fails_the_import_closed() -> None:
 def test_an_index_larger_than_the_configured_limit_is_refused(tmp_path: Path) -> None:
     root = tmp_path / "project"
     root.mkdir()
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(b"\x00" * 4096)
     store = PrecisionIndexStore(root=root, config=PrecisionIndexConfig(max_index_bytes=256))
     status = store.status()
@@ -194,7 +194,7 @@ def test_position_conversion_cannot_be_used_to_read_an_arbitrary_file(
     root.mkdir()
     big = root / "mod.py"
     big.write_text("x = 1\n" * 10_000, encoding="utf-8")
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(
         IndexBuilder()
         .add(
@@ -224,7 +224,7 @@ def test_an_unreadable_source_downgrades_rather_than_raising(tmp_path: Path) -> 
     root = tmp_path / "project"
     root.mkdir()
     (root / "mod.py").write_text("def handler(): ...\n", encoding="utf-8")
-    index_path = root / "index.scip"
+    index_path = root / "index.cortexidx"
     index_path.write_bytes(
         IndexBuilder()
         .add(

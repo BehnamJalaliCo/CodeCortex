@@ -102,7 +102,7 @@ def test_structural_engine_found_beside_the_interpreter(
 ) -> None:
     bindir = tmp_path / "bin"
     bindir.mkdir()
-    shipped = bindir / "ast-grep"
+    shipped = bindir / "codecortex-structural-engine"
     shipped.write_text("#!/bin/sh\n")
     shipped.chmod(0o755)
 

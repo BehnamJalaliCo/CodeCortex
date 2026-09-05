@@ -116,7 +116,7 @@ def _write_precision_index(root: Path) -> Path:
         )
         .encode()
     )
-    target = root / ".codecortex" / "precision" / "index.scip"
+    target = root / ".codecortex" / "precision" / "index.cortexidx"
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(payload)
     # Age the sources rather than post-dating the index, so the index is fresh

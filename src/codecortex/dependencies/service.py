@@ -28,6 +28,7 @@ class DependencyDocsStatus:
     """Capability report for the documentation provider."""
 
     enabled: bool
+    endpoint_configured: bool
     provider: str
     credentials_present: bool
     cache_writable: bool
@@ -37,6 +38,8 @@ class DependencyDocsStatus:
     def label(self) -> str:
         if not self.enabled:
             return "disabled"
+        if not self.endpoint_configured:
+            return "not configured"
         if not self.credentials_present:
             return "credentials missing"
         return "available"
@@ -45,6 +48,7 @@ class DependencyDocsStatus:
         return {
             "status": self.label,
             "enabled": self.enabled,
+            "endpoint_configured": self.endpoint_configured,
             "provider": self.provider,
             "credentials_present": self.credentials_present,
             "cache_writable": self.cache_writable,
@@ -139,7 +143,7 @@ class DependencyIntelligence:
     def provider(self) -> DependencyDocumentationProvider | None:
         if self._provider is not None:
             return self._provider
-        if not self.settings.enabled:
+        if not self.settings.enabled or not self.settings.base_url.strip():
             return None
         self._provider = RemoteDocumentationProvider(self.settings, self.api_key())
         return self._provider
@@ -151,10 +155,13 @@ class DependencyIntelligence:
         detail = ""
         if not self.settings.enabled:
             detail = "dependency documentation is disabled in configuration"
+        elif not self.settings.base_url.strip():
+            detail = "set dependency_docs.base_url to enable documentation lookups"
         elif not credentials:
             detail = f"set {self.settings.api_key_env} to enable documentation lookups"
         return DependencyDocsStatus(
             enabled=self.settings.enabled,
+            endpoint_configured=bool(self.settings.base_url.strip()),
             provider=self.settings.provider,
             credentials_present=credentials,
             cache_writable=self.cache.writable(),

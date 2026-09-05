@@ -20,16 +20,25 @@ from codecortex.dependencies.models import DocumentationUnavailable
 from codecortex.dependencies.remote import RemoteDocumentationProvider
 
 API_KEY_ENV = "CODECORTEX_DEPENDENCY_DOCS_API_KEY"
+BASE_URL_ENV = "CODECORTEX_DEPENDENCY_DOCS_BASE_URL"
 
 pytestmark = pytest.mark.skipif(
-    not os.environ.get(API_KEY_ENV, "").strip(),
-    reason=f"SKIPPED - no credentials: {API_KEY_ENV} is not set",
+    not os.environ.get(API_KEY_ENV, "").strip()
+    or not os.environ.get(BASE_URL_ENV, "").strip(),
+    reason=(
+        "SKIPPED - live documentation provider requires both "
+        f"{API_KEY_ENV} and {BASE_URL_ENV}"
+    ),
 )
 
 
 def _provider() -> RemoteDocumentationProvider:
     return RemoteDocumentationProvider(
-        DependencyDocsConfig(enabled=True, max_retries=1),
+        DependencyDocsConfig(
+            enabled=True,
+            base_url=os.environ[BASE_URL_ENV].strip(),
+            max_retries=1,
+        ),
         os.environ[API_KEY_ENV].strip(),
     )
 

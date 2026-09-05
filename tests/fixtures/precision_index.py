@@ -186,7 +186,7 @@ class IndexBuilder:
 
 def symbol(package: str, path: str, *, version: str = "1.0.0", manager: str = "pypi") -> str:
     """Build a well-formed symbol identity string."""
-    return f"scip-python {manager} {package} {version} {path}"
+    return f"codecortex-indexer {manager} {package} {version} {path}"
 
 
 DEFINITION = int(SymbolRole.DEFINITION)

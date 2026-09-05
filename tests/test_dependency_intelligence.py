@@ -452,10 +452,10 @@ async def test_documentation_is_disabled_and_credential_free_by_default(
         root,
         CortexConfig(project_root=root, dependency_docs=DependencyDocsConfig(enabled=True)),
     )
-    assert enabled.status().label == "credentials missing"
+    assert enabled.status().label == "not configured"
     missing = await enabled.docs("httpx", "streaming")
-    assert missing.provider_state is ProviderState.CREDENTIALS_MISSING
-    assert API_KEY_ENV in missing.detail
+    assert missing.provider_state is ProviderState.NOT_CONFIGURED
+    assert "base_url" in enabled.status().detail
 
 
 @pytest.mark.asyncio

@@ -93,7 +93,7 @@ def _duplicate_name_index() -> bytes:
     )
 
 
-def _write_index(root: Path, payload: bytes, relative: str = ".codecortex/precision/index.scip") -> Path:
+def _write_index(root: Path, payload: bytes, relative: str = ".codecortex/precision/index.cortexidx") -> Path:
     target = root / relative
     target.parent.mkdir(parents=True, exist_ok=True)
     target.write_bytes(payload)
@@ -199,7 +199,7 @@ def test_wire_reader_rejects_deep_nesting() -> None:
 
 def test_symbol_identity_decomposes_package_and_descriptors() -> None:
     identity = parse_symbol(AUTH_RUN)
-    assert identity.scheme == "scip-python"
+    assert identity.scheme == "codecortex-indexer"
     assert identity.package_name == "app"
     assert identity.package_version == "1.0.0"
     assert identity.qualified_name == "auth.Service.run"
@@ -212,11 +212,11 @@ def test_symbol_identity_handles_locals_escapes_and_malformed_input() -> None:
     local = parse_symbol("local 4")
     assert local.is_local and local.display_name == "4"
 
-    escaped = parse_symbol("scip-go gomod example  package 1.0 pkg/`My Type`#")
+    escaped = parse_symbol("codecortex-indexer gomod example  package 1.0 pkg/`My Type`#")
     assert escaped.package_name == "example package"
     assert escaped.display_name == "My Type"
 
-    broken = parse_symbol("scip-python pypi app 1.0 bad~suffix")
+    broken = parse_symbol("codecortex-indexer pypi app 1.0 bad~suffix")
     assert broken.parse_error
     assert broken.display_name == broken.raw
     assert parse_symbol("").parse_error == "empty symbol"
@@ -349,7 +349,7 @@ def test_store_discovers_default_locations_and_reports_status(tmp_path: Path) ->
     root = _project(tmp_path)
     store = PrecisionIndexStore(root=root)
     assert store.status().label == "unavailable"
-    index_path = _write_index(root, _duplicate_name_index(), "index.scip")
+    index_path = _write_index(root, _duplicate_name_index(), "index.cortexidx")
     _freshen(root, index_path)
     status = store.status()
     assert status.label == "available"
@@ -360,10 +360,10 @@ def test_store_discovers_default_locations_and_reports_status(tmp_path: Path) ->
 
 def test_store_honours_an_explicit_configured_path(tmp_path: Path) -> None:
     root = _project(tmp_path)
-    index_path = _write_index(root, _duplicate_name_index(), "custom/my.scip")
+    index_path = _write_index(root, _duplicate_name_index(), "custom/my.index")
     _freshen(root, index_path)
     store = PrecisionIndexStore(
-        root=root, config=PrecisionIndexConfig(path="custom/my.scip")
+        root=root, config=PrecisionIndexConfig(path="custom/my.index")
     )
     assert store.candidate_paths() == (index_path,)
     assert store.status().available

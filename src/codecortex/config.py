@@ -45,7 +45,7 @@ class DependencyDocsConfig(BaseModel):
 
     enabled: bool = False
     provider: str = "remote"
-    base_url: str = "https://context7.com/api"
+    base_url: str = ""
     api_key_env: str = "CODECORTEX_DEPENDENCY_DOCS_API_KEY"
     connect_timeout_seconds: float = Field(default=5.0, gt=0)
     read_timeout_seconds: float = Field(default=20.0, gt=0)

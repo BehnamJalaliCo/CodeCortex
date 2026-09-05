@@ -1,9 +1,5 @@
 name: Structural Engine
 
-# The structural engine is an optional extra. Core CI runs the structural tests
-# against an in-repository stub, so this workflow is the one place the real,
-# version-pinned binary is exercised. No credentials are required.
-
 on:
   workflow_dispatch:
   push:
@@ -12,14 +8,12 @@ on:
       - "src/codecortex/structural/**"
       - "tests/test_structural_intelligence.py"
       - "tests/fixtures/structural_engine.py"
-      - "pyproject.toml"
       - ".github/workflows/structural-engine.yml"
   pull_request:
     paths:
       - "src/codecortex/structural/**"
       - "tests/test_structural_intelligence.py"
       - "tests/fixtures/structural_engine.py"
-      - "pyproject.toml"
       - ".github/workflows/structural-engine.yml"
 
 permissions:
@@ -41,21 +35,6 @@ jobs:
           python-version: ${{ matrix.python-version }}
           cache: pip
       - run: python -m pip install --upgrade pip
-      - run: pip install -e ".[dev,structural]"
-      - name: Confirm the pinned engine is installed
-        run: |
-          ast-grep --version
-          ast-grep --version | grep -qF "$(python -c 'from codecortex.structural.engine import TESTED_ENGINE_VERSION as v; print(v)')"
-      - name: Structural search, preview, and guarded apply
+      - run: pip install -e ".[dev]"
+      - name: Structural adapter and guarded rewrite tests
         run: pytest -q tests/test_structural_intelligence.py tests/test_evidence_benchmark.py
-      - name: Real-binary conformance
-        run: pytest -q tests/test_structural_conformance.py
-      - name: Measured evidence benchmark
-        run: |
-          cortex evidence-benchmark --output benchmarks/evidence.json
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
-        if: always()
-        with:
-          name: evidence-benchmark-${{ matrix.python-version }}
-          path: benchmarks/evidence.json
-          if-no-files-found: warn

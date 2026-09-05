@@ -218,7 +218,7 @@ to omit.
 {
   "precision_index": {
     "enabled": true,
-    "path": ".codecortex/precision/index.scip",
+    "path": ".codecortex/precision/index.cortexidx",
     "auto_generate": false,
     "generator_command": []
   },
@@ -241,8 +241,8 @@ to omit.
 ```
 
 A precision index is discovered automatically at
-`.codecortex/precision/index.scip`, `index.scip`, `.scip/index.scip`, or
-`build/index.scip` when no path is configured. A malformed section falls back
+`.codecortex/precision/index.cortexidx`, `index.cortexidx`, `.codecortex/index.cortexidx`, or
+`build/index.cortexidx` when no path is configured. A malformed section falls back
 to defaults rather than breaking local operation.
 
 ## Diagnostics

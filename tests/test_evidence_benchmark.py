@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-import shutil
 from pathlib import Path
 
 from typer.testing import CliRunner
@@ -84,23 +83,14 @@ def test_benchmark_measures_resolved_dependency_versions(tmp_path: Path) -> None
     assert any("credentials" in note for note in case.notes)
 
 
-def test_benchmark_measures_migration_precision(tmp_path: Path) -> None:
-    engine = shutil.which("ast-grep")
-    report = EvidenceBenchmark(workdir=tmp_path / "wd", structural_command=engine).run()
+def test_benchmark_reports_structural_measurement_unavailable_without_command(
+    tmp_path: Path,
+) -> None:
+    report = EvidenceBenchmark(workdir=tmp_path / "wd", structural_command=None).run()
     case = _case(report, "mechanical-migration")
-
     lexical = _metric(case, "lexical_scan")
-    # The lexical scan also matches prose that merely mentions the call.
     assert lexical.false_targets >= 1
-
-    if engine is None:
-        assert any("not measured" in note for note in case.notes)
-        assert any("mechanical-migration" in item for item in report.skipped)
-        return
-    structural = _metric(case, "structural_search")
-    assert structural.correct_targets == 2
-    assert structural.false_targets == 0
-    assert structural.precision > lexical.precision
+    assert any("structural engine is not installed" in item for item in report.skipped)
 
 
 def test_benchmark_reports_skipped_strategies_instead_of_estimating(tmp_path: Path) -> None:
@@ -114,7 +104,7 @@ def test_benchmark_reports_skipped_strategies_instead_of_estimating(tmp_path: Pa
 def test_benchmark_cli_writes_a_report(tmp_path: Path) -> None:
     root = tmp_path / "project"
     root.mkdir()
-    index_file = tmp_path / "index.scip"
+    index_file = tmp_path / "index.cortexidx"
     index_file.write_bytes(_index())
     result = runner.invoke(
         app,

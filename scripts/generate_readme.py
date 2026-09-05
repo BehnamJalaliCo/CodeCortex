@@ -303,7 +303,7 @@ See [HARDENING_REPORT.md](HARDENING_REPORT.md) and [benchmarks/](benchmarks/) fo
 OUTRO = r"""
 ## Maintainer and project ownership
 
-CodeCortex is maintained by **Behnam Jalali**. CodeCortex-owned material in this repository is licensed under Apache-2.0. Third-party material remains subject to its applicable copyright and license terms; see `LICENSE`, `NOTICE`, `THIRD_PARTY_NOTICES.md`, and `docs/LICENSING.md` for the repository's licensing records.
+CodeCortex is maintained by **Behnam Jalali**. CodeCortex material in this repository is licensed under Apache-2.0; see `LICENSE`, `NOTICE`, and `docs/LICENSING.md`.
 
 ## Contributing
 
