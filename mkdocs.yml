@@ -24,6 +24,7 @@ nav:
   - Advanced Intelligence: ADVANCED_INTELLIGENCE.md
   - Distributed: DISTRIBUTED.md
   - Cloud & Enterprise Early Access: CLOUD_EARLY_ACCESS.md
+  - Support CodeCortex: SUPPORT.md
   - Platform:
       - Overview: platform/README.md
       - API: platform/api.md
