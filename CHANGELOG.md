@@ -2,6 +2,12 @@
 
 All notable changes to CodeCortex are documented here. The project follows semantic versioning while in alpha; breaking changes may occur before 1.0 and will be called out explicitly.
 
+## 0.1.0a9
+
+- Removed the final remaining named vendor reference from the current CodeCortex tree.
+- Verified the current repository tree has no exact references to the removed upstream/vendor names.
+- Supersedes v0.1.0a8 as the fully scrubbed cleanup release.
+
 ## 0.1.0a8
 
 - Removed obsolete named upstream attribution/provenance records from the current CodeCortex tree.
