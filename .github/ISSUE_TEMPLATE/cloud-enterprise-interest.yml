@@ -1,0 +1,68 @@
+name: CodeCortex Cloud / Enterprise early access
+description: Register non-confidential interest in hosted, team, or enterprise CodeCortex
+title: "[Early Access] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for your interest in CodeCortex Cloud and Enterprise.
+
+        This issue is public. Do not include secrets, proprietary repository details, customer data, security findings, or personal information.
+  - type: dropdown
+    id: plan
+    attributes:
+      label: Interested plan
+      options:
+        - Cloud Pro
+        - Team
+        - Enterprise
+        - Not sure yet
+    validations:
+      required: true
+  - type: dropdown
+    id: team-size
+    attributes:
+      label: Team size
+      options:
+        - "1"
+        - "2-10"
+        - "11-50"
+        - "51-200"
+        - "201+"
+    validations:
+      required: true
+  - type: dropdown
+    id: deployment
+    attributes:
+      label: Preferred deployment
+      options:
+        - Managed cloud
+        - Private cloud / VPC
+        - Self-hosted private deployment
+        - Hybrid
+        - Not sure yet
+    validations:
+      required: true
+  - type: textarea
+    id: workflow
+    attributes:
+      label: Main workflow
+      description: Describe the non-confidential workflow you want CodeCortex to improve.
+      placeholder: Example: shared context and impact analysis across several repositories.
+    validations:
+      required: true
+  - type: textarea
+    id: requirements
+    attributes:
+      label: Important capabilities
+      description: List the capabilities that would make an early-access deployment useful.
+      placeholder: Example: SSO, RBAC, audit logs, shared memory, hosted sync.
+    validations:
+      required: false
+  - type: checkboxes
+    id: public-data
+    attributes:
+      label: Public issue confirmation
+      options:
+        - label: I confirm that this issue contains no confidential or sensitive information.
+          required: true

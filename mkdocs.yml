@@ -23,6 +23,7 @@ nav:
   - Evidence Fusion: EVIDENCE_FUSION.md
   - Advanced Intelligence: ADVANCED_INTELLIGENCE.md
   - Distributed: DISTRIBUTED.md
+  - Cloud & Enterprise Early Access: CLOUD_EARLY_ACCESS.md
   - Platform:
       - Overview: platform/README.md
       - API: platform/api.md
