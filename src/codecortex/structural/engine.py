@@ -24,7 +24,7 @@ from codecortex.structural.models import StructuralEngineUnavailable, Structural
 
 #: No vendor-specific executable is auto-detected. Projects that enable the
 #: optional subprocess adapter must configure `structural.command` explicitly.
-CANDIDATE_EXECUTABLES: tuple[str, ...] = ()
+CANDIDATE_EXECUTABLES: tuple[str, ...] = ("codecortex-structural-engine",)
 
 #: Exit codes that mean "ran correctly". A structural search that matched
 #: nothing exits non-zero, which is not a failure.
