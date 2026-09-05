@@ -15,3 +15,5 @@ build/
 .codecortex/cache/
 .codecortex/index/
 .codecortex/runtime/
+web/node_modules/
+web/tsconfig.tsbuildinfo
