@@ -5,7 +5,7 @@ from codecortex.distributed.remote_mcp import (
     RemoteAccessPolicy,
     RemoteMCPServer,
 )
-from codecortex.mcp.server import MCPApplication, MCPServer, PROTOCOL_VERSION, SUPPORTED_PROTOCOLS
+from codecortex.mcp.server import PROTOCOL_VERSION, SUPPORTED_PROTOCOLS, MCPApplication, MCPServer
 from codecortex.runtime import build_runtime
 
 
