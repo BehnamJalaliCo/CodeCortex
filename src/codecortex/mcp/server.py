@@ -41,7 +41,9 @@ from codecortex.tracing import TaskTraceRecorder
 from codecortex.workspace import MultiRepositoryWorkspace
 
 PROTOCOL_VERSION = "2026-07-28"
-SUPPORTED_PROTOCOLS = frozenset({PROTOCOL_VERSION, "2025-06-18"})
+HANDSHAKE_PROTOCOLS = frozenset({"2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"})
+SUPPORTED_PROTOCOLS = frozenset({PROTOCOL_VERSION, *HANDSHAKE_PROTOCOLS})
+FALLBACK_PROTOCOL = "2025-11-25"
 SERVER_INFO = {"name": "codecortex", "version": "0.1.0a9"}
 
 
@@ -403,7 +405,7 @@ class MCPServer:
                 # MCP negotiation: when the requested version is unknown, respond with
                 # a protocol version this server supports and let the client decide
                 # whether to continue.
-                negotiated = requested if requested in SUPPORTED_PROTOCOLS else PROTOCOL_VERSION
+                negotiated = requested if requested in HANDSHAKE_PROTOCOLS else FALLBACK_PROTOCOL
                 return self._result(request_id, self._discovery(negotiated))
             if method == "server/discover":
                 return self._result(request_id, self._discovery(PROTOCOL_VERSION))
