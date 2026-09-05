@@ -59,6 +59,23 @@ class TreeSitterParserProvider:
         except ImportError as exc:
             raise RuntimeError("install CodeCortex with the `parsers` extra") from exc
         self._get_parser = get_parser
+        # One parser per language, kept for the provider's lifetime. `get_parser`
+        # builds a fresh Parser (and Language) on every call, so parsing a
+        # repository used to construct and drop thousands of native objects.
+        self._parsers: dict[str, Any] = {}
+
+    def _parser(self, alias: str) -> Any:
+        # Tolerates instances built without __init__ (the unit tests inject a
+        # fake `_get_parser` that way).
+        parsers = getattr(self, "_parsers", None)
+        if parsers is None:
+            parsers = {}
+            self._parsers = parsers
+        parser = parsers.get(alias)
+        if parser is None:
+            parser = self._get_parser(alias)
+            parsers[alias] = parser
+        return parser
 
     @classmethod
     def available(cls) -> bool:
@@ -72,10 +89,10 @@ class TreeSitterParserProvider:
         alias = self.aliases.get(language)
         if alias is None:
             return []
-        parser = self._get_parser(alias)
-        tree = parser.parse(source.encode("utf-8"))
-        root = tree.root_node
+        parser = self._parser(alias)
         source_bytes = source.encode("utf-8")
+        tree = parser.parse(source_bytes)
+        root = tree.root_node
         units: list[NativeUnit] = []
         stack = [root]
         while stack:

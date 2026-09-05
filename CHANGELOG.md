@@ -2,6 +2,20 @@
 
 All notable changes to CodeCortex are documented here. The project follows semantic versioning while in alpha; breaking changes may occur before 1.0 and will be called out explicitly.
 
+## Unreleased (fixes)
+
+- Native Tree-sitter parsing now runs in a supervised worker process, so a grammar
+  that faults can no longer take down `cortex index` with SIGSEGV. A crashed or
+  hung worker degrades that one file to the fallback parser and indexing
+  continues; `CODECORTEX_NATIVE_INPROCESS=1` restores in-process parsing.
+- The native provider keeps one parser per language instead of building a new
+  parser (and language) for every file.
+- Repository discovery honours `.gitignore` inside a Git work tree, so ignored
+  build output and nested checkouts are no longer indexed as project code.
+- The structural engine is now found when it was installed by the `structural`
+  extra into an isolated environment (`uv tool install`, `pipx`) whose script
+  directory is not on `PATH`.
+
 ## 0.1.0a7
 
 - Fixed a Windows lock-directory race in `FileMutex` discovered by the release matrix.

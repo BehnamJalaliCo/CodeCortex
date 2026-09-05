@@ -4,12 +4,13 @@ from __future__ import annotations
 
 from pathlib import Path
 
+from codecortex.indexing.discovery import EXCLUDED_PARTS, iter_repository_files
 from codecortex.indexing.graph import GraphEdge, GraphNode, ProjectGraph
 from codecortex.indexing.relationships import RelationshipExtractor
 from codecortex.indexing.resolution import CrossFileResolver
 from codecortex.languages import LanguageRegistry
 
-_EXCLUDED = {".git", ".codecortex", ".venv", "venv", "node_modules", "dist", "build", "__pycache__"}
+_EXCLUDED = EXCLUDED_PARTS
 
 
 class ProjectIndexer:
@@ -21,17 +22,7 @@ class ProjectIndexer:
         self.resolver = CrossFileResolver()
 
     def _files(self) -> list[Path]:
-        files: list[Path] = []
-        for path in self.root.rglob("*"):
-            if len(files) >= self.max_files:
-                break
-            if not path.is_file():
-                continue
-            relative = path.relative_to(self.root)
-            if any(part in _EXCLUDED for part in relative.parts):
-                continue
-            files.append(path)
-        return sorted(files)
+        return iter_repository_files(self.root)[: self.max_files]
 
     @staticmethod
     def _symbol_id(relative: str, name: str, kind: str, line: int, container: str | None) -> str:

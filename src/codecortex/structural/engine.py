@@ -14,6 +14,7 @@ import json
 import re
 import shutil
 import subprocess
+import sys
 from collections.abc import Iterator
 from dataclasses import dataclass
 from pathlib import Path
@@ -43,6 +44,23 @@ PATTERN_ERROR_MARKER = "Pattern contains an ERROR node"
 TESTED_ENGINE_VERSION = "0.45.3"
 
 _VERSION_TOKEN = re.compile(r"(\d+\.\d+\.\d+(?:[-+][0-9A-Za-z.\-]+)?)")
+
+
+def _interpreter_executable(name: str) -> str | None:
+    """Look for the engine beside the running interpreter.
+
+    ``pip install codecortex-context-engine[structural]`` drops ``ast-grep`` in
+    the environment's script directory. When CodeCortex is installed as an
+    isolated tool (``uv tool install``, ``pipx``) that directory is deliberately
+    not on PATH, so the engine shipped by the extra the user just installed was
+    reported as "not installed". Probing the interpreter's own bin directory
+    finds it without widening what is searched.
+    """
+    bindir = Path(sys.executable).parent
+    for candidate in (bindir / name, bindir / "Scripts" / name, bindir / f"{name}.exe"):
+        if candidate.is_file():
+            return str(candidate)
+    return None
 
 
 def parse_engine_version(text: str) -> str:
@@ -158,7 +176,7 @@ class StructuralEngine:
                 )
             return (located, *self.config.command_args)
         for name in CANDIDATE_EXECUTABLES:
-            located = shutil.which(name)
+            located = shutil.which(name) or _interpreter_executable(name)
             if located is not None:
                 return (located, *self.config.command_args)
         raise StructuralEngineUnavailable(
