@@ -400,9 +400,11 @@ class MCPServer:
                 if not isinstance(params, dict):
                     raise ValueError("initialize params must be an object")
                 requested = str(params.get("protocolVersion", ""))
-                if requested not in SUPPORTED_PROTOCOLS:
-                    raise ValueError(f"unsupported protocolVersion: {requested}")
-                return self._result(request_id, self._discovery(requested))
+                # MCP negotiation: when the requested version is unknown, respond with
+                # a protocol version this server supports and let the client decide
+                # whether to continue.
+                negotiated = requested if requested in SUPPORTED_PROTOCOLS else PROTOCOL_VERSION
+                return self._result(request_id, self._discovery(negotiated))
             if method == "server/discover":
                 return self._result(request_id, self._discovery(PROTOCOL_VERSION))
             if method == "ping":
