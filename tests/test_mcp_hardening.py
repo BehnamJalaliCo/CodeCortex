@@ -5,7 +5,7 @@ from codecortex.distributed.remote_mcp import (
     RemoteAccessPolicy,
     RemoteMCPServer,
 )
-from codecortex.mcp.server import MCPApplication, MCPServer
+from codecortex.mcp.server import MCPApplication, MCPServer, PROTOCOL_VERSION, SUPPORTED_PROTOCOLS
 from codecortex.runtime import build_runtime
 
 
@@ -28,30 +28,45 @@ def test_native_mcp_rejects_unknown_arguments(tmp_path) -> None:
     assert response["error"]["code"] == -32602
 
 
-def test_initialize_negotiates_only_supported_protocols(tmp_path) -> None:
+def test_initialize_echoes_supported_protocols(tmp_path) -> None:
     server = MCPServer(MCPApplication(build_runtime(tmp_path)))
-    ok = asyncio.run(
-        server.dispatch(
-            {
-                "jsonrpc": "2.0",
-                "id": 1,
-                "method": "initialize",
-                "params": {"protocolVersion": "2025-06-18"},
-            }
+    for request_id, version in enumerate(sorted(SUPPORTED_PROTOCOLS), start=1):
+        response = asyncio.run(
+            server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "method": "initialize",
+                    "params": {"protocolVersion": version},
+                }
+            )
         )
+        assert response is not None
+        assert "error" not in response
+        assert response["result"]["protocolVersion"] == version
+
+
+def test_initialize_negotiates_unknown_and_missing_protocols(tmp_path) -> None:
+    server = MCPServer(MCPApplication(build_runtime(tmp_path)))
+    requests = (
+        {"protocolVersion": "2025-11-25"},
+        {"protocolVersion": ""},
+        {},
     )
-    assert ok and ok["result"]["protocolVersion"] == "2025-06-18"
-    bad = asyncio.run(
-        server.dispatch(
-            {
-                "jsonrpc": "2.0",
-                "id": 2,
-                "method": "initialize",
-                "params": {"protocolVersion": "1900-01-01"},
-            }
+    for request_id, params in enumerate(requests, start=100):
+        response = asyncio.run(
+            server.dispatch(
+                {
+                    "jsonrpc": "2.0",
+                    "id": request_id,
+                    "method": "initialize",
+                    "params": params,
+                }
+            )
         )
-    )
-    assert bad and bad["error"]["code"] == -32602
+        assert response is not None
+        assert "error" not in response
+        assert response["result"]["protocolVersion"] == PROTOCOL_VERSION
 
 
 def test_remote_mutations_require_explicit_opt_in() -> None:
