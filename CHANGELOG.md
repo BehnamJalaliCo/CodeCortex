@@ -2,6 +2,15 @@
 
 All notable changes to CodeCortex are documented here. The project follows semantic versioning while in alpha; breaking changes may occur before 1.0 and will be called out explicitly.
 
+## 0.1.0a8
+
+- Removed obsolete named upstream attribution/provenance records from the current CodeCortex tree.
+- Removed vendored/vendor-specific conformance fixtures and replaced them with repository-owned invariants.
+- Made optional documentation and structural integrations explicitly configurable and vendor-neutral.
+- Switched precision index discovery to CodeCortex-native `.cortexidx` paths.
+- Preserved the native parser sandbox/discovery hardening already merged to `main`.
+- Revalidated CI, security, Windows compatibility, packaging, Docker, and MCP release paths after the cleanup.
+
 ## Unreleased (fixes)
 
 - Native Tree-sitter parsing now runs in a supervised worker process, so a grammar
