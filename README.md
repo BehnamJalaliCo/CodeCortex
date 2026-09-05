@@ -878,6 +878,7 @@ Public interfaces are still evolving. Breaking changes can occur before 1.0. Eva
 - [Contributing](CONTRIBUTING.md)
 - [Governance](GOVERNANCE.md)
 - [Roadmap](ROADMAP.md)
+- [Cloud & Enterprise Early Access](docs/CLOUD_EARLY_ACCESS.md)
 
 
 ---
@@ -1709,6 +1710,7 @@ interfaceهای عمومی هنوز تکامل پیدا می‌کنند و قب�
 - [Contributing](CONTRIBUTING.md)
 - [Governance](GOVERNANCE.md)
 - [Roadmap](ROADMAP.md)
+- [Cloud & Enterprise Early Access](docs/CLOUD_EARLY_ACCESS.md)
 
 
 ---
