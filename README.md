@@ -17,7 +17,7 @@
 [![OpenSSF Scorecard](https://api.securityscorecards.dev/projects/github.com/BehnamJalaliCo/CodeCortex/badge)](https://securityscorecards.dev/viewer/?uri=github.com/BehnamJalaliCo/CodeCortex)
 [![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
 
-[**⭐ Star CodeCortex**](https://github.com/BehnamJalaliCo/CodeCortex) · [**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**Good First Issues**](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**Contribute**](CONTRIBUTING.md)
+[**⭐ Star CodeCortex**](https://github.com/BehnamJalaliCo/CodeCortex) · [**Documentation**](https://behnamjalalico.github.io/CodeCortex/) · [**Latest Release**](https://github.com/BehnamJalaliCo/CodeCortex/releases/latest) · [**Good First Issues**](https://github.com/BehnamJalaliCo/CodeCortex/issues?q=is%3Aissue+is%3Aopen+label%3A%22good+first+issue%22) · [**Report a Bug**](https://github.com/BehnamJalaliCo/CodeCortex/issues/new?template=bug.yml) · [**❤️ Support CodeCortex**](docs/SUPPORT.md) · [**Contribute**](CONTRIBUTING.md)
 
 [🇬🇧 English](#english) · [🇮🇷 فارسی](#فارسی)
 
@@ -863,6 +863,15 @@ Public interfaces are still evolving. Breaking changes can occur before 1.0. Eva
 
 ---
 
+
+# Support the open-source project
+
+If CodeCortex is useful to your work, you can support continued development with a voluntary crypto contribution.
+
+[**❤️ View crypto support addresses**](docs/SUPPORT.md)
+
+Support contributions are separate from Cloud, Team, and Enterprise commercial plans.
+
 # Documentation
 
 - [Architecture](docs/ARCHITECTURE.md)
@@ -1694,6 +1703,15 @@ interfaceهای عمومی هنوز تکامل پیدا می‌کنند و قب�
 | Release readiness | CI + security + benchmark | artifact commit دقیق |
 
 ---
+
+
+# حمایت از پروژه متن‌باز
+
+اگر CodeCortex برای کار شما مفید است، می‌توانید با کمک داوطلبانه کریپتویی از ادامه توسعه آن حمایت کنید.
+
+[**❤️ مشاهده آدرس‌های حمایت کریپتویی**](docs/SUPPORT.md)
+
+این حمایت‌ها از پلن‌های تجاری Cloud، Team و Enterprise جدا هستند.
 
 # مستندات
 

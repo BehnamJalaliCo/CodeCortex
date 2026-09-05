@@ -54,6 +54,7 @@ See the full [Getting Started guide](GETTING_STARTED.md) for supported coding-ag
 - [Evidence Fusion](EVIDENCE_FUSION.md)
 - [Advanced Intelligence](ADVANCED_INTELLIGENCE.md)
 - [Distributed operation](DISTRIBUTED.md)
+- [Support CodeCortex](SUPPORT.md)
 - [Platform](platform/README.md)
 - [Quality](QUALITY.md)
 - [Testing](TESTING.md)
