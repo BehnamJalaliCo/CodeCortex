@@ -46,6 +46,49 @@ SUPPORTED_PROTOCOLS = frozenset({PROTOCOL_VERSION, *HANDSHAKE_PROTOCOLS})
 FALLBACK_PROTOCOL = "2025-11-25"
 SERVER_INFO = {"name": "codecortex", "version": "0.1.0a9"}
 
+# MCP clients use tool annotations to decide whether a call needs human
+# approval. Query-only tools are explicitly marked read-only so non-interactive
+# agents can use them without weakening their sandbox or approval policy.
+_READ_ONLY_TOOLS = frozenset(
+    {
+        "cortex_repository_map",
+        "cortex_find_symbol",
+        "cortex_find_references",
+        "cortex_dependency_graph",
+        "cortex_impact",
+        "cortex_semantic_search",
+        "cortex_context",
+        "cortex_architecture",
+        "cortex_architecture_drift",
+        "cortex_symbol_history",
+        "cortex_pr_intelligence",
+        "cortex_memory_search",
+        "cortex_team_memory_search",
+        "cortex_workspace_search",
+        "cortex_trace_summary",
+        "cortex_stats",
+        "cortex_precise_definition",
+        "cortex_precise_references",
+        "cortex_precise_implementations",
+        "cortex_symbol_occurrences",
+        "cortex_precision_status",
+        "cortex_dependency_info",
+        "cortex_dependency_docs",
+        "cortex_dependency_context",
+        "cortex_structural_search",
+    }
+)
+
+# These query tools may consult external dependency documentation when the
+# request supplies a library, so keep their open-world hint conservative.
+_OPEN_WORLD_READ_ONLY_TOOLS = frozenset(
+    {
+        "cortex_context",
+        "cortex_dependency_docs",
+        "cortex_dependency_context",
+    }
+)
+
 
 def _schema(properties: dict[str, Any], required: list[str] | None = None) -> dict[str, Any]:
     schema: dict[str, Any] = {"$schema": "https://json-schema.org/draft/2020-12/schema", "type": "object", "properties": properties, "additionalProperties": False}
@@ -77,7 +120,7 @@ class MCPApplication:
         positive_int = {"type": "integer", "minimum": 1}
         location = {"path": text, "line": positive_int, "column": positive_int}
         glob_list = {"type": "array", "items": {"type": "string", "minLength": 1}, "maxItems": 32}
-        return [
+        tools = [
             {"name": "cortex_repository_map", "description": "Inspect repository graph counts and matching nodes.", "inputSchema": _schema({"query": {"type": "string", "default": ""}})},
             {"name": "cortex_find_symbol", "description": "Find code symbols across supported languages.", "inputSchema": _schema({"query": text}, ["query"])},
             {"name": "cortex_find_references", "description": "Find graph references to a symbol or file.", "inputSchema": _schema({"query": text}, ["query"])},
@@ -107,6 +150,14 @@ class MCPApplication:
             {"name": "cortex_structural_search", "description": "Find code by syntax structure rather than text.", "inputSchema": _schema({"pattern": text, "language": text, "paths": glob_list, "include": glob_list, "exclude": glob_list, "limit": {**positive_int, "maximum": 500, "default": 100}}, ["pattern", "language"])},
             {"name": "cortex_rewrite_preview", "description": "Plan a structural rewrite and return a reviewable, expiring preview. Changes no files.", "inputSchema": _schema({"pattern": text, "replacement": text, "language": text, "paths": glob_list, "include": glob_list, "exclude": glob_list}, ["pattern", "replacement", "language"])},
         ]
+        for tool in tools:
+            if tool["name"] in _READ_ONLY_TOOLS:
+                tool["annotations"] = {
+                    "readOnlyHint": True,
+                    "destructiveHint": False,
+                    "openWorldHint": tool["name"] in _OPEN_WORLD_READ_ONLY_TOOLS,
+                }
+        return tools
 
     def _graph(self, *, fuse_precision: bool = False) -> ProjectGraph:
         graph = IncrementalGraphIndex(self.root).refresh()[0]
