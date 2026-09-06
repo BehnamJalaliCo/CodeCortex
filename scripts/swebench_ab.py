@@ -74,6 +74,8 @@ Rules:
 - Work only from this checked-out repository and the issue text above.
 - Do not browse the web, search for the original pull request, or look for a gold/reference patch.
 - Inspect the repository and implement the smallest correct fix.
+- Use all repository-intelligence tools that are available to you.
+- If CodeCortex MCP tools are available, you MUST use CodeCortex for at least one repository-navigation or evidence query before editing. If CodeCortex is unavailable, continue with normal local tools.
 - Do not change tests unless the issue explicitly requires a test-only change.
 - Do not create benchmark metadata files in the repository.
 - Do not commit changes.
@@ -113,6 +115,7 @@ def collect(workspace: Path, output: Path, mode: str, model: str, effort: str) -
     run("git", "add", "-N", ".", cwd=target, check=False)
     patch = run("git", "diff", "--binary", base_commit, cwd=target).stdout
     status = run("git", "status", "--short", cwd=target).stdout
+    event_summary = read_events(target)
 
     output.mkdir(parents=True, exist_ok=True)
     prediction = [
@@ -140,12 +143,16 @@ def collect(workspace: Path, output: Path, mode: str, model: str, effort: str) -
         "patch_sha256": hashlib.sha256(patch.encode()).hexdigest(),
         "patch_bytes": len(patch.encode()),
         "git_status": status.splitlines(),
-        **read_events(target),
+        **event_summary,
     }
     evidence_path = output / f"{mode}-{metadata['instance_id']}.evidence.json"
     evidence_path.write_text(json.dumps(evidence, indent=2) + "\n", encoding="utf-8")
     print(f"saved {prediction_path}")
     print(f"saved {evidence_path}")
+    if mode == "codecortex" and event_summary["mcp_tool_calls"] < 1:
+        raise SystemExit(
+            "invalid CodeCortex treatment run: no CodeCortex MCP tool call was observed"
+        )
 
 
 def combine(source: Path, output: Path) -> None:
