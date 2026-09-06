@@ -11,10 +11,21 @@ async def test_mcp_lists_tools_and_supports_discovery(tmp_path):
     assert discovery["result"]["protocolVersion"] == PROTOCOL_VERSION
 
     listed = await server.dispatch({"jsonrpc": "2.0", "id": 2, "method": "tools/list"})
-    names = {tool["name"] for tool in listed["result"]["tools"]}
-    assert "cortex_impact" in names
-    assert "cortex_context" in names
-    assert "cortex_stats" in names
+    tools = {tool["name"]: tool for tool in listed["result"]["tools"]}
+    assert "cortex_impact" in tools
+    assert "cortex_context" in tools
+    assert "cortex_stats" in tools
+    assert tools["cortex_context"]["annotations"] == {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "openWorldHint": True,
+    }
+    assert tools["cortex_find_symbol"]["annotations"] == {
+        "readOnlyHint": True,
+        "destructiveHint": False,
+        "openWorldHint": False,
+    }
+    assert "annotations" not in tools["cortex_remember"]
 
 
 @pytest.mark.asyncio
