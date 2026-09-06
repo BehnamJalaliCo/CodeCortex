@@ -1,0 +1,210 @@
+name: SWE-bench CodeCortex A/B
+
+on:
+  workflow_dispatch:
+    inputs:
+      instance_ids:
+        description: 'JSON list of SWE-bench Verified instance IDs'
+        required: true
+        default: '["sympy__sympy-20590"]'
+        type: string
+      model:
+        description: 'OpenAI model used by Codex in both arms'
+        required: true
+        default: 'gpt-5.3-codex'
+        type: string
+      effort:
+        description: 'Reasoning effort used in both arms'
+        required: true
+        default: 'high'
+        type: choice
+        options:
+          - low
+          - medium
+          - high
+          - xhigh
+      submit_cloud_eval:
+        description: 'Submit both prediction files to official SWE-bench cloud evaluation'
+        required: true
+        default: false
+        type: boolean
+
+permissions:
+  contents: read
+
+jobs:
+  generate-patches:
+    name: ${{ matrix.mode }} / ${{ matrix.instance_id }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      max-parallel: 2
+      matrix:
+        mode: [baseline, codecortex]
+        instance_id: ${{ fromJSON(inputs.instance_ids) }}
+
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+
+      - name: Install benchmark dependencies
+        run: python -m pip install "datasets>=3,<5"
+
+      - name: Install CodeCortex only in the enabled arm
+        if: matrix.mode == 'codecortex'
+        run: python -m pip install -e ".[parsers]"
+
+      - name: Prepare exact SWE-bench checkout
+        run: |
+          python scripts/swebench_ab.py prepare \
+            --instance-id "${{ matrix.instance_id }}" \
+            --workspace ".benchmark/run"
+
+      - name: Build CodeCortex index
+        if: matrix.mode == 'codecortex'
+        working-directory: .benchmark/run/target
+        run: |
+          cortex init .
+          cortex index
+
+      - name: Prepare trusted Codex configuration
+        shell: bash
+        env:
+          MODE: ${{ matrix.mode }}
+        run: |
+          mkdir -p .benchmark/codex-home
+          : > .benchmark/codex-home/config.toml
+          if [ "$MODE" = "codecortex" ]; then
+            target="$(realpath .benchmark/run/target)"
+            cat > .benchmark/codex-home/config.toml <<EOF
+          [mcp_servers.codecortex]
+          command = "cortex"
+          args = ["mcp", "--path", "$target"]
+          env = { CODECORTEX_BACKENDS = "auto" }
+          enabled = true
+          required = true
+          startup_timeout_sec = 60
+          tool_timeout_sec = 180
+          EOF
+          fi
+
+      - name: Run identical Codex agent
+        uses: openai/codex-action@52fe01ec70a42f454c9d2ebd47598f9fd6893d56 # v1.11
+        with:
+          openai-api-key: ${{ secrets.OPENAI_API_KEY }}
+          prompt-file: .benchmark/run/prompt.txt
+          working-directory: .benchmark/run/target
+          codex-home: .benchmark/codex-home
+          codex-version: "0.153.4"
+          model: ${{ inputs.model }}
+          effort: ${{ inputs.effort }}
+          permission-profile: ":workspace"
+          safety-strategy: "drop-sudo"
+          codex-args: '["--ephemeral"]'
+          output-file: .benchmark/final-message.txt
+
+      - name: Collect patch and provenance
+        if: always()
+        run: |
+          python scripts/swebench_ab.py collect \
+            --workspace ".benchmark/run" \
+            --output ".benchmark/results" \
+            --mode "${{ matrix.mode }}" \
+            --model "${{ inputs.model }}" \
+            --effort "${{ inputs.effort }}"
+          cp .benchmark/final-message.txt .benchmark/results/ 2>/dev/null || true
+
+      - name: Upload immutable evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: swebench-${{ matrix.mode }}-${{ matrix.instance_id }}
+          path: .benchmark/results/
+          retention-days: 90
+          if-no-files-found: error
+
+  combine:
+    name: Combine A/B predictions
+    needs: generate-patches
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          pattern: swebench-*
+          path: .benchmark/downloads
+          merge-multiple: true
+
+      - name: Combine
+        run: |
+          python scripts/swebench_ab.py combine \
+            --source .benchmark/downloads \
+            --output .benchmark/combined
+
+      - name: Upload combined predictions
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: swebench-ab-combined-${{ github.run_id }}
+          path: .benchmark/combined/
+          retention-days: 90
+
+  cloud-evaluate:
+    name: Official SWE-bench cloud evaluation
+    needs: combine
+    if: ${{ inputs.submit_cloud_eval }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8
+        with:
+          name: swebench-ab-combined-${{ github.run_id }}
+          path: .benchmark/combined
+
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7
+        with:
+          python-version: "3.13"
+
+      - name: Install official SWE-bench cloud CLI
+        run: python -m pip install sb-cli
+
+      - name: Evaluate baseline
+        env:
+          SWEBENCH_API_KEY: ${{ secrets.SWEBENCH_API_KEY }}
+        run: |
+          sb-cli submit swe-bench_verified test \
+            --predictions_path .benchmark/combined/predictions-baseline.json \
+            --run_id "codecortex-baseline-${GITHUB_RUN_ID}" \
+            --output_dir .benchmark/reports/baseline \
+            --gen_report 1
+
+      - name: Evaluate CodeCortex
+        env:
+          SWEBENCH_API_KEY: ${{ secrets.SWEBENCH_API_KEY }}
+        run: |
+          sb-cli submit swe-bench_verified test \
+            --predictions_path .benchmark/combined/predictions-codecortex.json \
+            --run_id "codecortex-enabled-${GITHUB_RUN_ID}" \
+            --output_dir .benchmark/reports/codecortex \
+            --gen_report 1
+
+      - name: Upload cloud reports
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+        with:
+          name: swebench-cloud-reports-${{ github.run_id }}
+          path: .benchmark/reports/
+          retention-days: 90
