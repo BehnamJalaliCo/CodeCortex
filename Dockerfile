@@ -29,7 +29,7 @@ EXPOSE 7340
 ENTRYPOINT ["cortex-api"]
 CMD ["--host", "0.0.0.0", "--port", "7340", "--state-dir", "/var/lib/codecortex"]
 
-FROM node:22-alpine AS web-build
+FROM node:26-alpine AS web-build
 WORKDIR /web
 COPY web/package.json ./
 RUN npm install
