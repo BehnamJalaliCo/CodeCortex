@@ -42,6 +42,42 @@ def load_instance(instance_id: str) -> dict[str, Any]:
     raise SystemExit(f"instance not found in {DATASET}: {instance_id}")
 
 
+def select_instances(count: int, seed: str, explicit: str) -> list[str]:
+    if count <= 0:
+        selected = json.loads(explicit)
+        if not isinstance(selected, list) or not all(isinstance(item, str) for item in selected):
+            raise SystemExit("--explicit must be a JSON list of instance IDs")
+        return selected
+
+    from datasets import load_dataset
+
+    dataset = load_dataset(DATASET, split="test")
+    ranked = sorted(
+        dataset,
+        key=lambda row: hashlib.sha256(
+            f"{seed}:{row['instance_id']}".encode()
+        ).hexdigest(),
+    )
+    selected: list[str] = []
+    seen_repos: set[str] = set()
+    for row in ranked:
+        instance_id = str(row["instance_id"])
+        repo = str(row["repo"])
+        if instance_id == "sympy__sympy-20590":
+            continue
+        if repo in seen_repos:
+            continue
+        selected.append(instance_id)
+        seen_repos.add(repo)
+        if len(selected) == count:
+            break
+    if len(selected) < count:
+        raise SystemExit(
+            f"requested {count} unique-repository tasks but only found {len(selected)}"
+        )
+    return selected
+
+
 def prepare(instance_id: str, workspace: Path) -> None:
     workspace = workspace.resolve()
     target = workspace / "target"
@@ -181,6 +217,12 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     sub = parser.add_subparsers(dest="command", required=True)
 
+    sel = sub.add_parser("select")
+    sel.add_argument("--count", type=int, required=True)
+    sel.add_argument("--seed", required=True)
+    sel.add_argument("--explicit", required=True)
+    sel.add_argument("--github-output", type=Path)
+
     prep = sub.add_parser("prepare")
     prep.add_argument("--instance-id", required=True)
     prep.add_argument("--workspace", type=Path, required=True)
@@ -197,7 +239,14 @@ def main() -> int:
     comb.add_argument("--output", type=Path, required=True)
 
     args = parser.parse_args()
-    if args.command == "prepare":
+    if args.command == "select":
+        selected = select_instances(args.count, args.seed, args.explicit)
+        payload = json.dumps(selected, separators=(",", ":"))
+        print(payload)
+        if args.github_output:
+            with args.github_output.open("a", encoding="utf-8") as handle:
+                handle.write(f"instance_ids={payload}\n")
+    elif args.command == "prepare":
         prepare(args.instance_id, args.workspace)
     elif args.command == "collect":
         collect(args.workspace, args.output, args.mode, args.model, args.effort)
