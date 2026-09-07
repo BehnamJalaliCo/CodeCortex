@@ -36,7 +36,7 @@ RUN npm install
 COPY web ./
 RUN npm run build
 
-FROM nginx:1.27-alpine AS console
+FROM nginx:1.31-alpine AS console
 COPY deploy/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=web-build /web/dist /usr/share/nginx/html
 EXPOSE 8080
