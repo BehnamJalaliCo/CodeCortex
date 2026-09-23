@@ -26,7 +26,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-semantic = ["sentence-transformers>=3,<6"]
+semantic = ["sentence-transformers>=3,<7"]
 parsers = ["tree-sitter-language-pack>=1.15.8,<2"]
 web = ["fastapi>=0.116,<1", "uvicorn>=0.35,<1"]
 dev = [
