@@ -2,6 +2,15 @@
 
 All notable changes to CodeCortex are documented here. The project follows semantic versioning while in alpha; breaking changes may occur before 1.0 and will be called out explicitly.
 
+## 0.1.0a10
+
+- Fixed MCP protocol negotiation for unsupported and released protocol versions, and added read-only tool safety annotations for non-interactive agents.
+- Added reproducible SWE-bench CodeCortex A/B benchmarking with deterministic multi-task batches and verification of observed MCP usage.
+- Added a reproducible web-console lockfile, Cloud/Enterprise early-access materials, project support/funding documentation, and PowerShell setup guidance.
+- Updated build and release dependencies, including Docker Buildx, Nginx 1.29 Alpine, CodeQL 4.38.2, Codecov, and release container actions.
+- Kept CodeQL init, analyze, and SARIF upload actions on compatible pinned revisions while preserving required CI and security checks.
+- Synchronized package, MCP server, and registry version metadata for the v0.1.0a10 release.
+
 ## 0.1.0a9
 
 - Removed the final remaining named vendor reference from the current CodeCortex tree.
