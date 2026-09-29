@@ -44,7 +44,7 @@ PROTOCOL_VERSION = "2026-07-28"
 HANDSHAKE_PROTOCOLS = frozenset({"2025-11-25", "2025-06-18", "2025-03-26", "2024-11-05"})
 SUPPORTED_PROTOCOLS = frozenset({PROTOCOL_VERSION, *HANDSHAKE_PROTOCOLS})
 FALLBACK_PROTOCOL = "2025-11-25"
-SERVER_INFO = {"name": "codecortex", "version": "0.1.0a9"}
+SERVER_INFO = {"name": "codecortex", "version": "0.1.0a10"}
 
 # MCP clients use tool annotations to decide whether a call needs human
 # approval. Query-only tools are explicitly marked read-only so non-interactive
