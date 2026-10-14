@@ -32,7 +32,7 @@ jobs:
         run: pytest -q tests/test_security_boundaries.py tests/test_task_trace.py tests/test_agent_configurator.py
       - name: Generate CycloneDX SBOM
         run: cyclonedx-py environment --output-format JSON --output-file sbom.cdx.json
-      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7
         with:
           name: codecortex-sbom-${{ github.sha }}
           path: sbom.cdx.json
